@@ -3,14 +3,25 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Harvester Parts | Premium Agri Ecommerce Marketplace</title>
-  <meta name="description" content="Premium Indian agriculture ecommerce marketplace for tractors, harvesters, machinery, implements and spare parts." />
+  <title>Harvester Parts | Royal Agriculture Machinery Marketplace</title>
+  <meta name="description" content="Buy and sell new and used agricultural machinery, harvesters, tractors, implements and spare parts with verified sellers, rewards, plans, chat and AI assistance." />
+  <meta name="keywords" content="harvester parts, tractor, agriculture machinery, spare parts, combine harvester, farm equipment marketplace, India agri ecommerce" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:title" content="Harvester Parts - Royal Agriculture Machinery Marketplace" />
+  <meta property="og:description" content="Verified agriculture machinery marketplace for buyers, sellers and dealers." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1200&q=80" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="theme-color" content="#0f3d2e" />
+  <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="preload" href="styles.css" as="style" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <noscript><div class="noscript">Please enable JavaScript to use Harvester Parts marketplace.</div></noscript>
   <div id="intro" class="intro">
     <div class="mandala"></div><div class="grain-rain"></div>
     <div class="intro-card">
@@ -76,9 +87,11 @@
     <div class="footer-links"><a href="#marketplace">Buy</a><a href="#sell">Sell</a><a href="#verification">Verification</a><a href="#admin">Admin</a></div>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="data.js"></script>
-  <script src="supabase-config.js"></script>
-  <script src="app.js"></script>
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="data.js" defer></script>
+  <script src="supabase-config.js" defer></script>
+  <script src="app.js" defer></script>
+  <script src="pro-features.js" defer></script>
 </body>
 </html>

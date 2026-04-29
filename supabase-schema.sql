@@ -172,3 +172,57 @@ create policy "plan order insert" on plan_orders for insert with check (true);
 create policy "plan order read own or admin" on plan_orders for select using (auth.uid()=user_id or exists(select 1 from profiles where id=auth.uid() and role='admin'));
 
 insert into storage.buckets (id, name, public) values ('seller-documents','seller-documents',true) on conflict (id) do nothing;
+
+-- v10 additions: AI logs, payments, notifications, saved items, product images
+create table if not exists product_images (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid references products(id) on delete cascade,
+  image_url text not null,
+  sort_order int default 0,
+  created_at timestamptz default now()
+);
+create table if not exists ai_chat_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete set null,
+  question text not null,
+  answer text,
+  created_at timestamptz default now()
+);
+create table if not exists notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete cascade,
+  title text not null,
+  body text,
+  is_read boolean default false,
+  created_at timestamptz default now()
+);
+create table if not exists saved_products (
+  user_id uuid references profiles(id) on delete cascade,
+  product_id uuid references products(id) on delete cascade,
+  created_at timestamptz default now(),
+  primary key(user_id, product_id)
+);
+create table if not exists payment_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete set null,
+  plan_id text,
+  amount numeric,
+  gateway text default 'razorpay',
+  gateway_payment_id text,
+  status text default 'created',
+  raw jsonb,
+  created_at timestamptz default now()
+);
+alter table product_images enable row level security;
+alter table ai_chat_logs enable row level security;
+alter table notifications enable row level security;
+alter table saved_products enable row level security;
+alter table payment_events enable row level security;
+create policy if not exists "public read product images" on product_images for select using (true);
+create policy if not exists "seller manage product images" on product_images for all using (exists(select 1 from products where products.id=product_images.product_id and products.seller_id=auth.uid()));
+create policy if not exists "user insert ai logs" on ai_chat_logs for insert with check (auth.uid()=user_id or user_id is null);
+create policy if not exists "user read own notifications" on notifications for select using (auth.uid()=user_id or exists(select 1 from profiles where id=auth.uid() and role='admin'));
+create policy if not exists "user update own notifications" on notifications for update using (auth.uid()=user_id);
+create policy if not exists "user save products" on saved_products for all using (auth.uid()=user_id);
+create policy if not exists "payment insert own" on payment_events for insert with check (auth.uid()=user_id or user_id is null);
+create policy if not exists "payment read own or admin" on payment_events for select using (auth.uid()=user_id or exists(select 1 from profiles where id=auth.uid() and role='admin'));

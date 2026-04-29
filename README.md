@@ -1,49 +1,24 @@
-# Harvester Parts v8
+# Harvester Parts v10 — Pro Marketplace Drop-in ZIP
 
-GitHub-ready drop-in update. Upload/replace these root files in your existing GitHub Pages repo.
+Upload/replace these files in your GitHub repo. Do not delete your repo; just overwrite matching files and add the new files.
 
-## What is included
-- Dynamic Supabase-ready marketplace frontend
-- Buyer / Seller / Dealer / Admin flows
-- Login and signup using Supabase Auth
-- Product posting with admin approval status
-- Seller verification form with Aadhaar front/back + shop photo upload
-- Admin approval table
-- Enquiry system for machines
-- Cart flow for spare parts
-- Machine selector by brand/model/category
-- Plans from ₹999 to ₹15,999 with visible pricing
-- Custom SVG reward badges, no emoji badges
-- Mobile responsive fixes, smoother page transitions, auto-closing menu, scroll-up button
+## Added in v10
+- Floating AI assistant for product suggestions, seller help and plan guidance
+- Voice search for marketplace filters using browser speech recognition
+- Razorpay-ready seller plan payment flow
+- AI price guidance on product detail pages
+- PWA support: installable mobile-app style experience with service worker
+- Smoother page transitions and scroll reveal animations
+- Extra Supabase SQL tables for images, notifications, saved products, payment events and AI logs
 
-## Setup steps
+## Setup
+1. Edit `supabase-config.js` and add your Supabase URL + anon key.
+2. Run `supabase-schema.sql` in Supabase SQL Editor. It drops/recreates base tables first, then adds v10 tables.
+3. Create these Supabase Storage buckets: `product-images`, `seller-documents`.
+4. For payments, replace `rzp_test_REPLACE_WITH_YOUR_KEY_ID` inside `pro-features.js` with your Razorpay key ID.
 
-1. Upload the files to GitHub by replacing existing files. Do not delete your repo.
-2. Open Supabase > SQL Editor.
-3. Run `supabase-schema.sql` once.
-4. Open Supabase > Authentication and enable Email login. Phone OTP can be enabled later.
-5. Open `supabase-config.js` and add your public anon config:
+## Important payment note
+Client-only Razorpay works for demo/testing. For real money, create Razorpay orders and verify signatures on a secure backend/serverless function before activating plans.
 
-```js
-window.HP_SUPABASE = {
-  url: "https://YOUR_PROJECT.supabase.co",
-  anonKey: "YOUR_PUBLIC_ANON_KEY"
-};
-```
-
-Never paste your service role key into GitHub.
-
-## Admin setup
-After creating your admin account on the site, go to Supabase SQL editor and run:
-
-```sql
-update profiles set role = 'admin' where id = 'YOUR_USER_UUID';
-```
-
-You can find your user UUID in Supabase Authentication > Users.
-
-## Storage
-The SQL creates a public bucket named `seller-documents`. For production, make this private and use signed URLs. Current setup is easier for testing.
-
-## Current mode
-If Supabase keys are not added, the site runs in demo/local mode using `data.js`.
+## Mobile app note
+This ZIP makes the site installable as a PWA. A full native React Native app is a separate project, but this is ready for mobile users now.
