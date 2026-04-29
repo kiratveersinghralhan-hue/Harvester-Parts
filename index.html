@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Harvester Parts | Royal Indian Agri Marketplace</title>
+  <meta name="description" content="Premium Indian agriculture ecommerce marketplace for tractors, harvesters, machinery, implements and spare parts." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+Devanagari:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="intro" class="intro">
+    <div class="mandala"></div><div class="grain-rain"></div>
+    <div class="intro-card">
+      <div class="royal-logo intro-logo" aria-hidden="true"></div>
+      <div class="intro-kicker">भारत की कृषि विरासत • Global Agri Trade</div>
+      <h1>Harvester Parts</h1>
+      <p>Royal marketplace for machines, implements, spare parts and verified dealers.</p>
+      <div class="intro-loader"><span></span></div>
+    </div>
+  </div>
+
+  <div id="languageModal" class="modal" aria-hidden="true">
+    <div class="modal-card royal-panel pop-in">
+      <button class="icon-btn modal-close" data-close-modal aria-label="Close">×</button>
+      <div class="kicker">Language / भाषा</div>
+      <h2>Choose your marketplace language</h2>
+      <p class="muted">Worldwide languages plus Indian languages. You can change it anytime from the header.</p>
+      <div id="languageGrid" class="language-grid"></div>
+    </div>
+  </div>
+
+  <div class="top-strip"><span>Verified sellers only</span><span>•</span><span>Luxury agri ecommerce</span><span>•</span><span>India local + worldwide catalog</span></div>
+  <header class="site-header">
+    <a href="#home" class="brand" aria-label="Harvester Parts home">
+      <span class="royal-logo small-logo"></span>
+      <span class="brand-text"><strong>Harvester</strong> Parts<small>Royal Agri Marketplace</small></span>
+    </a>
+    <button id="mobileMenu" class="icon-btn mobile-only" aria-label="Open menu">☰</button>
+    <nav id="siteNav" class="nav">
+      <a href="#home">Home</a>
+      <a href="#marketplace">Marketplace</a>
+      <a href="#new">New</a>
+      <a href="#used">Used</a>
+      <a href="#parts">Parts</a>
+      <a href="#selector">Selector</a>
+      <a href="#sell">Sell</a>
+      <a href="#plans">Plans</a>
+      <a href="#rewards">Rewards</a>
+      <a href="#admin">Admin</a>
+    </nav>
+    <div class="header-actions">
+      <select id="languageSelect" class="mini-select" aria-label="Change language"></select>
+      <a href="#auth" class="btn small ghost">Login</a>
+      <a href="#sell" class="btn small">Sell Now</a>
+    </div>
+  </header>
+
+  <main id="app" class="page-shell"></main>
+
+  <aside id="cartDrawer" class="drawer" aria-hidden="true">
+    <button class="icon-btn drawer-close" id="closeCart">×</button>
+    <h2>Royal Parts Cart</h2>
+    <p class="muted">Checkout can be connected later with Supabase + payment gateway.</p>
+    <div id="cartItems"></div>
+    <div class="cart-total"><span>Total</span><strong id="cartTotal">₹0</strong></div>
+    <button class="btn full">Continue checkout</button>
+  </aside>
+  <button id="cartButton" class="floating-cart">🛒 <span id="cartCount">0</span></button>
+
+  <footer class="footer">
+    <div><strong>Harvester Parts</strong><p>Royal Indian agriculture trading platform for buyers, sellers, dealers and admins.</p></div>
+    <div class="footer-links"><a href="#marketplace">Buy</a><a href="#sell">Sell</a><a href="#verification">Verification</a><a href="#admin">Admin</a></div>
+  </footer>
+
+  <script src="data.js"></script>
+  <script src="supabase-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
