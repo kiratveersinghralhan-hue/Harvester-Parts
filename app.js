@@ -45,3 +45,35 @@ async function submitVerification(e){e.preventDefault();const fd=new FormData(e.
 function addCart(id){const p=state.products.find(x=>String(x.id)===String(id));if(!p)return;state.cart.push(String(id));localStorage.hpCart=JSON.stringify(state.cart);updateCart();$('#cartDrawer').classList.add('show')}
 function updateCart(){const items=state.cart.map(id=>state.products.find(p=>String(p.id)===String(id))).filter(Boolean);$('#cartCount').textContent=items.length;$('#cartItems').innerHTML=items.length?items.map(p=>`<div class="cart-item">${imgTag(realImg(p),safe(p.title),p)}<div><strong>${safe(p.title)}</strong><br><span class="muted">${money(p.price)}</span></div></div>`).join(''):'<p class="muted">Cart is empty.</p>';$('#cartTotal').textContent=money(items.reduce((s,p)=>s+(+p.price||0),0))}
 init();
+
+/* v13 stable route/mobile patch */
+(function(){
+  const oldRoute = window.route;
+  if (typeof oldRoute === 'function') {
+    window.route = function(){
+      try { oldRoute(); } catch(e) { console.error('Route recovered', e); location.hash = '#home'; }
+      document.getElementById('siteNav')?.classList.remove('open','show','active');
+      document.body.classList.remove('route-leaving','menu-open');
+      setTimeout(()=>window.scrollTo(0,0), 20);
+    };
+    window.removeEventListener('hashchange', oldRoute);
+    window.addEventListener('hashchange', window.route);
+  }
+  document.addEventListener('click', function(e){
+    const a=e.target.closest('a[href^="#"]');
+    if(a){ document.getElementById('siteNav')?.classList.remove('open','show','active'); document.body.classList.remove('route-leaving','menu-open'); }
+  }, true);
+  window.addEventListener('error', function(e){
+    if(String(e.message||'').toLowerCase().includes('script error')) return;
+    console.warn('Recovered UI error:', e.message);
+  });
+})();
+
+/* v14 premium menu behavior */
+(function(){
+  function nav(){return document.getElementById('siteNav')}
+  function btn(){return document.getElementById('mobileMenu')}
+  function closeMenu(){nav()?.classList.remove('open','show','active');document.body.classList.remove('menu-open');btn()?.setAttribute('aria-expanded','false')}
+  function toggleMenu(e){e&&e.preventDefault();const n=nav();if(!n)return;n.classList.contains('open')?closeMenu():(n.classList.add('open'),document.body.classList.add('menu-open'),btn()?.setAttribute('aria-expanded','true'))}
+  setTimeout(()=>{btn()&&(btn().onclick=toggleMenu);document.getElementById('menuOverlay')?.addEventListener('click',closeMenu);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});document.querySelectorAll('#siteNav a[href^="#"], .header-actions a[href^="#"]').forEach(a=>a.addEventListener('click',()=>setTimeout(closeMenu,30)));window.addEventListener('resize',()=>{if(innerWidth>900)closeMenu()},{passive:true});},0);
+})();
