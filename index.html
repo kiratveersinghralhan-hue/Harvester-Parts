@@ -49,18 +49,16 @@
       <span class="royal-logo small-logo"></span>
       <span class="brand-text"><strong>Harvester</strong> Parts<small>Royal Agri Marketplace</small></span>
     </a>
-    <button id="mobileMenu" class="icon-btn mobile-only" aria-label="Open menu">☰</button>
-    <nav id="siteNav" class="nav">
-      <a href="#home">Home</a>
-      <a href="#marketplace">Marketplace</a>
-      <a href="#new">New</a>
-      <a href="#used">Used</a>
-      <a href="#parts">Parts</a>
-      <a href="#selector">Selector</a>
-      <a href="#sell">Sell</a>
-      <a href="#plans">Plans</a>
-      <a href="#rewards">Rewards</a>
-      <a href="#admin">Admin</a>
+    <button id="mobileMenu" class="icon-btn mobile-only premium-menu-btn" aria-label="Open menu" aria-expanded="false"><span></span><span></span><span></span></button>
+    <nav id="siteNav" class="nav premium-nav" aria-label="Main menu">
+      <div class="menu-head"><span class="royal-logo small-logo"></span><div><strong>Harvester Parts</strong><small>Luxury agri control center</small></div></div>
+      <div class="menu-account glass-block"><div class="account-avatar">HP</div><div class="account-copy"><strong id="menuUserName">Guest Buyer</strong><small id="menuUserStatus">Login to save listings, chats and rewards</small></div><a href="#auth" class="menu-pill" id="menuLoginBtn">Login</a><button class="menu-pill ghost" id="menuLogoutBtn" type="button">Logout</button></div>
+      <div class="menu-actions"><a href="#sell" class="menu-action sell-action"><b>Sell Product</b><small>Verified sellers only</small></a><a href="#marketplace" class="menu-action"><b>Browse Bazaar</b><small>New, used and parts</small></a></div>
+      <div class="menu-section-title">Navigation</div>
+      <a href="#home" data-icon="⌂"><span>Home</span><small>Start</small></a><a href="#marketplace" data-icon="◈"><span>Marketplace</span><small>All listings</small></a><a href="#selector" data-icon="⌁"><span>Machine Selector</span><small>Brand + model</small></a><a href="#plans" data-icon="₹"><span>Plans</span><small>Seller packages</small></a><a href="#rewards" data-icon="★"><span>Rewards</span><small>Badges + levels</small></a>
+      <div class="menu-section-title">Shop categories</div><div class="menu-category-grid"><a href="#new">New Machines</a><a href="#used">Used Machines</a><a href="#parts">Spare Parts</a><a href="#marketplace">Tractors</a><a href="#marketplace">Harvesters</a><a href="#marketplace">Irrigation</a></div>
+      <div class="menu-section-title">Your tools</div><div class="menu-quick"><a href="#dashboard">My Listings</a><a href="#chat">Chats</a><a href="#orders">Orders</a><a href="#notifications">Alerts</a></div>
+      <div class="menu-section-title">Platform</div><a href="#admin" data-icon="⚙"><span>Admin Panel</span><small>Approvals</small></a><a href="#ai" data-icon="AI"><span>AI Assistant</span><small>Find machines</small></a>
     </nav>
     <div class="header-actions">
       <select id="languageSelect" class="mini-select" aria-label="Change language"></select>
@@ -68,6 +66,7 @@
       <a href="#sell" class="btn small">Sell Now</a>
     </div>
   </header>
+  <div id="menuOverlay" class="menu-overlay" aria-hidden="true"></div>
 
   <main id="app" class="page-shell"></main>
 
