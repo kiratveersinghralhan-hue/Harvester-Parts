@@ -1,32 +1,49 @@
-# Harvester Parts Fresh Marketplace v2
+# Harvester Parts v8
 
-Fresh responsive frontend for an agricultural machinery and spare parts marketplace.
+GitHub-ready drop-in update. Upload/replace these root files in your existing GitHub Pages repo.
 
-## Improvements in this version
-- New custom agriculture logo SVG
-- Removed harsh sun/light toggle style and replaced with cleaner green/gold theme
-- Improved intro animation with field furrows, logo mark, and smoother loading
-- Fully dynamic rendering from `data.js`
-- 96 demo listings using internet-hosted demo images
-- Smooth SPA-style page transitions
-- Mobile menu now auto-closes on page change, outside click, or nav click
-- Better responsive grids for mobile/tablet/desktop
-- Marketplace filters, product details, cart, plans, rewards, seller verification, machine selector and admin dashboard
+## What is included
+- Dynamic Supabase-ready marketplace frontend
+- Buyer / Seller / Dealer / Admin flows
+- Login and signup using Supabase Auth
+- Product posting with admin approval status
+- Seller verification form with Aadhaar front/back + shop photo upload
+- Admin approval table
+- Enquiry system for machines
+- Cart flow for spare parts
+- Machine selector by brand/model/category
+- Plans from ₹999 to ₹15,999 with visible pricing
+- Custom SVG reward badges, no emoji badges
+- Mobile responsive fixes, smoother page transitions, auto-closing menu, scroll-up button
 
-## Files
-- `index.html` main static app
-- `styles.css` full responsive UI styling
-- `data.js` fake catalog, plans, languages, brands, categories
-- `app.js` dynamic routing and UI logic
-- `supabase-config.js` placeholder config
-- `supabase-schema.sql` database schema starter
+## Setup steps
 
-## GitHub upload
-Upload all files in this folder to the root of your GitHub repo. Do not upload the zip itself.
+1. Upload the files to GitHub by replacing existing files. Do not delete your repo.
+2. Open Supabase > SQL Editor.
+3. Run `supabase-schema.sql` once.
+4. Open Supabase > Authentication and enable Email login. Phone OTP can be enabled later.
+5. Open `supabase-config.js` and add your public anon config:
 
-## Supabase
-Add your Supabase URL and anon key in `supabase-config.js`. Never expose service-role keys in frontend code.
+```js
+window.HP_SUPABASE = {
+  url: "https://YOUR_PROJECT.supabase.co",
+  anonKey: "YOUR_PUBLIC_ANON_KEY"
+};
+```
 
+Never paste your service role key into GitHub.
 
-## V3 reference-inspired update
-This version keeps the cleaner fresh build, but brings back the older website feel: entry gate, guest view, new/used/spare tabs, speed meters, filter sidebar, premium farm marketplace branding, smoother drawer behavior, and a stronger custom logo.
+## Admin setup
+After creating your admin account on the site, go to Supabase SQL editor and run:
+
+```sql
+update profiles set role = 'admin' where id = 'YOUR_USER_UUID';
+```
+
+You can find your user UUID in Supabase Authentication > Users.
+
+## Storage
+The SQL creates a public bucket named `seller-documents`. For production, make this private and use signed URLs. Current setup is easier for testing.
+
+## Current mode
+If Supabase keys are not added, the site runs in demo/local mode using `data.js`.

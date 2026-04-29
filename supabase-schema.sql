@@ -1,224 +1,174 @@
--- Harvester Parts fresh Supabase schema
--- Run in Supabase SQL editor. WARNING: the first section drops old marketplace tables.
+-- Harvester Parts fresh backend schema v8
+-- Run in Supabase SQL editor. This creates a working marketplace backend.
+-- WARNING: The DROP section removes older Harvester Parts demo tables.
 
-begin;
+create extension if not exists pgcrypto;
 
-drop table if exists reward_events cascade;
-drop table if exists rewards cascade;
-drop table if exists cart_items cascade;
-drop table if exists orders cascade;
 drop table if exists enquiries cascade;
-drop table if exists listings cascade;
+drop table if exists plan_orders cascade;
 drop table if exists seller_verifications cascade;
-drop table if exists subscriptions cascade;
+drop table if exists products cascade;
+drop table if exists reward_badges cascade;
 drop table if exists plans cascade;
-drop table if exists machine_models cascade;
-drop table if exists machine_brands cascade;
-drop table if exists categories cascade;
 drop table if exists profiles cascade;
-
-drop type if exists user_role cascade;
-drop type if exists verification_status cascade;
-drop type if exists listing_status cascade;
-drop type if exists listing_type cascade;
-drop type if exists condition_type cascade;
-
-create type user_role as enum ('buyer','seller','dealer','admin');
-create type verification_status as enum ('not_submitted','pending','approved','rejected');
-create type listing_status as enum ('draft','pending','approved','rejected','sold','archived');
-create type listing_type as enum ('machine','spare_part');
-create type condition_type as enum ('new','used','refurbished');
+drop table if exists brands cascade;
+drop table if exists categories cascade;
 
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
-  phone text unique,
-  email text,
-  role user_role not null default 'buyer',
-  language_code text default 'en',
-  country text,
-  state text,
-  district text,
-  city text,
-  village text,
-  reward_points integer not null default 0,
-  badge_title text default 'Seed Starter',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  role text check (role in ('buyer','seller','dealer','admin')) default 'buyer',
+  phone text,
+  language text default 'en',
+  created_at timestamptz default now()
 );
 
 create table categories (
-  id uuid primary key default gen_random_uuid(),
-  slug text unique not null,
+  id text primary key,
   name text not null,
   icon text,
-  description text,
-  parent_id uuid references categories(id) on delete set null,
-  is_active boolean default true
+  sort_order int default 0
 );
 
-create table machine_brands (
+create table brands (
   id uuid primary key default gen_random_uuid(),
-  name text unique not null,
-  country text,
-  logo_url text,
-  is_active boolean default true
-);
-
-create table machine_models (
-  id uuid primary key default gen_random_uuid(),
-  brand_id uuid references machine_brands(id) on delete cascade,
-  model_name text not null,
-  machine_type text,
-  hp_range text,
-  compatible_parts jsonb default '[]'::jsonb,
-  unique(brand_id, model_name)
+  name text not null unique,
+  models text[] default '{}',
+  country text
 );
 
 create table plans (
-  id uuid primary key default gen_random_uuid(),
-  name text unique not null,
-  price_inr integer not null,
-  active_listing_limit integer,
-  featured_boosts integer default 0,
-  reward_multiplier numeric default 1,
-  benefits jsonb default '[]'::jsonb,
-  is_active boolean default true
+  id text primary key,
+  name text not null,
+  price int not null,
+  description text,
+  features text[] default '{}',
+  max_listings int default 0,
+  featured_slots int default 0,
+  active boolean default true
 );
 
-create table subscriptions (
+create table products (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references profiles(id) on delete cascade,
-  plan_id uuid references plans(id),
-  status text default 'pending',
-  starts_at timestamptz,
-  ends_at timestamptz,
-  payment_reference text,
+  seller_id uuid references profiles(id) on delete set null,
+  title text not null,
+  description text,
+  category text references categories(id),
+  category_name text,
+  brand text,
+  model text,
+  type text check (type in ('machine','spare')) default 'machine',
+  condition text check (condition in ('New','Used','Refurbished')) default 'Used',
+  price numeric default 0,
+  year int,
+  hours int,
+  country text default 'India',
+  state text,
+  city text,
+  village text,
+  image_url text,
+  gallery_urls text[] default '{}',
+  status text check (status in ('pending','approved','rejected','sold')) default 'pending',
+  verified boolean default false,
+  rating numeric default 4.5,
+  seller_name text,
   created_at timestamptz default now()
 );
 
 create table seller_verifications (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references profiles(id) on delete cascade,
-  status verification_status default 'pending',
+  user_id uuid references profiles(id) on delete set null,
+  legal_name text not null,
+  phone text not null,
+  address text,
   aadhaar_front_url text,
   aadhaar_back_url text,
   shop_photo_url text,
-  phone_otp_verified boolean default false,
-  business_name text,
-  gst_number text,
-  address text,
-  admin_notes text,
-  reviewed_by uuid references profiles(id),
-  reviewed_at timestamptz,
+  status text check (status in ('pending','approved','rejected')) default 'pending',
+  admin_note text,
   created_at timestamptz default now()
-);
-
-create table listings (
-  id uuid primary key default gen_random_uuid(),
-  seller_id uuid references profiles(id) on delete cascade,
-  category_id uuid references categories(id),
-  brand_id uuid references machine_brands(id),
-  model_id uuid references machine_models(id),
-  title text not null,
-  description text,
-  listing_type listing_type not null,
-  condition condition_type not null,
-  price numeric not null,
-  currency text default 'INR',
-  country text,
-  state text,
-  district text,
-  city text,
-  village text,
-  manufacture_year integer,
-  usage_hours integer,
-  images jsonb default '[]'::jsonb,
-  status listing_status default 'pending',
-  is_featured boolean default false,
-  admin_notes text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
 );
 
 create table enquiries (
   id uuid primary key default gen_random_uuid(),
-  listing_id uuid references listings(id) on delete cascade,
+  product_id uuid references products(id) on delete cascade,
   buyer_id uuid references profiles(id) on delete set null,
-  seller_id uuid references profiles(id) on delete set null,
-  message text,
-  phone text,
-  status text default 'open',
+  message text not null,
+  status text default 'new',
   created_at timestamptz default now()
 );
 
-create table orders (
-  id uuid primary key default gen_random_uuid(),
-  buyer_id uuid references profiles(id) on delete set null,
-  status text default 'cart',
-  total_amount numeric default 0,
-  currency text default 'INR',
-  address jsonb default '{}'::jsonb,
-  created_at timestamptz default now()
-);
-
-create table cart_items (
-  id uuid primary key default gen_random_uuid(),
-  order_id uuid references orders(id) on delete cascade,
-  listing_id uuid references listings(id) on delete cascade,
-  quantity integer default 1,
-  price numeric not null
-);
-
-create table rewards (
-  id uuid primary key default gen_random_uuid(),
-  code text unique not null,
+create table reward_badges (
+  id text primary key,
+  icon text default 'gold',
   title text not null,
   description text,
-  points integer default 0,
-  badge text,
-  is_active boolean default true
+  points int default 0,
+  trigger_code text
 );
 
-create table reward_events (
+create table plan_orders (
   id uuid primary key default gen_random_uuid(),
-  user_id uuid references profiles(id) on delete cascade,
-  reward_id uuid references rewards(id),
-  points integer not null,
-  note text,
+  plan_id text references plans(id),
+  user_id uuid references profiles(id) on delete set null,
+  status text check (status in ('pending','paid','approved','cancelled')) default 'pending',
   created_at timestamptz default now()
 );
 
-insert into plans (name, price_inr, active_listing_limit, featured_boosts, reward_multiplier, benefits) values
-('Starter', 999, 3, 0, 1.0, '["3 active listings","Basic seller badge","Phone support ticket"]'),
-('Grower', 1999, 10, 2, 1.2, '["10 active listings","2 featured boosts","WhatsApp enquiry button"]'),
-('Trader', 3999, 25, 5, 1.3, '["25 active listings","Dealer profile page","Lead inbox access"]'),
-('Dealer Pro', 6999, 60, 10, 1.5, '["60 active listings","Priority verification","Top area placement"]'),
-('Agri Gold', 9999, 120, 20, 1.8, '["120 active listings","Homepage spotlight","Bulk upload ready"]'),
-('Global Elite', 15999, null, 40, 2.0, '["Unlimited draft listings","Global dealer badge","Premium support"]');
+insert into categories(id,name,icon,sort_order) values
+('power','Power & Prime Movers','tractor',1),('land','Land Development','land',2),('tillage','Tillage / Soil Cultivation','soil',3),('planting','Planting & Sowing','seed',4),('irrigation','Irrigation & Water','water',5),('fertilizing','Fertilizing & Nutrients','nutrient',6),('protection','Crop Protection','shield',7),('cropcare','Intercultural & Crop Care','leaf',8),('harvesting','Harvesting Machinery','harvest',9),('post','Post-Harvest Processing','grain',10),('transport','Transport & Handling','truck',11),('forage','Hay & Forage','bale',12),('livestock','Livestock Field Machinery','feed',13),('orchard','Orchard & Plantation','tree',14),('smart','Precision & Smart Agri','gps',15),('spare','Spare Parts','gear',16);
 
-insert into rewards (code,title,description,points,badge) values
-('signup','Seed Starter','Complete signup and language setup',50,'🌱'),
-('verified_seller','Verified Kisan Seller','Aadhaar, phone OTP and shop photo approved',250,'🛡️'),
-('first_listing','First Machine Listed','First approved machine listing',150,'🚜'),
-('parts_pro','Parts Pro','Add 5 spare parts',200,'⚙️'),
-('deal_maker','Deal Maker','Close a buy/sell enquiry',400,'🤝'),
-('trusted_buyer','Trusted Buyer','Buy or enquire on verified listings',100,'🛒'),
-('daily_task','Daily Field Task','Login/share/update/respond',20,'🔥'),
-('agri_champion','Agri Champion','10 successful actions',1000,'👑');
+insert into brands(name,models,country) values
+('Mahindra',array['575 DI','Arjun Novo 605','Yuvo Tech+ 575','Jivo 245'],'India'),('Swaraj',array['735 FE','744 FE','855 FE','963 FE'],'India'),('Sonalika',array['DI 745','Tiger 55','RX 750','Sikander 60'],'India'),('John Deere',array['5050D','5310','5405','6120B'],'USA'),('New Holland',array['3630 TX','5620 TX','Excel 4710','Baler BC5060'],'Global'),('Massey Ferguson',array['241 DI','1035 DI','9500 Smart','2635 4WD'],'Global'),('Kubota',array['MU4501','MU5501','L4508','Harvesking DC-68G'],'Japan'),('CLAAS',array['Crop Tiger','Jaguar 950','Lexion 770','Dominator'],'Germany'),('Preet',array['6049','987','949 TAF','Combine 987'],'India'),('Shaktiman',array['Rotavator SRP','Super Seeder','Baler','Mulcher'],'India'),('Case IH',array['Puma 150','Axial Flow 4000','Farmall 75','Magnum 250'],'USA'),('Fendt',array['Vario 211','Vario 724','Ideal 8','Katana 650'],'Germany');
+
+insert into plans(id,name,price,description,features,max_listings,featured_slots) values
+('starter','Starter',999,'For small farmers testing online selling',array['2 active listings','Basic enquiry inbox','Seller profile','Bronze reward badge'],2,0),
+('kisan-plus','Kisan Plus',1999,'For regular local sellers',array['8 active listings','District visibility','Photo gallery','Buyer contact requests'],8,1),
+('dealer-basic','Dealer Basic',3999,'For shops and spare part dealers',array['25 active listings','Spare parts catalog','Lead dashboard','Verification badge'],25,2),
+('growth','Growth',6999,'Most useful plan for serious sellers',array['60 active listings','Featured search slots','Priority support','Rewards multiplier'],60,4),
+('premium-dealer','Premium Dealer',9999,'For high-volume machinery sellers',array['120 active listings','Homepage promotion','Team access ready','Analytics cards'],120,8),
+('elite-global','Elite Global',15999,'For large dealers and exporters',array['Unlimited demo listings','Global marketplace badge','Top placement','Bulk upload ready'],9999,20);
+
+insert into reward_badges(id,icon,title,description,points,trigger_code) values
+('first-seed','bronze','First Seed','Create account and complete language setup',50,'signup'),
+('verified-farmer','green','Verified Farmer','Complete Aadhaar, OTP and shop photo verification',250,'seller_verified'),
+('first-listing','gold','First Listing','Post your first approved machine or part',150,'listing_approved'),
+('trusted-trader','platinum','Trusted Trader','Complete a successful enquiry or sale',500,'sale_complete'),
+('smart-buyer','green','Smart Buyer','Buy or enquire for a spare part',120,'buyer_enquiry'),
+('daily-streak','bronze','Daily Streak','Login and complete daily marketplace task',30,'daily_login'),
+('dealer-champion','platinum','Dealer Champion','Maintain high rating with approved listings',1000,'dealer_rating');
+
+insert into products(title,description,category,category_name,brand,model,type,condition,price,year,hours,country,state,city,village,image_url,status,verified,rating,seller_name) values
+('Mahindra 575 DI Tractor','Demo approved tractor listing for testing marketplace.', 'power','Power & Prime Movers','Mahindra','575 DI','machine','Used',385000,2018,1850,'India','Punjab','Ludhiana','Rampur','https://images.unsplash.com/photo-1605333396915-47ed6b68a00d?auto=format&fit=crop&w=1200&q=80','approved',true,4.6,'GreenGrow Dealers'),
+('CLAAS Crop Tiger Combine Harvester','Premium combine harvester demo listing.', 'harvesting','Harvesting Machinery','CLAAS','Crop Tiger','machine','Used',1450000,2020,930,'India','Haryana','Karnal','Bhaini','https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&w=1200&q=80','approved',true,4.8,'Kisan Agro Hub'),
+('Hydraulic Pump for Mahindra','New spare part demo listing with cart flow.', 'spare','Spare Parts','Mahindra','575 DI','spare','New',4500,2024,0,'India','Punjab','Jalandhar','Nakodar','https://images.unsplash.com/photo-1581092335397-9583eb92d232?auto=format&fit=crop&w=1200&q=80','approved',true,4.4,'Parts Palace');
 
 alter table profiles enable row level security;
+alter table products enable row level security;
 alter table seller_verifications enable row level security;
-alter table listings enable row level security;
 alter table enquiries enable row level security;
-alter table orders enable row level security;
-alter table cart_items enable row level security;
-alter table reward_events enable row level security;
+alter table plans enable row level security;
+alter table reward_badges enable row level security;
+alter table categories enable row level security;
+alter table brands enable row level security;
+alter table plan_orders enable row level security;
 
-create policy "Public can read approved listings" on listings for select using (status = 'approved');
-create policy "Users manage own profile" on profiles for all using (auth.uid() = id) with check (auth.uid() = id);
-create policy "Sellers manage own listings" on listings for all using (auth.uid() = seller_id) with check (auth.uid() = seller_id);
-create policy "Users manage own verification" on seller_verifications for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
-create policy "Users read own rewards" on reward_events for select using (auth.uid() = user_id);
+create policy "public read products" on products for select using (true);
+create policy "users insert products" on products for insert with check (true);
+create policy "users update own products or admin" on products for update using (auth.uid() = seller_id or exists(select 1 from profiles where id=auth.uid() and role='admin'));
+create policy "public read categories" on categories for select using (true);
+create policy "public read brands" on brands for select using (true);
+create policy "public read plans" on plans for select using (true);
+create policy "public read rewards" on reward_badges for select using (true);
+create policy "profile read own" on profiles for select using (auth.uid()=id or exists(select 1 from profiles where id=auth.uid() and role='admin'));
+create policy "profile insert own" on profiles for insert with check (auth.uid()=id);
+create policy "profile update own" on profiles for update using (auth.uid()=id);
+create policy "verification insert" on seller_verifications for insert with check (true);
+create policy "verification read own or admin" on seller_verifications for select using (auth.uid()=user_id or exists(select 1 from profiles where id=auth.uid() and role='admin'));
+create policy "verification admin update" on seller_verifications for update using (exists(select 1 from profiles where id=auth.uid() and role='admin'));
+create policy "enquiry insert" on enquiries for insert with check (true);
+create policy "enquiry read related" on enquiries for select using (auth.uid()=buyer_id or exists(select 1 from products where products.id=enquiries.product_id and products.seller_id=auth.uid()) or exists(select 1 from profiles where id=auth.uid() and role='admin'));
+create policy "plan order insert" on plan_orders for insert with check (true);
+create policy "plan order read own or admin" on plan_orders for select using (auth.uid()=user_id or exists(select 1 from profiles where id=auth.uid() and role='admin'));
 
-commit;
+insert into storage.buckets (id, name, public) values ('seller-documents','seller-documents',true) on conflict (id) do nothing;
