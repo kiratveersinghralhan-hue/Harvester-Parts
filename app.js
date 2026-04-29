@@ -77,3 +77,118 @@ init();
   function toggleMenu(e){e&&e.preventDefault();const n=nav();if(!n)return;n.classList.contains('open')?closeMenu():(n.classList.add('open'),document.body.classList.add('menu-open'),btn()?.setAttribute('aria-expanded','true'))}
   setTimeout(()=>{btn()&&(btn().onclick=toggleMenu);document.getElementById('menuOverlay')?.addEventListener('click',closeMenu);document.addEventListener('keydown',e=>{if(e.key==='Escape')closeMenu()});document.querySelectorAll('#siteNav a[href^="#"], .header-actions a[href^="#"]').forEach(a=>a.addEventListener('click',()=>setTimeout(closeMenu,30)));window.addEventListener('resize',()=>{if(innerWidth>900)closeMenu()},{passive:true});},0);
 })();
+
+/* v16 stable overlay manager: fixes language/menu/modal scroll lock and invisible blockers */
+(function(){
+  const doc = document;
+  const root = doc.documentElement;
+  let lockedBy = new Set();
+  let scrollY = 0;
+  const body = () => doc.body;
+  const nav = () => doc.getElementById('siteNav');
+  const menuBtn = () => doc.getElementById('mobileMenu');
+  const menuOverlay = () => doc.getElementById('menuOverlay');
+  const langModal = () => doc.getElementById('languageModal');
+  function lock(reason){
+    if(!body()) return;
+    if(!lockedBy.size){
+      scrollY = window.scrollY || doc.documentElement.scrollTop || 0;
+      body().style.top = `-${scrollY}px`;
+      body().classList.add('hp-scroll-lock');
+    }
+    lockedBy.add(reason);
+    root.classList.toggle('hp-menu-open', lockedBy.has('menu'));
+    root.classList.toggle('hp-modal-open', lockedBy.has('modal'));
+  }
+  function unlock(reason){
+    if(!body()) return;
+    lockedBy.delete(reason);
+    root.classList.toggle('hp-menu-open', lockedBy.has('menu'));
+    root.classList.toggle('hp-modal-open', lockedBy.has('modal'));
+    if(!lockedBy.size){
+      body().classList.remove('hp-scroll-lock');
+      body().style.top = '';
+      window.scrollTo(0, scrollY || 0);
+    }
+  }
+  function forceUnlock(){
+    lockedBy.clear();
+    root.classList.remove('hp-menu-open','hp-modal-open');
+    body()?.classList.remove('hp-scroll-lock','menu-open');
+    if(body()) body().style.top = '';
+    menuOverlay()?.setAttribute('aria-hidden','true');
+  }
+  function openMenu(){
+    nav()?.classList.add('open');
+    body()?.classList.add('menu-open');
+    menuBtn()?.setAttribute('aria-expanded','true');
+    menuOverlay()?.setAttribute('aria-hidden','false');
+    lock('menu');
+  }
+  function closeMenu(){
+    nav()?.classList.remove('open','show','active');
+    body()?.classList.remove('menu-open');
+    menuBtn()?.setAttribute('aria-expanded','false');
+    menuOverlay()?.setAttribute('aria-hidden','true');
+    unlock('menu');
+  }
+  function closeModal(modal){
+    if(!modal) return;
+    modal.classList.remove('show');
+    modal.setAttribute('aria-hidden','true');
+    unlock('modal');
+  }
+  function openModal(modal){
+    if(!modal) return;
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+    lock('modal');
+  }
+  window.hpOverlay = {lock, unlock, forceUnlock, openMenu, closeMenu, openModal, closeModal};
+
+  function wire(){
+    forceUnlock();
+    const btn = menuBtn();
+    if(btn){
+      btn.onclick = function(e){
+        e.preventDefault();
+        nav()?.classList.contains('open') ? closeMenu() : openMenu();
+      };
+    }
+    menuOverlay()?.addEventListener('click', closeMenu);
+    doc.querySelectorAll('[data-close-modal]').forEach(btn=>btn.addEventListener('click',()=>closeModal(btn.closest('.modal'))));
+    langModal()?.addEventListener('click',e=>{ if(e.target===langModal()) closeModal(langModal()); });
+    doc.addEventListener('click', function(e){
+      const a = e.target.closest('a[href^="#"]');
+      if(a){ setTimeout(()=>{ closeMenu(); forceUnlock(); }, 60); }
+    }, true);
+    doc.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeMenu(); closeModal(langModal()); } });
+    window.addEventListener('hashchange',()=>setTimeout(forceUnlock,80));
+    window.addEventListener('pageshow',()=>setTimeout(forceUnlock,80));
+    window.addEventListener('resize',()=>{ if(innerWidth>900) closeMenu(); },{passive:true});
+
+    const originalSetLang = window.setLang;
+    if(typeof originalSetLang === 'function'){
+      window.setLang = function(c){
+        try{ originalSetLang(c); } finally { closeModal(langModal()); forceUnlock(); }
+      };
+    }
+    const originalBuildLanguage = window.buildLanguage;
+    if(typeof originalBuildLanguage === 'function'){
+      window.buildLanguage = function(){
+        originalBuildLanguage();
+        doc.querySelectorAll('#languageGrid button').forEach(b=>{
+          b.addEventListener('click',()=>setTimeout(()=>{ closeModal(langModal()); forceUnlock(); },40));
+        });
+      };
+    }
+    // Observe language modal class changes from old code and apply one clean lock only.
+    const m = langModal();
+    if(m){
+      new MutationObserver(()=>{
+        if(m.classList.contains('show')) openModal(m); else unlock('modal');
+      }).observe(m,{attributes:true,attributeFilter:['class']});
+    }
+  }
+  if(doc.readyState==='loading') doc.addEventListener('DOMContentLoaded',wire); else wire();
+})();
