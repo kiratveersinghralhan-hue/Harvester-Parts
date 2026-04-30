@@ -53,6 +53,7 @@
     const r = location.hash.replace('#','') || state.route || 'home';
     if(r.startsWith('product-')) return productPage(r.replace('product-',''));
     const views = {home, marketplace, selector, plans:plansView, rewards, sell, admin, cart, chat};
+    document.body.setAttribute('data-route', r);
     ($('#app')).innerHTML = (views[r]||home)();
     afterRender(r);
   }
@@ -100,7 +101,13 @@
         <small class="old-price">Indicative market value ${money(p.oldPrice)}</small>
         <div class="deal-box"><b>Sale Type</b><span>${p.type==='part'?'Spare part checkout available':'Machine enquiry and direct seller deal'}</span></div>
         <div class="seller-mini"><b>${p.seller}</b><span>Verified seller • ${p.rating} rating</span><small>${p.village}, ${p.district}, ${p.state}</small></div>
-        <div class="action-stack"><button class="btn full" id="addCart">${p.type==='part'?'Add to Cart':'Send Enquiry'}</button><button class="btn dark full" id="whatsappBtn">WhatsApp Seller</button><button class="ghost full" data-route="chat">Open Chat</button></div>
+        <div class="action-stack product-actions">
+          <button class="btn full" id="addCart">Add to Cart</button>
+          <button class="btn dark full" id="buyNowBtn">Buy Now</button>
+          <button class="btn gold full" id="enquiryBtn">Send Enquiry</button>
+          <button class="ghost full" id="whatsappBtn">WhatsApp Seller</button>
+          <button class="ghost full" data-route="chat">Open Chat</button>
+        </div>
         <p class="quick-facts"><b>Brand:</b> ${p.brand}<br><b>Model:</b> ${p.model}<br><b>Stock:</b> ${p.stock}<br><b>Warranty:</b> ${p.warranty}</p>
         <div class="safe-box"><b>Harvester Parts Safety</b><p>Pay only after verification. For demo launch, listings use temporary catalog data and internet images.</p></div>
       </aside>
@@ -112,6 +119,8 @@
       </div>
     </section>`;
     $('#addCart').onclick=()=>addCart(p);
+    $('#buyNowBtn').onclick=()=>{ addCart(p, true); location.hash='cart'; };
+    $('#enquiryBtn').onclick=()=>toast('Enquiry sent to seller');
     $('#reviewBtn').onclick=()=>toast('Feedback posting demo ready');
     $('#whatsappBtn').onclick=()=>open(`https://wa.me/${cfg.WHATSAPP_NUMBER}?text=${encodeURIComponent('I am interested in '+p.name+' on Harvester Parts')}`,'_blank');
   }
@@ -130,7 +139,11 @@
     <section class="checkout-layout">
       <div class="checkout-main">
         <div class="checkout-card"><div class="checkout-title"><b>1</b><span>Cart items</span></div>${lines.map(({item,product:p})=>`<article class="cart-line"><div class="cart-img">${img(p.image,p.name)}</div><div><h3>${p.name}</h3><p>${p.brand} • ${p.condition} • ${p.district}, ${p.state}</p><strong>${money(p.price)}</strong></div><div class="qty-box"><button data-cart-dec="${p.id}">−</button><span>${item.qty}</span><button data-cart-inc="${p.id}">+</button></div><button class="cart-remove" data-cart-remove="${p.id}">Remove</button></article>`).join('') || '<div class="empty">Your cart is empty. Add spare parts from marketplace first.</div>'}</div>
-        <form class="checkout-card checkout-form" id="checkoutForm"><div class="checkout-title"><b>2</b><span>Buyer & delivery details</span></div><div class="forms-grid"><input id="buyerName" required placeholder="Full name" value="${state.user?.name||''}"><input id="buyerPhone" required placeholder="Phone number" value="${state.user?.phone||''}"><input id="buyerEmail" placeholder="Email address" value="${state.user?.email||''}"><select id="buyerState" required><option value="">Select state / region</option>${states.map(st=>`<option>${st}</option>`).join('')}</select><input id="buyerDistrict" required placeholder="District / City / Village"><input id="buyerPincode" required placeholder="Pincode / ZIP"><textarea id="buyerAddress" required placeholder="Complete delivery address / landmark"></textarea></div><div class="checkout-methods"><label><input type="radio" name="payMode" value="razorpay" checked> Razorpay Online</label><label><input type="radio" name="payMode" value="cod"> Pay after seller confirmation</label><label><input type="radio" name="payMode" value="enquiry"> Enquiry only</label></div><button class="btn dark full" ${!lines.length?'disabled':''}>Place Secure Order</button></form>
+        <form class="checkout-card checkout-form" id="checkoutForm"><div class="checkout-title"><b>2</b><span>Buyer & delivery details</span></div><div class="forms-grid"><input id="buyerName" required placeholder="Full name" value="${state.user?.name||''}"><input id="buyerPhone" required placeholder="Phone number" value="${state.user?.phone||''}"><input id="buyerEmail" placeholder="Email address" value="${state.user?.email||''}"><select id="buyerState" required><option value="">Select state / region</option>${states.map(st=>`<option>${st}</option>`).join('')}</select><input id="buyerDistrict" required placeholder="District / City / Village"><input id="buyerPincode" required placeholder="Pincode / ZIP"><textarea id="buyerAddress" required placeholder="Complete delivery address / landmark"></textarea></div><div class="checkout-methods">
+  <label class="pay-card"><input type="radio" name="payMode" value="razorpay" checked><span><b>Razorpay Online</b><small>Pay securely using UPI, card or net banking.</small></span></label>
+  <label class="pay-card"><input type="radio" name="payMode" value="cod"><span><b>Pay after seller confirmation</b><small>Seller confirms stock, delivery and final invoice first.</small></span></label>
+  <label class="pay-card"><input type="radio" name="payMode" value="enquiry"><span><b>Enquiry only</b><small>For machines and high-value equipment deals.</small></span></label>
+</div><button class="btn dark full" ${!lines.length?'disabled':''}>Place Secure Order</button></form>
       </div>
       <aside class="checkout-summary"><p class="eyebrow">Order Summary</p><h3>${lines.length} item${lines.length===1?'':'s'}</h3><div class="summary-row"><span>Subtotal</span><b>${money(subtotal)}</b></div><div class="summary-row"><span>Protection fee</span><b>${money(protection)}</b></div><div class="summary-row"><span>Delivery estimate</span><b>${delivery?money(delivery):'Free'}</b></div><div class="summary-total"><span>Total</span><b>${money(total)}</b></div><p class="checkout-note">Online payment uses Razorpay when your key is added in config.js. Demo mode creates a local test order.</p><button class="ghost full" data-route="marketplace">Continue Shopping</button></aside>
     </section>`}
@@ -155,7 +168,7 @@
       updatePulse(); setInterval(updatePulse,2300);
     }
   }
-  function addCart(p){ if(p.type!=='part'){toast('Enquiry sent to seller'); return;} const item=state.cart.find(i=>i.id===p.id); item?item.qty++:state.cart.push({id:p.id,qty:1}); saveCart(); toast('Added to cart'); }
+  function addCart(p, silent=false){ const item=state.cart.find(i=>i.id===p.id); item?item.qty++:state.cart.push({id:p.id,qty:1}); saveCart(); if(!silent) toast('Added to cart'); }
   function bindCartActions(){
     $$('[data-cart-inc]').forEach(b=>b.onclick=()=>{ const it=state.cart.find(i=>i.id===b.dataset.cartInc); if(it) it.qty++; saveCart(); render(); });
     $$('[data-cart-dec]').forEach(b=>b.onclick=()=>{ const it=state.cart.find(i=>i.id===b.dataset.cartDec); if(!it) return; it.qty--; if(it.qty<=0) state.cart=state.cart.filter(i=>i.id!==it.id); saveCart(); render(); });
