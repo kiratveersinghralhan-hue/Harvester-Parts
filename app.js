@@ -14,7 +14,7 @@
   window.addEventListener('hashchange',()=>route());
 
   function init(){
-    setTimeout(()=>$('#intro')?.classList.add('done'),1800);
+    setTimeout(()=>$('#intro')?.classList.add('done'),1450);
     if(state.lang) $('#languageModal').classList.remove('active');
     renderLanguage(); saveCart(); bindGlobal(); route();
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -61,7 +61,7 @@
         <h1>Buy machines. Sell equipment. Source genuine parts.</h1>
         <p>Harvester Parts is a complete agriculture trading platform for buyers, verified sellers and dealers — combining Amazon-style product discovery with OLX-style local enquiries for tractors, harvesters, implements and spare parts.</p>
         <div class="hero-actions"><button class="btn" data-route="marketplace">Explore Marketplace</button><button class="btn dark" data-route="sell">Become Verified Seller</button></div>
-        <div class="counters live-stats"><div class="counter"><b data-count="72000">0</b><span> demo products indexed</span></div><div class="counter"><b data-count="18000">0</b><span> seller/dealer profiles</span></div><div class="counter"><b data-count="640">0</b><span> Indian districts supported</span></div></div>
+        <div class="counters live-stats"><div class="counter"><b data-count="72000">0</b><span> Products</span></div><div class="counter"><b data-count="18000">0</b><span> Dealers</span></div><div class="counter"><b data-count="640">0</b><span> Districts</span></div></div>
       </div>
       <div class="hero-visual"><div class="live-card"><p class="eyebrow">Live Platform Pulse</p><h3><span id="liveDeals">128</span> active enquiries</h3><small><span id="liveListings">42</span> listings reviewed today • <span id="liveBuyers">390</span> buyers browsing now</small></div></div>
     </section>
@@ -95,7 +95,8 @@
     $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault(); toast('Listing submitted for admin approval');});
     $('#verifyForm')?.addEventListener('submit',e=>{e.preventDefault(); toast('Verification sent to admin');});
     $('#checkoutBtn')?.addEventListener('click',()=>pay('Cart checkout', state.cart.reduce((a,i)=>a+(products.find(p=>p.id===i.id)?.price||0)*i.qty,0)));
-    $$('.counter b').forEach(el=>animateCount(el,+el.dataset.count));
+    initCounters();
+    initScrollReveal();
     if($('#liveDeals')) {
       const updatePulse=()=>{
         const set=(id,base,range)=>{ const el=$('#'+id); if(el) el.textContent=base+Math.floor(Math.random()*range); };
@@ -109,6 +110,26 @@
   function buyPlan(plan){ pay(plan.name+' plan',plan.price); }
   function pay(name,amount){ if(!amount){toast('Nothing to pay');return;} if(window.Razorpay && !cfg.RAZORPAY_KEY_ID.includes('YOUR_')){ new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:amount*100,currency:'INR',name:'Harvester Parts',description:name,handler:()=>toast('Payment successful')}).open(); } else toast('Demo payment success. Add Razorpay key in config.js'); }
   function askAI(q){ if(!q.trim())return; const log=$('#aiLog'); log.innerHTML+=`<div class="msg user">${q}</div>`; const words=q.toLowerCase(); let matches=products.filter(p=>words.includes(p.brand.toLowerCase())||words.includes(p.category.toLowerCase().split(' ')[0])||p.name.toLowerCase().includes(words.split(' ')[0])).slice(0,3); let reply=matches.length?`I found ${matches.length} matching options: ${matches.map(p=>p.name+' '+money(p.price)).join(', ')}.`:'Tell me your budget, state and brand. I can suggest tractor, harvester or spare parts.'; log.innerHTML+=`<div class="msg">${reply}</div>`; log.scrollTop=log.scrollHeight; }
-  function animateCount(el,target){ let cur=0,step=Math.ceil(target/60); const tick=()=>{cur=Math.min(target,cur+step); el.textContent=cur.toLocaleString('en-IN'); if(cur<target) requestAnimationFrame(tick)}; tick(); }
+  function initCounters(){
+    const counters=$$('.counter b');
+    if(!counters.length) return;
+    const run=(el)=>{ if(el.dataset.done==='1') return; el.dataset.done='1'; animateCount(el,+el.dataset.count); };
+    if(!('IntersectionObserver' in window)){ counters.forEach(run); return; }
+    const io=new IntersectionObserver(entries=>{ entries.forEach(entry=>{ if(entry.isIntersecting){ run(entry.target); io.unobserve(entry.target); } }); },{threshold:.35,rootMargin:'0px 0px -8% 0px'});
+    counters.forEach(el=>io.observe(el));
+  }
+  function initScrollReveal(){
+    const items=$$('.section,.hero,.pulse-strip,.product-card,.theme-card,.cat-tile,.plan-card,.badge-card,.form-card,.dash-card,.counter');
+    items.forEach((el,i)=>{ el.classList.add('reveal'); el.style.setProperty('--reveal-delay', Math.min(i%8,7)*55+'ms'); });
+    if(!('IntersectionObserver' in window)){ items.forEach(el=>el.classList.add('in-view')); return; }
+    const io=new IntersectionObserver(entries=>{ entries.forEach(entry=>{ entry.target.classList.toggle('in-view', entry.isIntersecting); }); },{threshold:.10,rootMargin:'0px 0px -6% 0px'});
+    items.forEach(el=>io.observe(el));
+  }
+  function animateCount(el,target){
+    const duration=1350;
+    const start=performance.now();
+    const tick=(now)=>{ const p=Math.min(1,(now-start)/duration); const eased=1-Math.pow(1-p,3); el.textContent=Math.round(target*eased).toLocaleString('en-IN'); if(p<1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  }
   init();
 })();
