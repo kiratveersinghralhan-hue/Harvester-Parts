@@ -1,218 +1,168 @@
 (() => {
   const $ = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
-  const {products,categories,brands,states,districtsByState,languages,plans,titles} = window.HP_DATA;
-  const cfg = window.HP_CONFIG;
-  let state = { route:'home', lang:localStorage.hp_lang || '', cart: JSON.parse(localStorage.hp_cart||'[]'), user: JSON.parse(localStorage.hp_user||'null'), filter:{q:'',category:'',brand:'',state:'',district:'',type:''}, selectedProduct:null };
+  const D = window.HP_DATA || {};
+  const cfg = window.HP_CONFIG || {};
+  const baseProducts = D.products || [];
+  const categories = D.categories || [];
+  const brands = D.brands || [];
+  const states = D.states || [];
+  const districtsByState = D.districtsByState || {};
+  const languages = D.languages || ['English','हिन्दी','ਪੰਜਾਬੀ','தமிழ்','తెలుగు'];
+  const plans = D.plans || [];
+  const titles = D.titles || [];
+  const safeParse = (k, fallback) => { try { return JSON.parse(localStorage.getItem(k)) ?? fallback; } catch { return fallback; } };
+  let state = {
+    route:'home', lang:localStorage.hp_lang || '',
+    cart:safeParse('hp_cart',[]), user:safeParse('hp_user',null),
+    localProducts:safeParse('hp_seller_products',[]),
+    reviews:safeParse('hp_reviews',{}), messages:safeParse('hp_messages',[]), orders:safeParse('hp_orders',[]),
+    filter:{q:'',category:'',brand:'',state:'',district:'',type:''}
+  };
   let supabaseClient = null;
-  if (window.supabase && cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('YOUR_')) supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
-
-  const money = n => '₹' + Number(n).toLocaleString('en-IN');
-  const fallbackImage = title => `https://placehold.co/1200x850/f3ead8/123b2d?text=${encodeURIComponent(title||'Harvester Parts')}`;
-  const img = (src, alt='', cls='') => `<img ${cls?`class="${cls}"`:''} src="${src}" alt="${alt}" loading="lazy" onerror="this.onerror=null;this.src='${fallbackImage(alt)}';">`;
-  const toast = m => { const t=$('#toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); };
-  const saveCart = () => { localStorage.hp_cart = JSON.stringify(state.cart); $('#cartCount').textContent = state.cart.reduce((a,b)=>a+b.qty,0); };
-  const route = r => { state.route = r || location.hash.replace('#','') || 'home'; closeMenu(); window.scrollTo({top:0,behavior:'smooth'}); render(); };
-  window.addEventListener('hashchange',()=>route());
+  if (window.supabase && cfg.SUPABASE_URL && !String(cfg.SUPABASE_URL).includes('YOUR_')) {
+    supabaseClient = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
+  }
+  const save = () => { localStorage.hp_cart=JSON.stringify(state.cart); localStorage.hp_user=JSON.stringify(state.user); localStorage.hp_seller_products=JSON.stringify(state.localProducts); localStorage.hp_reviews=JSON.stringify(state.reviews); localStorage.hp_messages=JSON.stringify(state.messages); localStorage.hp_orders=JSON.stringify(state.orders); updateCart(); };
+  const allProducts = () => [...state.localProducts, ...baseProducts];
+  const money = n => '₹' + Number(n||0).toLocaleString('en-IN');
+  const fallbackImage = title => `https://placehold.co/1200x850/f6f1e6/123b2d?text=${encodeURIComponent(title||'Harvester Parts')}`;
+  const img = (src, alt='', cls='') => `<img ${cls?`class="${cls}"`:''} src="${src||fallbackImage(alt)}" alt="${alt}" loading="lazy" onerror="this.onerror=null;this.src='${fallbackImage(alt)}';">`;
+  const toast = m => { const t=$('#toast'); if(!t) return; t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2200); };
+  const isAdmin = () => state.user && (state.user.role === 'Admin' || state.user.role === 'admin' || state.user.email === cfg.ADMIN_EMAIL);
+  const needsLogin = (msg='Please login first') => { if(!state.user){ toast(msg); openAuth(); return true; } return false; };
 
   function init(){
-    setTimeout(()=>$('#intro')?.classList.add('done'),1450);
-    if(state.lang) $('#languageModal').classList.remove('active');
-    renderLanguage(); saveCart(); bindGlobal(); route();
+    setTimeout(()=>$('#intro')?.classList.add('done'),1200);
+    if(state.lang) $('#languageModal')?.classList.remove('active');
+    renderLanguage(); bindGlobal(); updateCart(); route();
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
   }
   function bindGlobal(){
-    $('#menuBtn').onclick=openMenu; $$('#smartMenu [data-close="menu"]').forEach(x=>x.onclick=closeMenu);
-    $('#loginBtn').onclick=()=>openAuth(); $('#languageBtn').onclick=()=>$('#languageModal').classList.add('active');
-    $('#continueLanguage').onclick=()=>{ state.lang ||= 'English'; localStorage.hp_lang=state.lang; $('#languageModal').classList.remove('active'); toast(`Language: ${state.lang}`); };
-    document.body.addEventListener('click',e=>{ const btn=e.target.closest('[data-route]'); if(btn){ location.hash=btn.dataset.route; }});
-    $('#scrollTop').onclick=()=>scrollTo({top:0,behavior:'smooth'});
-    addEventListener('scroll',()=>$('#scrollTop').classList.toggle('show',scrollY>500),{passive:true});
-    $('#cartBubble').onclick=()=>location.hash='cart';
-    $('#aiFab').onclick=()=>$('#aiPanel').classList.add('open'); $('#closeAi').onclick=()=>$('#aiPanel').classList.remove('open');
-    $('#aiForm').onsubmit=e=>{e.preventDefault(); askAI($('#aiInput').value); $('#aiInput').value='';};
+    $('#menuBtn')?.addEventListener('click',openMenu);
+    $$('#smartMenu [data-close="menu"]').forEach(x=>x.onclick=closeMenu);
+    $('#loginBtn')?.addEventListener('click',()=> state.user ? location.hash='account' : openAuth());
+    $('#languageBtn')?.addEventListener('click',()=>$('#languageModal')?.classList.add('active'));
+    $('#continueLanguage')?.addEventListener('click',()=>{state.lang ||= 'English'; localStorage.hp_lang=state.lang; $('#languageModal')?.classList.remove('active'); toast(`Language: ${state.lang}`);});
+    document.body.addEventListener('click',e=>{ const b=e.target.closest('[data-route]'); if(b){ e.preventDefault(); location.hash=b.dataset.route; }});
+    $('#scrollTop')?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
+    addEventListener('scroll',()=>$('#scrollTop')?.classList.toggle('show',scrollY>500),{passive:true});
+    $('#cartBubble')?.addEventListener('click',()=>location.hash='cart');
+    $('#aiFab')?.addEventListener('click',()=>$('#aiPanel')?.classList.add('open'));
+    $('#closeAi')?.addEventListener('click',()=>$('#aiPanel')?.classList.remove('open'));
+    $('#aiForm')?.addEventListener('submit',e=>{e.preventDefault(); askAI($('#aiInput').value); $('#aiInput').value='';});
+    addEventListener('hashchange', route);
   }
   function renderLanguage(){
-    $('#languageGrid').innerHTML = languages.map(l=>`<button class="${state.lang===l?'active':''}" data-lang="${l}">${l}</button>`).join('');
+    const grid = $('#languageGrid'); if(!grid) return;
+    grid.innerHTML = languages.map(l=>`<button class="${state.lang===l?'active':''}" data-lang="${l}">${l}</button>`).join('');
     $$('#languageGrid button').forEach(b=>b.onclick=()=>{state.lang=b.dataset.lang; $$('#languageGrid button').forEach(x=>x.classList.remove('active')); b.classList.add('active');});
   }
-  function openMenu(){
-    $('#smartMenu').classList.add('open'); $('#smartMenu').setAttribute('aria-hidden','false');
-    $('#accountBlock').innerHTML = state.user ? `<b>${state.user.name}</b><p>${state.user.role} • Verified demo account</p><button class="btn dark full" id="logoutNow">Logout</button>` : `<b>Welcome to Harvester Parts</b><p>Login to sell, buy, chat and earn rewards.</p><button class="btn full" id="menuLogin">Login / Register</button>`;
-    $('#menuLogin')?.addEventListener('click',()=>{closeMenu();openAuth();}); $('#logoutNow')?.addEventListener('click',()=>{state.user=null;localStorage.removeItem('hp_user');closeMenu();toast('Logged out');});
-    $('#menuCats').innerHTML = categories.slice(0,10).map(c=>`<button data-cat="${c[1]}">${c[1]}</button>`).join('');
-    $$('#menuCats button').forEach(b=>b.onclick=()=>{state.filter.category=b.dataset.cat; closeMenu(); location.hash='marketplace';});
+  function updateCart(){ const c = $('#cartCount'); if(c) c.textContent = state.cart.reduce((a,b)=>a+(b.qty||1),0); }
+  function route(){
+    closeMenu();
+    const r = location.hash.replace('#','') || 'home';
+    if(r.startsWith('product-')) return productPage(r.replace('product-',''));
+    const views = {home, marketplace, selector, plans:plansView, rewards, sell, admin, cart, checkout, chat, account, seller:sellerDashboard, orders:ordersPage};
+    const app = $('#app'); if(!app) return;
+    app.classList.add('route-out');
+    setTimeout(()=>{ app.innerHTML = (views[r] || home)(); app.classList.remove('route-out'); afterRender(r); initScrollReveal(); },120);
   }
-  function closeMenu(){ $('#smartMenu').classList.remove('open'); $('#smartMenu').setAttribute('aria-hidden','true'); }
-  function openAuth(){
-    const modal=document.createElement('div'); modal.className='modal active'; modal.innerHTML=`<div class="modal-card"><button class="round" style="float:right" data-x>×</button><p class="eyebrow">Account</p><h2 style="font-family:var(--serif);font-size:54px;margin:0">Login / Register</h2><div class="forms-grid" style="margin-top:18px"><input id="authName" placeholder="Full name"><select id="authRole"><option>Buyer</option><option>Seller</option><option>Dealer</option><option>Admin</option></select><input id="authPhone" placeholder="Phone number"><input id="authEmail" placeholder="Email"></div><button class="btn dark full" id="authSave" style="margin-top:16px">Continue</button></div>`;
-    document.body.appendChild(modal); modal.querySelector('[data-x]').onclick=()=>modal.remove(); modal.querySelector('#authSave').onclick=()=>{ state.user={name:$('#authName').value||'Harvester User',role:$('#authRole').value,phone:$('#authPhone').value,email:$('#authEmail').value}; localStorage.hp_user=JSON.stringify(state.user); modal.remove(); toast('Account ready'); };
+  function openMenu(){
+    const menu=$('#smartMenu'); if(!menu) return;
+    menu.classList.add('open'); menu.setAttribute('aria-hidden','false');
+    $('#accountBlock').innerHTML = state.user ? `<div class="menu-account"><div class="avatar">${state.user.photo?`<img src="${state.user.photo}" alt="profile">`:initials(state.user.name)}</div><div><b>${state.user.name||'Harvester User'}</b><p>${state.user.user_uid||'HP-USER'} • ${state.user.role||'Buyer'}</p></div></div><div class="menu-row"><button class="btn full" data-route="account">My Account</button><button class="ghost full" id="logoutNow">Logout</button></div>` : `<b>Welcome to Harvester Parts</b><p>Login to buy, sell, chat and earn rewards.</p><div class="menu-row"><button class="btn full" id="menuLogin">Login</button><button class="ghost full" id="menuRegister">Create Account</button></div>`;
+    $('#menuLogin')?.addEventListener('click',()=>{closeMenu();openAuth();}); $('#menuRegister')?.addEventListener('click',()=>{closeMenu();openAuth();}); $('#logoutNow')?.addEventListener('click',()=>{state.user=null; localStorage.removeItem('hp_user'); closeMenu(); toast('Logged out'); updateLoginButton(); route();});
+    $('#menuCats').innerHTML = categories.slice(0,12).map(c=>`<button data-cat="${c[1]}">${c[1]}</button>`).join('');
+    $$('#menuCats button').forEach(b=>b.onclick=()=>{state.filter.category=b.dataset.cat; closeMenu(); location.hash='marketplace';});
+    updateLoginButton();
+  }
+  function closeMenu(){ $('#smartMenu')?.classList.remove('open'); $('#smartMenu')?.setAttribute('aria-hidden','true'); }
+  function updateLoginButton(){ const b=$('#loginBtn'); if(b) b.textContent = state.user ? 'Account' : 'Login'; }
+  function initials(n='HP'){ return n.split(' ').filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase() || 'HP'; }
+  function userId(){ return 'HP-' + Math.random().toString(36).slice(2,8).toUpperCase(); }
+
+  async function openAuth(){
+    const modal=document.createElement('div'); modal.className='modal active';
+    modal.innerHTML=`<div class="modal-card"><button class="round" style="float:right" data-x>×</button><p class="eyebrow">Account</p><h2 class="big-title">Login / Create Account</h2><div class="forms-grid"><input id="authName" placeholder="Full name"><select id="authRole"><option>Buyer</option><option>Seller</option><option>Dealer</option><option>Admin</option></select><input id="authPhone" placeholder="Phone number"><input id="authEmail" placeholder="Email"><select id="authGender"><option value="">Gender</option><option>Male</option><option>Female</option><option>Other</option><option>Prefer not to say</option></select></div><button class="btn dark full" id="authSave">Continue</button><p class="muted">Demo login works offline. With Supabase keys, profile can be linked to auth users.</p></div>`;
+    document.body.appendChild(modal);
+    modal.querySelector('[data-x]').onclick=()=>modal.remove();
+    modal.querySelector('#authSave').onclick=async()=>{
+      const email=$('#authEmail').value.trim();
+      state.user={name:$('#authName').value.trim()||'Harvester User',role:$('#authRole').value,phone:$('#authPhone').value,email,gender:$('#authGender').value,user_uid:userId(),points:250,verified:false};
+      save(); modal.remove(); updateLoginButton(); toast('Account ready');
+      if(supabaseClient && email){ try { await supabaseClient.from('users').upsert({email, phone:state.user.phone, full_name:state.user.name, role:state.user.role, gender:state.user.gender, user_uid:state.user.user_uid},{onConflict:'email'}); } catch{} }
+      route();
+    };
   }
 
-  function render(){
-    const r = location.hash.replace('#','') || state.route || 'home';
-    if(r.startsWith('product-')) return productPage(r.replace('product-',''));
-    const views = {home, marketplace, selector, plans:plansView, rewards, sell, admin, cart, chat};
-    document.body.setAttribute('data-route', r);
-    ($('#app')).innerHTML = (views[r]||home)();
-    afterRender(r);
-  }
-  function home(){ return `
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">Verified Agricultural Marketplace</p>
-        <h1>Buy machines. Sell equipment. Source genuine parts.</h1>
-        <p>Harvester Parts is a complete agriculture trading platform for buyers, verified sellers and dealers — combining Amazon-style product discovery with OLX-style local enquiries for tractors, harvesters, implements and spare parts.</p>
-        <div class="hero-actions"><a class="btn" href="#marketplace" id="browseMarketBtn">Explore Marketplace</a><a class="btn dark" href="#sell">Become Verified Seller</a></div>
-        <div class="counters live-stats"><div class="counter"><b data-count="72000">0</b><span> Products</span></div><div class="counter"><b data-count="18000">0</b><span> Dealers</span></div><div class="counter"><b data-count="640">0</b><span> Districts</span></div></div>
-      </div>
-      <div class="hero-visual"><div class="live-card"><p class="eyebrow">Live Platform Pulse</p><h3><span id="liveDeals">128</span> active enquiries</h3><small><span id="liveListings">42</span> listings reviewed today • <span id="liveBuyers">390</span> buyers browsing now</small></div></div>
-    </section>
-    <section class="pulse-strip" aria-label="Live marketplace numbers">
-      <div><span id="pulseOne">256</span><small>live searches</small></div>
-      <div><span id="pulseTwo">74</span><small>seller approvals</small></div>
-      <div><span id="pulseThree">19</span><small>plan checks</small></div>
-      <div><span id="pulseFour">11</span><small>enquiries/min</small></div>
-    </section>
-    <section class="section"><div class="section-head"><div><p class="eyebrow">Featured Product Carousel</p><h2>Browse like a premium ecommerce store.</h2></div><a class="btn" href="#marketplace">View All</a></div><div class="carousel product-carousel">${products.slice(0,10).map(themeCard).join('')}</div></section>
-    <section class="section"><div class="section-head"><div><p class="eyebrow">Complete Agricultural Categories</p><h2>Machinery and parts for every field operation.</h2></div></div><div class="category-grid">${categories.map(c=>`<div class="cat-tile"><p class="eyebrow">${c[0]}</p><h3>${c[1]}</h3><button class="ghost" data-catgo="${c[1]}">Explore</button></div>`).join('')}</div></section>
-    <section class="section"><div class="section-head"><div><p class="eyebrow">Demo Catalogue</p><h2>New machines, used machines and spare parts.</h2></div></div><div class="products">${products.slice(12,18).map(productCard).join('')}</div></section>`; }
-  function themeCard(p){return `<article class="theme-card" onclick="location.hash='product-${p.id}'">${img(p.image,p.name)}<span>${p.brand}</span></article>`}
-  function productCard(p){return `<article class="product-card" onclick="location.hash='product-${p.id}'">${img(p.image,p.name)}<div class="product-info"><span class="chip">${p.condition}</span> <span class="chip verified">Verified</span><h3>${p.name}</h3><p>${p.brand} • ${p.state}</p><div class="price">${money(p.price)}</div><small>⭐ ${p.rating} • ${p.seller}</small></div></article>`}
+  function hero(){return `<section class="hero reveal"><div><p class="eyebrow">Premium agri ecommerce</p><h1>Harvester Parts marketplace for verified buyers, sellers and dealers.</h1><p>Buy spare parts with cart checkout. Enquire on machines like tractors, harvesters, seed drills, straw reapers and smart agriculture tools.</p><div class="hero-actions"><button class="btn" data-route="marketplace">Browse Marketplace</button><button class="ghost" data-route="sell">Become Seller</button></div></div><div class="hero-visual"><span class="lux-label">Live Marketplace</span>${img('https://loremflickr.com/1000/760/tractor,farm?lock=912','tractor luxury')}</div></section>`}
+  function home(){return `${hero()}<section class="stats-strip reveal"><div class="counter"><b data-count="72000">0</b><span>Products</span></div><div class="counter"><b data-count="18000">0</b><span>Dealers</span></div><div class="counter"><b data-count="640">0</b><span>Districts</span></div></section><section class="section"><p class="eyebrow">Featured Categories</p><h2>Search like ecommerce. Deal like local mandi.</h2><div class="cat-grid">${categories.slice(0,8).map(c=>`<button class="cat-tile" data-catgo="${c[1]}"><b>${c[1]}</b><span>New • Used • Parts</span></button>`).join('')}</div></section><section class="section"><div class="section-head"><div><p class="eyebrow">Premium Picks</p><h2>Featured machines and parts</h2></div><button class="ghost" data-route="marketplace">View all</button></div><div class="carousel">${allProducts().slice(0,10).map(productCard).join('')}</div></section><section class="section"><p class="eyebrow">Platform Systems</p><div class="feature-grid">${['Verified seller approval','Real buyer-seller chat','Secure checkout & Razorpay hooks','Reviews, reports and admin control','Seller dashboard and plan limits','AI assistant and machine selector'].map(x=>`<article class="feature-card"><b>${x}</b><p>Built into this frontend and ready to connect with Supabase.</p></article>`).join('')}</div></section>`}
+
+  function productCard(p){return `<article class="product-card reveal"><a href="#product-${p.id}" class="product-img">${img(p.image,p.name)}</a><div class="product-info"><div class="chips"><span>${p.condition}</span>${p.verified?'<span>Verified</span>':''}${p.featured?'<span>Boosted</span>':''}</div><h3>${p.name||p.title}</h3><p>${p.brand} • ${p.district}, ${p.state}</p><b>${money(p.price)}</b><div class="card-actions"><a class="btn small" href="#product-${p.id}">View</a>${p.type==='part'?`<button class="ghost small" data-add="${p.id}">Add Cart</button>`:`<button class="ghost small" data-chat="${p.id}">Enquire</button>`}</div></div></article>`}
   function marketplace(){
-    const list=filtered();
-    const districtList = state.filter.state ? (districtsByState[state.filter.state]||[]) : Object.values(districtsByState||{}).flat().slice(0,220);
-    return `<section class="section"><p class="eyebrow">Marketplace</p><h2>Search like ecommerce, negotiate like OLX.</h2></section><section class="market-layout"><aside class="filters"><input id="q" placeholder="Search tractors, harvesters, parts" value="${state.filter.q}"><select id="fType"><option value="">All types</option><option ${state.filter.type==='machine'?'selected':''} value="machine">Machines</option><option ${state.filter.type==='part'?'selected':''} value="part">Spare Parts</option></select><select id="fCat"><option value="">All categories</option>${categories.map(c=>`<option ${state.filter.category===c[1]?'selected':''}>${c[1]}</option>`)}</select><select id="fBrand"><option value="">All brands</option>${brands.map(b=>`<option ${state.filter.brand===b?'selected':''}>${b}</option>`)}</select><select id="fState"><option value="">All India + Worldwide</option>${states.map(s=>`<option ${state.filter.state===s?'selected':''}>${s}</option>`)}</select><select id="fDistrict"><option value="">All districts / cities</option>${districtList.map(d=>`<option ${state.filter.district===d?'selected':''}>${d}</option>`)}</select><button class="btn dark" id="clearFilters">Clear Filters</button></aside><div><div class="result-row"><b>${list.length}</b><span>verified demo listings found</span></div><div class="products">${list.map(productCard).join('') || '<div class="empty">No products found.</div>'}</div></div></section>`;
-  }
-  function filtered(){return products.filter(p=>(!state.filter.q || (p.name+p.brand+p.category).toLowerCase().includes(state.filter.q.toLowerCase())) && (!state.filter.category || p.category===state.filter.category) && (!state.filter.brand || p.brand===state.filter.brand) && (!state.filter.state || p.state===state.filter.state) && (!state.filter.district || p.district===state.filter.district) && (!state.filter.type || p.type===state.filter.type));}
+    const f = state.filter;
+    const districts = f.state ? (districtsByState[f.state] || ['All Districts']) : [];
+    let list = allProducts().filter(p => (!f.q || `${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(f.q.toLowerCase())) && (!f.category || p.category===f.category) && (!f.brand || p.brand===f.brand) && (!f.state || p.state===f.state) && (!f.district || p.district===f.district) && (!f.type || p.condition===f.type || p.type===f.type));
+    return `<section class="section"><p class="eyebrow">Marketplace</p><h2>Find machines, implements and spare parts.</h2><div class="filter-card"><input id="q" placeholder="Search tractor, harvester, part..." value="${f.q}"><select id="fType"><option value="">All types</option>${['New','Used','Spare Part','part','machine'].map(x=>`<option ${f.type===x?'selected':''}>${x}</option>`).join('')}</select><select id="fCat"><option value="">All categories</option>${categories.map(c=>`<option ${f.category===c[1]?'selected':''}>${c[1]}</option>`).join('')}</select><select id="fBrand"><option value="">All brands</option>${brands.map(b=>`<option ${f.brand===b?'selected':''}>${b}</option>`).join('')}</select><select id="fState"><option value="">All states</option>${states.map(s=>`<option ${f.state===s?'selected':''}>${s}</option>`).join('')}</select><select id="fDistrict"><option value="">All districts</option>${districts.map(d=>`<option ${f.district===d?'selected':''}>${d}</option>`).join('')}</select><button class="ghost" id="clearFilters">Clear</button></div></section><section class="products">${list.map(productCard).join('') || '<div class="empty">No products found.</div>'}</section>`}
   function productPage(id){
-    const p=products.find(x=>x.id===id)||products[0];
-    const similar=products.filter(x=>(x.category===p.category||x.brand===p.brand)&&x.id!==p.id).slice(0,8);
-    const gallery = p.gallery || [p.image, p.image2 || p.image, p.image3 || p.image];
-    $('#app').innerHTML=`<section class="product-page upgraded-detail">
-      <div class="product-media">
-        <div class="gallery-main">${img(gallery[0],p.name)}</div>
-        <div class="thumb-row">${gallery.slice(0,3).map((g,i)=>img(g,`${p.name} view ${i+1}`)).join('')}</div>
-      </div>
-      <aside class="detail-panel buy-panel-top">
-        <span class="chip">${p.condition}</span> <span class="chip verified">Verified Seller</span><span class="chip sale-chip">${p.saleType}</span>
-        <h1>${p.name}</h1>
-        <div class="price">${money(p.price)}</div>
-        <small class="old-price">Indicative market value ${money(p.oldPrice)}</small>
-        <div class="deal-box"><b>Sale Type</b><span>${p.type==='part'?'Spare part checkout available':'Machine enquiry and direct seller deal'}</span></div>
-        <div class="seller-mini"><b>${p.seller}</b><span>Verified seller • ${p.rating} rating</span><small>${p.village}, ${p.district}, ${p.state}</small></div>
-        <div class="action-stack product-actions">
-          <button class="btn full" id="addCart">Add to Cart</button>
-          <button class="btn dark full" id="buyNowBtn">Buy Now</button>
-          <button class="btn gold full" id="enquiryBtn">Send Enquiry</button>
-          <button class="ghost full" id="whatsappBtn">WhatsApp Seller</button>
-          <button class="ghost full" data-route="chat">Open Chat</button>
-        </div>
-        <p class="quick-facts"><b>Brand:</b> ${p.brand}<br><b>Model:</b> ${p.model}<br><b>Stock:</b> ${p.stock}<br><b>Warranty:</b> ${p.warranty}</p>
-        <div class="safe-box"><b>Harvester Parts Safety</b><p>Pay only after verification. For demo launch, listings use temporary catalog data and internet images.</p></div>
-      </aside>
-      <div class="product-extra">
-        <section class="section tight"><p class="eyebrow">Machine / Part Details</p><div class="spec-grid"><div><b>Engine No.</b><span>${p.engineNo}</span></div><div><b>Chassis No.</b><span>${p.chassisNo}</span></div><div><b>Year</b><span>${p.year}</span></div><div><b>Hours Used</b><span>${p.type==='part'?'Not applicable':p.hours+' hrs'}</span></div><div><b>Horsepower</b><span>${p.hp?p.hp+' HP':'Part item'}</span></div><div><b>Fuel</b><span>${p.fuel}</span></div><div><b>Transmission</b><span>${p.transmission}</span></div><div><b>Ownership</b><span>${p.ownership}</span></div></div></section>
-        <section class="section tight"><p class="eyebrow">Seller Notes</p><div class="info-box"><p>${p.desc}</p><ul><li>Documents can be checked before final deal.</li><li>Inspection and local visit can be scheduled with seller.</li><li>Final price, delivery and transfer are confirmed directly with seller.</li></ul></div></section>
-        <section class="section tight"><div class="section-head"><div><p class="eyebrow">Reviews & Feedback</p><h2>Buyer confidence</h2></div><button class="btn dark" id="reviewBtn">Post Feedback</button></div><div class="review-grid">${p.reviews.map(r=>`<article class="review-card"><b>${r.name}</b><span>★★★★★</span><p>${r.text}</p></article>`).join('')}</div></section>
-        <section class="section tight"><p class="eyebrow">Similar Products</p><div class="carousel">${similar.map(productCard).join('')}</div></section>
-      </div>
-    </section>`;
-    $('#addCart').onclick=()=>addCart(p);
-    $('#buyNowBtn').onclick=()=>{ addCart(p, true); location.hash='cart'; };
-    $('#enquiryBtn').onclick=()=>toast('Enquiry sent to seller');
-    $('#reviewBtn').onclick=()=>toast('Feedback posting demo ready');
-    $('#whatsappBtn').onclick=()=>open(`https://wa.me/${cfg.WHATSAPP_NUMBER}?text=${encodeURIComponent('I am interested in '+p.name+' on Harvester Parts')}`,'_blank');
+    const p=allProducts().find(x=>x.id===id) || allProducts()[0];
+    const reviews=[...(p.reviews||[]), ...(state.reviews[p.id]||[])];
+    const similar=allProducts().filter(x=>x.id!==p.id && (x.category===p.category || x.brand===p.brand)).slice(0,8);
+    $('#app').innerHTML=`<section class="product-detail"><div class="gallery reveal"><div class="main-image">${img(p.image,p.name)}</div><div class="thumbs">${[p.image,p.image2,p.image3].filter(Boolean).map((u,i)=>`<button data-img="${u}">${img(u,p.name+' '+i)}</button>`).join('')}</div></div><aside class="buy-box reveal"><div class="chips"><span>${p.condition}</span><span>${p.saleType||'Direct Deal'}</span><span>${p.verified?'Verified Seller':'Seller'}</span></div><h1>${p.name}</h1><p>${p.brand} • ${p.model} • ${p.district}, ${p.state}</p><div class="price-line"><b>${money(p.price)}</b><span>${p.oldPrice?money(p.oldPrice):''}</span></div><div class="buy-actions"><button class="btn full" id="buyNow">${p.type==='part'?'Buy Now':'Send Enquiry'}</button><button class="ghost full" id="addCart">${p.type==='part'?'Add to Cart':'WhatsApp Seller'}</button><button class="ghost full" id="openChat">Open Chat</button></div><div class="seller-card"><b>${p.seller}</b><p>Verified dealer • ${p.rating}★ • ${p.village}</p><button class="ghost small" id="reportBtn">Report Listing</button></div></aside><div class="product-extra"><section class="section tight"><p class="eyebrow">Machine / Part Details</p><div class="spec-grid">${[['Engine No.',p.engineNo],['Chassis No.',p.chassisNo],['Year',p.year],['Hours Used',p.type==='part'?'Not applicable':p.hours+' hrs'],['Horsepower',p.hp?p.hp+' HP':'Part item'],['Fuel',p.fuel],['Transmission',p.transmission],['Ownership',p.ownership],['Warranty / Support',p.warranty],['Stock',p.stock]].map(a=>`<div><b>${a[0]}</b><span>${a[1]}</span></div>`).join('')}</div></section><section class="section tight"><p class="eyebrow">Seller Notes</p><div class="info-box"><p>${p.desc}</p><ul><li>Documents can be checked before final deal.</li><li>Inspection and local visit can be scheduled with seller.</li><li>Final price, delivery and transfer are confirmed directly with seller.</li></ul></div></section><section class="section tight"><div class="section-head"><div><p class="eyebrow">Reviews & Feedback</p><h2>Buyer confidence</h2></div><button class="btn dark" id="reviewBtn">Post Feedback</button></div><div class="review-grid">${reviews.map(r=>`<article class="review-card"><b>${r.name}</b><span>${'★'.repeat(r.rating||5)}</span><p>${r.text||r.comment}</p></article>`).join('')}</div></section><section class="section tight"><p class="eyebrow">Similar Products</p><div class="carousel">${similar.map(productCard).join('')}</div></section></div></section>`;
+    afterRender('product');
+    $('#buyNow').onclick=()=> p.type==='part' ? (addCart(p), location.hash='checkout') : startChat(p);
+    $('#addCart').onclick=()=> p.type==='part' ? addCart(p) : open(`https://wa.me/${cfg.WHATSAPP_NUMBER}?text=${encodeURIComponent('I am interested in '+p.name+' on Harvester Parts')}`,'_blank');
+    $('#openChat').onclick=()=>startChat(p);
+    $('#reportBtn').onclick=()=>toast('Report sent to admin review queue');
+    $('#reviewBtn').onclick=()=>postReview(p);
+    $$('.thumbs button').forEach(b=>b.onclick=()=>$('.main-image').innerHTML=img(b.dataset.img,p.name));
   }
-  function selector(){return `<section class="section"><p class="eyebrow">Machine Selector</p><h2>Brand → model → compatible parts.</h2></section><div class="form-card"><div class="forms-grid"><select id="selBrand">${brands.map(b=>`<option>${b}</option>`)}</select><select id="selModel"><option>5310</option><option>744 FE</option><option>605 DI</option><option>Crop Tiger</option><option>TC5.30</option></select></div><button class="btn" id="findParts" style="margin-top:14px">Find Compatible Products</button></div><section class="section"><div id="selectorResults" class="products"></div></section>`}
-  function plansView(){return `<section class="section"><p class="eyebrow">Seller Plans</p><h2>Start ₹999. Scale to ₹15,999.</h2></section><div class="plans">${plans.map((p,i)=>`<article class="plan-card ${i===3?'featured':''}"><span class="chip">${p.tag}</span><h3>${p.name}</h3><div class="plan-price">${money(p.price)}</div><p>${p.listings} listings • ${p.boosts} boosts • verified seller tools • rewards</p><button class="btn full" data-plan="${i}">Buy Plan</button></article>`).join('')}</div>`}
-  function rewards(){return `<section class="section"><p class="eyebrow">Rewards</p><h2>Custom badges and titles.</h2></section><div class="badge-grid">${titles.map((t,i)=>`<div class="badge-card"><div class="custom-badge">${t.split(' ').map(w=>w[0]).join('')}</div><h3>${t}</h3><p>Earn through verified listings, sales, purchases, daily tasks and dealer activity.</p><b>+${(i+1)*125} points</b></div>`).join('')}</div>`}
-  function sell(){return `<section class="section"><p class="eyebrow">Verified Sellers Only</p><h2>Submit product and verification.</h2></section><div class="forms-grid"><form class="form-card" id="sellForm"><h3>Product Details</h3><input required placeholder="Product title"><select>${categories.map(c=>`<option>${c[1]}</option>`)}</select><select>${brands.map(b=>`<option>${b}</option>`)}</select><input placeholder="Price in INR"><select><option>New</option><option>Used</option><option>Spare Part</option></select><input type="file" multiple><textarea placeholder="Description"></textarea><button class="btn full">Submit Listing</button></form><form class="form-card" id="verifyForm"><h3>Seller Verification</h3><input placeholder="Aadhaar number"><label>Aadhaar Front<input type="file"></label><label>Aadhaar Back<input type="file"></label><label>Shop Photo<input type="file"></label><input placeholder="Phone OTP"><button class="btn dark full">Send For Approval</button></form></div>`}
-  function admin(){return `<section class="section"><p class="eyebrow">Admin</p><h2>Approval command center.</h2></section><div class="admin-grid"><div class="dash-card"><b>142</b><p>Pending Sellers</p></div><div class="dash-card"><b>318</b><p>Pending Listings</p></div><div class="dash-card"><b>₹8.4L</b><p>Plan Revenue</p></div><div class="dash-card"><b>27</b><p>Reports</p></div></div><section class="section"><div class="products">${products.slice(0,6).map(p=>`<div class="product-card">${img(p.image,p.name)}<div class="product-info"><h3>${p.name}</h3><p>${p.seller}</p><button class="btn">Approve</button> <button class="ghost">Reject</button></div></div>`).join('')}</div></section>`}
-  function cart(){
-    const lines = state.cart.map(i=>({item:i, product:products.find(p=>p.id===i.id)})).filter(x=>x.product);
-    const subtotal = lines.reduce((a,x)=>a+x.product.price*x.item.qty,0);
-    const protection = subtotal ? Math.min(999, Math.round(subtotal*0.012)) : 0;
-    const delivery = subtotal > 50000 ? 0 : (subtotal ? 249 : 0);
-    const total = subtotal + protection + delivery;
-    return `<section class="section"><p class="eyebrow">Secure Checkout</p><h2>Review cart, address and payment.</h2></section>
-    <section class="checkout-layout">
-      <div class="checkout-main">
-        <div class="checkout-card"><div class="checkout-title"><b>1</b><span>Cart items</span></div>${lines.map(({item,product:p})=>`<article class="cart-line"><div class="cart-img">${img(p.image,p.name)}</div><div><h3>${p.name}</h3><p>${p.brand} • ${p.condition} • ${p.district}, ${p.state}</p><strong>${money(p.price)}</strong></div><div class="qty-box"><button data-cart-dec="${p.id}">−</button><span>${item.qty}</span><button data-cart-inc="${p.id}">+</button></div><button class="cart-remove" data-cart-remove="${p.id}">Remove</button></article>`).join('') || '<div class="empty">Your cart is empty. Add spare parts from marketplace first.</div>'}</div>
-        <form class="checkout-card checkout-form" id="checkoutForm"><div class="checkout-title"><b>2</b><span>Buyer & delivery details</span></div><div class="forms-grid"><input id="buyerName" required placeholder="Full name" value="${state.user?.name||''}"><input id="buyerPhone" required placeholder="Phone number" value="${state.user?.phone||''}"><input id="buyerEmail" placeholder="Email address" value="${state.user?.email||''}"><select id="buyerState" required><option value="">Select state / region</option>${states.map(st=>`<option>${st}</option>`).join('')}</select><input id="buyerDistrict" required placeholder="District / City / Village"><input id="buyerPincode" required placeholder="Pincode / ZIP"><textarea id="buyerAddress" required placeholder="Complete delivery address / landmark"></textarea></div><div class="checkout-methods">
-  <label class="pay-card"><input type="radio" name="payMode" value="razorpay" checked><span><b>Razorpay Online</b><small>Pay securely using UPI, card or net banking.</small></span></label>
-  <label class="pay-card"><input type="radio" name="payMode" value="cod"><span><b>Pay after seller confirmation</b><small>Seller confirms stock, delivery and final invoice first.</small></span></label>
-  <label class="pay-card"><input type="radio" name="payMode" value="enquiry"><span><b>Enquiry only</b><small>For machines and high-value equipment deals.</small></span></label>
-</div><button class="btn dark full" ${!lines.length?'disabled':''}>Place Secure Order</button></form>
-      </div>
-      <aside class="checkout-summary"><p class="eyebrow">Order Summary</p><h3>${lines.length} item${lines.length===1?'':'s'}</h3><div class="summary-row"><span>Subtotal</span><b>${money(subtotal)}</b></div><div class="summary-row"><span>Protection fee</span><b>${money(protection)}</b></div><div class="summary-row"><span>Delivery estimate</span><b>${delivery?money(delivery):'Free'}</b></div><div class="summary-total"><span>Total</span><b>${money(total)}</b></div><p class="checkout-note">Online payment uses Razorpay when your key is added in config.js. Demo mode creates a local test order.</p><button class="ghost full" data-route="marketplace">Continue Shopping</button></aside>
-    </section>`}
-  function chat(){return `<section class="section"><p class="eyebrow">Messages</p><h2>Buyer seller chat.</h2></section><div class="form-card"><div class="ai-log"><div class="msg">Hello, is this machine available?</div><div class="msg user">Yes, inspection can be scheduled.</div></div><form class="ai-form"><input placeholder="Type message"><button>Send</button></form></div>`}
+
+  function selector(){return `<section class="section"><p class="eyebrow">Machine Selector</p><h2>Brand → model → compatible parts.</h2></section><div class="form-card"><div class="forms-grid"><select id="selBrand">${brands.map(b=>`<option>${b}</option>`)}</select><select id="selModel"><option>5310</option><option>744 FE</option><option>605 DI</option><option>Crop Tiger</option><option>TC5.30</option></select></div><button class="btn" id="findParts">Find Compatible Products</button></div><section class="section"><div id="selectorResults" class="products"></div></section>`}
+  function plansView(){return `<section class="section"><p class="eyebrow">Seller Plans</p><h2>Start ₹999. Scale to ₹15,999.</h2></section><div class="plans">${plans.map((p,i)=>`<article class="plan-card ${i===3?'featured':''}"><span class="chip">${p.tag}</span><h3>${p.name}</h3><div class="plan-price">${money(p.price)}</div><p>${p.listings} listings • ${p.boosts} boosts • seller dashboard • rewards</p><button class="btn full" data-plan="${i}">Buy Plan</button></article>`).join('')}</div>`}
+  function rewards(){return `<section class="section"><p class="eyebrow">Rewards</p><h2>Badges, titles and seller reputation.</h2></section><div class="badge-grid">${titles.map((t,i)=>`<div class="badge-card"><div class="custom-badge">${t.split(' ').map(w=>w[0]).join('')}</div><h3>${t}</h3><p>Earn through verified listings, sales, purchases, daily tasks and dealer activity.</p><b>+${(i+1)*125} points</b></div>`).join('')}</div>`}
+  function sell(){return `<section class="section"><p class="eyebrow">Verified Sellers Only</p><h2>Submit product and verification.</h2></section><div class="forms-grid"><form class="form-card" id="sellForm"><h3>Product Details</h3><input id="spTitle" required placeholder="Product title"><select id="spCat">${categories.map(c=>`<option>${c[1]}</option>`)}</select><select id="spBrand">${brands.map(b=>`<option>${b}</option>`)}</select><input id="spModel" placeholder="Model"><input id="spPrice" placeholder="Price in INR"><select id="spCond"><option>Used</option><option>New</option><option>Spare Part</option></select><select id="spState">${states.map(s=>`<option>${s}</option>`)}</select><input id="spDistrict" placeholder="District / City"><input id="spImage" placeholder="Image URL or upload later"><textarea id="spDesc" placeholder="Description"></textarea><button class="btn full">Submit Listing</button></form><form class="form-card" id="verifyForm"><h3>Seller Verification</h3><input placeholder="Aadhaar number"><label>Aadhaar Front<input type="file"></label><label>Aadhaar Back<input type="file"></label><label>Shop Photo<input type="file"></label><input placeholder="Phone OTP"><button class="btn dark full">Send For Approval</button></form></div>`}
+  function sellerDashboard(){ if(needsLogin('Login to open seller dashboard')) return ''; const mine=state.localProducts.filter(p=>p.sellerEmail===state.user.email || p.ownerUid===state.user.user_uid); return `<section class="section"><p class="eyebrow">Seller Dashboard</p><h2>Manage your listings and leads.</h2><button class="btn" data-route="sell">Add Product</button></section><div class="admin-grid"><div class="dash-card"><b>${mine.length}</b><p>My Listings</p></div><div class="dash-card"><b>${state.messages.length}</b><p>Leads / Chats</p></div><div class="dash-card"><b>${state.user.points||250}</b><p>Reward Points</p></div><div class="dash-card"><b>${state.user.verified?'Verified':'Pending'}</b><p>Status</p></div></div><section class="products">${mine.map(productCard).join('') || '<div class="empty">No listings yet.</div>'}</section>`}
+  function admin(){ if(!isAdmin()) return `<section class="section"><p class="eyebrow">Admin Access</p><h2>Only approved admins can access this panel.</h2><button class="btn" id="adminLogin">Login as Admin</button></section>`; return `<section class="section"><p class="eyebrow">Admin</p><h2>Approval command center.</h2></section><div class="admin-grid"><div class="dash-card"><b>142</b><p>Pending Sellers</p></div><div class="dash-card"><b>${state.localProducts.length}</b><p>Seller Listings</p></div><div class="dash-card"><b>₹8.4L</b><p>Plan Revenue</p></div><div class="dash-card"><b>27</b><p>Reports</p></div></div><section class="section"><h2>Recent Listings</h2><div class="products">${allProducts().slice(0,8).map(p=>`<div class="product-card">${img(p.image,p.name)}<div class="product-info"><h3>${p.name}</h3><p>${p.seller}</p><button class="btn small">Approve</button><button class="ghost small">Reject</button></div></div>`).join('')}</div></section>`}
+  function account(){ if(needsLogin('Login to open account')) return ''; const u=state.user; return `<section class="section"><p class="eyebrow">My Account</p><h2>Profile, identity and platform tools.</h2></section><div class="account-layout"><div class="profile-card"><label class="profile-photo">${u.photo?`<img src="${u.photo}">`:`<span>${initials(u.name)}</span>`}<input id="photoInput" type="file" accept="image/*"></label><h3>${u.name}</h3><p>${u.user_uid}</p><div class="chips"><span>${u.role}</span><span>${u.verified?'Verified':'Verification pending'}</span><span>${u.points||250} pts</span></div></div><form class="form-card" id="profileForm"><h3>Edit Profile</h3><input id="profileName" value="${u.name||''}" placeholder="Full name"><input id="profileEmail" value="${u.email||''}" placeholder="Email"><input id="profilePhone" value="${u.phone||''}" placeholder="Phone"><select id="profileGender"><option value="">Gender</option>${['Male','Female','Other','Prefer not to say'].map(g=>`<option ${u.gender===g?'selected':''}>${g}</option>`).join('')}</select><select id="profileRole">${['Buyer','Seller','Dealer','Admin'].map(r=>`<option ${u.role===r?'selected':''}>${r}</option>`).join('')}</select><textarea id="profileBio" placeholder="About you / business">${u.bio||''}</textarea><button class="btn full">Save Profile</button></form></div><section class="section"><div class="menu-grid"><button data-route="seller">Seller Dashboard</button><button data-route="orders">My Orders</button><button data-route="chat">My Chats</button><button data-route="rewards">Rewards</button></div></section>`}
+  function cart(){ const rows=state.cart.map(i=>{const p=allProducts().find(x=>x.id===i.id); return p?{...p,qty:i.qty}:null}).filter(Boolean); const total=rows.reduce((a,p)=>a+p.price*p.qty,0); return `<section class="section"><p class="eyebrow">Cart</p><h2>Review spare parts before checkout.</h2></section><div class="forms-grid"><div>${rows.map(p=>`<div class="cart-row"><div>${img(p.image,p.name)}<b>${p.name}</b><p>${money(p.price)} × ${p.qty}</p></div><div><button class="ghost small" data-dec="${p.id}">−</button><button class="ghost small" data-inc="${p.id}">+</button><button class="ghost small" data-remove="${p.id}">Remove</button></div></div>`).join('') || '<div class="empty">Cart is empty.</div>'}</div><div class="form-card"><h3>Total ${money(total)}</h3><button class="btn full" data-route="checkout">Go to Checkout</button></div></div>`}
+  function checkout(){ const rows=state.cart.map(i=>{const p=allProducts().find(x=>x.id===i.id); return p?{...p,qty:i.qty}:null}).filter(Boolean); const total=rows.reduce((a,p)=>a+p.price*p.qty,0); return `<section class="section"><p class="eyebrow">Secure Checkout</p><h2>Delivery details and payment.</h2></section><div class="checkout-grid"><form class="form-card" id="checkoutForm"><h3>Delivery Details</h3><input required placeholder="Full name" value="${state.user?.name||''}"><input required placeholder="Phone number" value="${state.user?.phone||''}"><input required placeholder="Address"><select>${states.map(s=>`<option>${s}</option>`)}</select><input placeholder="District / City"><h3>Payment Method</h3><label class="pay-option"><input type="radio" name="payment" value="razorpay" checked><b>Razorpay Online</b><span>UPI, cards, netbanking</span></label><label class="pay-option"><input type="radio" name="payment" value="cod"><b>Pay after seller confirmation</b><span>Recommended for machines</span></label><label class="pay-option"><input type="radio" name="payment" value="enquiry"><b>Enquiry only</b><span>No payment now</span></label><button class="btn dark full">Place Secure Order</button></form><aside class="summary-card"><p class="eyebrow">Order Summary</p><h2>${rows.length} items</h2>${rows.map(p=>`<div class="summary-line"><span>${p.name} × ${p.qty}</span><b>${money(p.price*p.qty)}</b></div>`).join('')}<hr><div class="summary-line"><span>Total</span><b>${money(total)}</b></div></aside></div>`}
+  function ordersPage(){return `<section class="section"><p class="eyebrow">My Orders</p><h2>Order history.</h2></section><div class="orders-list">${state.orders.map(o=>`<div class="order-card"><b>${o.id}</b><p>${o.items} items • ${money(o.total)} • ${o.status}</p></div>`).join('') || '<div class="empty">No orders yet.</div>'}</div>`}
+  function chat(){ const productId = localStorage.hp_active_chat_product; const p=allProducts().find(x=>x.id===productId); const msgs=state.messages.filter(m=>m.productId===productId); return `<section class="section"><p class="eyebrow">Messages</p><h2>${p?'Chat about '+p.name:'Buyer seller chat'}</h2></section><div class="form-card"><div class="ai-log chat-log">${msgs.map(m=>`<div class="msg ${m.from==='me'?'user':''}">${m.text}<small>${new Date(m.time).toLocaleTimeString()}</small></div>`).join('') || '<div class="msg">Open any product and press Open Chat to start.</div>'}</div><form id="chatForm" class="ai-form"><input id="chatInput" placeholder="Type message"><button>Send</button></form></div>`}
+
   function afterRender(r){
+    updateLoginButton();
     $$('[data-catgo]').forEach(b=>b.onclick=()=>{state.filter.category=b.dataset.catgo; location.hash='marketplace';});
-    ['q','fType','fCat','fBrand','fState','fDistrict'].forEach(id=>{$('#'+id)?.addEventListener('input',e=>{const map={q:'q',fType:'type',fCat:'category',fBrand:'brand',fState:'state',fDistrict:'district'}; state.filter[map[id]]=e.target.value; if(id==='fState') state.filter.district=''; render();});});
-    $('#clearFilters')?.addEventListener('click',()=>{state.filter={q:'',category:'',brand:'',state:'',district:'',type:''};render();});
-    $('#findParts')?.addEventListener('click',()=>{$('#selectorResults').innerHTML=products.filter(p=>p.brand===$('#selBrand').value || p.type==='part').slice(0,9).map(productCard).join('');});
+    $$('[data-add]').forEach(b=>b.onclick=e=>{e.preventDefault(); addCart(allProducts().find(p=>p.id===b.dataset.add));});
+    $$('[data-chat]').forEach(b=>b.onclick=e=>{e.preventDefault(); startChat(allProducts().find(p=>p.id===b.dataset.chat));});
+    ['q','fType','fCat','fBrand','fState','fDistrict'].forEach(id=>{$('#'+id)?.addEventListener('input',e=>{const map={q:'q',fType:'type',fCat:'category',fBrand:'brand',fState:'state',fDistrict:'district'}; state.filter[map[id]]=e.target.value; if(id==='fState') state.filter.district=''; route();});});
+    $('#clearFilters')?.addEventListener('click',()=>{state.filter={q:'',category:'',brand:'',state:'',district:'',type:''};route();});
+    $('#findParts')?.addEventListener('click',()=>{$('#selectorResults').innerHTML=allProducts().filter(p=>p.brand===$('#selBrand').value || p.type==='part').slice(0,12).map(productCard).join(''); afterRender('selector-results');});
     $$('[data-plan]').forEach(b=>b.onclick=()=>buyPlan(plans[b.dataset.plan]));
-    $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault(); toast('Listing submitted for admin approval');});
-    $('#verifyForm')?.addEventListener('submit',e=>{e.preventDefault(); toast('Verification sent to admin');});
-    bindCartActions();
+    $('#sellForm')?.addEventListener('submit',sellSubmit); $('#verifyForm')?.addEventListener('submit',e=>{e.preventDefault(); if(needsLogin()) return; state.user.verified=true; save(); toast('Verification sent to admin');});
+    $('#profileForm')?.addEventListener('submit',saveProfile); $('#photoInput')?.addEventListener('change',photoUpload);
+    $('#adminLogin')?.addEventListener('click',openAuth);
+    $$('[data-remove]').forEach(b=>b.onclick=()=>{state.cart=state.cart.filter(i=>i.id!==b.dataset.remove);save();route();});
+    $$('[data-inc]').forEach(b=>b.onclick=()=>{const i=state.cart.find(x=>x.id===b.dataset.inc); if(i)i.qty++; save(); route();});
+    $$('[data-dec]').forEach(b=>b.onclick=()=>{const i=state.cart.find(x=>x.id===b.dataset.dec); if(i){i.qty--; if(i.qty<1) state.cart=state.cart.filter(x=>x.id!==b.dataset.dec);} save(); route();});
+    $('#checkoutForm')?.addEventListener('submit',checkoutSubmit); $('#chatForm')?.addEventListener('submit',sendChat);
     initCounters();
-    initScrollReveal();
-    if($('#liveDeals')) {
-      const updatePulse=()=>{
-        const set=(id,base,range)=>{ const el=$('#'+id); if(el) el.textContent=base+Math.floor(Math.random()*range); };
-        set('liveDeals',128,38); set('liveListings',42,19); set('liveBuyers',390,88);
-        set('pulseOne',256,90); set('pulseTwo',74,18); set('pulseThree',19,8); set('pulseFour',11,6);
-      };
-      updatePulse(); setInterval(updatePulse,2300);
-    }
   }
-  function addCart(p, silent=false){ const item=state.cart.find(i=>i.id===p.id); item?item.qty++:state.cart.push({id:p.id,qty:1}); saveCart(); if(!silent) toast('Added to cart'); }
-  function bindCartActions(){
-    $$('[data-cart-inc]').forEach(b=>b.onclick=()=>{ const it=state.cart.find(i=>i.id===b.dataset.cartInc); if(it) it.qty++; saveCart(); render(); });
-    $$('[data-cart-dec]').forEach(b=>b.onclick=()=>{ const it=state.cart.find(i=>i.id===b.dataset.cartDec); if(!it) return; it.qty--; if(it.qty<=0) state.cart=state.cart.filter(i=>i.id!==it.id); saveCart(); render(); });
-    $$('[data-cart-remove]').forEach(b=>b.onclick=()=>{ state.cart=state.cart.filter(i=>i.id!==b.dataset.cartRemove); saveCart(); render(); toast('Item removed'); });
-    $('#checkoutForm')?.addEventListener('submit',e=>{e.preventDefault(); placeOrder();});
-  }
-  function placeOrder(){
-    const lines=state.cart.map(i=>({item:i,product:products.find(p=>p.id===i.id)})).filter(x=>x.product);
-    if(!lines.length){ toast('Cart is empty'); return; }
-    const subtotal=lines.reduce((a,x)=>a+x.product.price*x.item.qty,0);
-    const protection=Math.min(999, Math.round(subtotal*0.012));
-    const delivery=subtotal>50000?0:249;
-    const total=subtotal+protection+delivery;
-    const order={id:'HP-'+Date.now().toString().slice(-8), date:new Date().toLocaleString(), items:lines.map(x=>({id:x.product.id,name:x.product.name,qty:x.item.qty,price:x.product.price})), total, buyer:{name:$('#buyerName').value, phone:$('#buyerPhone').value, email:$('#buyerEmail').value, state:$('#buyerState').value, district:$('#buyerDistrict').value, pincode:$('#buyerPincode').value, address:$('#buyerAddress').value}, mode:document.querySelector('input[name=payMode]:checked')?.value||'razorpay'};
-    const complete=()=>{ const orders=JSON.parse(localStorage.hp_orders||'[]'); orders.unshift(order); localStorage.hp_orders=JSON.stringify(orders.slice(0,30)); state.cart=[]; saveCart(); renderOrderSuccess(order); };
-    if(order.mode==='razorpay') pay('Order '+order.id,total,complete); else complete();
-  }
-  function renderOrderSuccess(order){
-    $('#app').innerHTML=`<section class="section"><p class="eyebrow">Order Created</p><h2>Secure order request placed.</h2></section><div class="order-success"><div class="success-mark">✓</div><h3>${order.id}</h3><p>Your order has been saved. Seller confirmation, invoice and delivery coordination are demo-ready for now.</p><div class="summary-row"><span>Payment mode</span><b>${order.mode}</b></div><div class="summary-row"><span>Total</span><b>${money(order.total)}</b></div><button class="btn dark" data-route="marketplace">Back to Marketplace</button><button class="ghost" data-route="cart">View Cart</button></div>`;
-    toast('Order placed successfully');
-  }
-  function buyPlan(plan){ pay(plan.name+' plan',plan.price); }
-  function pay(name,amount,onSuccess){ if(!amount){toast('Nothing to pay');return;} if(window.Razorpay && !cfg.RAZORPAY_KEY_ID.includes('YOUR_')){ new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:amount*100,currency:'INR',name:'Harvester Parts',description:name,handler:()=>{toast('Payment successful'); onSuccess&&onSuccess();}}).open(); } else { toast('Demo payment success. Add Razorpay key in config.js'); onSuccess&&onSuccess(); } }
-  function askAI(q){ if(!q.trim())return; const log=$('#aiLog'); log.innerHTML+=`<div class="msg user">${q}</div>`; const words=q.toLowerCase(); let matches=products.filter(p=>words.includes(p.brand.toLowerCase())||words.includes(p.category.toLowerCase().split(' ')[0])||p.name.toLowerCase().includes(words.split(' ')[0])).slice(0,3); let reply=matches.length?`I found ${matches.length} matching options: ${matches.map(p=>p.name+' '+money(p.price)).join(', ')}.`:'Tell me your budget, state and brand. I can suggest tractor, harvester or spare parts.'; log.innerHTML+=`<div class="msg">${reply}</div>`; log.scrollTop=log.scrollHeight; }
-  function initCounters(){
-    const counters=$$('.counter b');
-    if(!counters.length) return;
-    const run=(el)=>{ if(el.dataset.done==='1') return; el.dataset.done='1'; animateCount(el,+el.dataset.count); };
-    if(!('IntersectionObserver' in window)){ counters.forEach(run); return; }
-    const io=new IntersectionObserver(entries=>{ entries.forEach(entry=>{ if(entry.isIntersecting){ run(entry.target); io.unobserve(entry.target); } }); },{threshold:.35,rootMargin:'0px 0px -8% 0px'});
-    counters.forEach(el=>io.observe(el));
-  }
-  function initScrollReveal(){
-    const items=$$('.section,.hero,.pulse-strip,.product-card,.theme-card,.cat-tile,.plan-card,.badge-card,.form-card,.dash-card,.counter');
-    items.forEach((el,i)=>{ el.classList.add('reveal'); el.style.setProperty('--reveal-delay', Math.min(i%8,7)*55+'ms'); });
-    if(!('IntersectionObserver' in window)){ items.forEach(el=>el.classList.add('in-view')); return; }
-    const io=new IntersectionObserver(entries=>{ entries.forEach(entry=>{ entry.target.classList.toggle('in-view', entry.isIntersecting); }); },{threshold:.10,rootMargin:'0px 0px -6% 0px'});
-    items.forEach(el=>io.observe(el));
-  }
-  function animateCount(el,target){
-    const duration=1350;
-    const start=performance.now();
-    const tick=(now)=>{ const p=Math.min(1,(now-start)/duration); const eased=1-Math.pow(1-p,3); el.textContent=Math.round(target*eased).toLocaleString('en-IN'); if(p<1) requestAnimationFrame(tick); };
-    requestAnimationFrame(tick);
-  }
+  function sellSubmit(e){ e.preventDefault(); if(needsLogin('Login before selling')) return; const id='LOCAL-'+Date.now(); const p={id,name:$('#spTitle').value,category:$('#spCat').value,brand:$('#spBrand').value,model:$('#spModel').value,condition:$('#spCond').value,type:$('#spCond').value==='Spare Part'?'part':'machine',price:+$('#spPrice').value||0,state:$('#spState').value,district:$('#spDistrict').value||'Local',village:'Seller Area',rating:'New',seller:state.user.name, sellerEmail:state.user.email, ownerUid:state.user.user_uid,verified:state.user.verified,stock:1,image:$('#spImage').value||fallbackImage($('#spTitle').value),desc:$('#spDesc').value||'Seller submitted listing',engineNo:'Pending update',chassisNo:'Pending update',year:new Date().getFullYear(),hours:0,fuel:'Diesel',transmission:'Manual',ownership:'Seller',saleType:'Admin approval pending',reviews:[]}; state.localProducts.unshift(p); state.user.points=(state.user.points||0)+50; save(); toast('Listing submitted for admin approval'); location.hash='seller'; }
+  function saveProfile(e){ e.preventDefault(); Object.assign(state.user,{name:$('#profileName').value,email:$('#profileEmail').value,phone:$('#profilePhone').value,gender:$('#profileGender').value,role:$('#profileRole').value,bio:$('#profileBio').value}); save(); toast('Profile saved'); route(); }
+  function photoUpload(e){ const f=e.target.files[0]; if(!f) return; const reader=new FileReader(); reader.onload=()=>{state.user.photo=reader.result; save(); toast('Profile photo updated'); route();}; reader.readAsDataURL(f); }
+  function addCart(p){ if(!p) return; if(p.type!=='part'){ startChat(p); return; } const item=state.cart.find(i=>i.id===p.id); item?item.qty++:state.cart.push({id:p.id,qty:1}); save(); toast('Added to cart'); }
+  function checkoutSubmit(e){ e.preventDefault(); if(needsLogin('Login before checkout')) return; const total=state.cart.reduce((a,i)=>{const p=allProducts().find(x=>x.id===i.id); return a+(p?.price||0)*i.qty},0); const method=new FormData(e.target).get('payment'); if(method==='razorpay') pay('Cart checkout',total,()=>finishOrder(total)); else finishOrder(total,method); }
+  function finishOrder(total,status='created'){ state.orders.unshift({id:'HP-ORDER-'+Date.now().toString().slice(-6),items:state.cart.length,total,status}); state.cart=[]; save(); toast('Order placed successfully'); location.hash='orders'; }
+  function buyPlan(plan){ if(needsLogin('Login before plan purchase')) return; pay(plan.name+' plan',plan.price,()=>toast(plan.name+' activated')); }
+  function pay(name,amount,onSuccess){ if(!amount){toast('Nothing to pay');return;} if(window.Razorpay && cfg.RAZORPAY_KEY_ID && !cfg.RAZORPAY_KEY_ID.includes('YOUR_')){ new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:amount*100,currency:'INR',name:'Harvester Parts',description:name,handler:()=>{toast('Payment successful'); onSuccess&&onSuccess();}}).open(); } else {toast('Demo payment success. Add Razorpay key in config.js'); onSuccess&&onSuccess();} }
+  function startChat(p){ if(needsLogin('Login to chat with seller')) return; localStorage.hp_active_chat_product=p.id; if(!state.messages.some(m=>m.productId===p.id)){ state.messages.push({productId:p.id,from:'seller',text:`Thanks for your interest in ${p.name}. Please share your location and budget.`,time:Date.now()}); save(); } location.hash='chat'; }
+  function sendChat(e){ e.preventDefault(); const input=$('#chatInput'); const text=input.value.trim(); const productId=localStorage.hp_active_chat_product; if(!text||!productId) return; state.messages.push({productId,from:'me',text,time:Date.now()}); input.value=''; save(); route(); }
+  function postReview(p){ if(needsLogin('Login to post feedback')) return; const text=prompt('Write your feedback for this seller/product:'); if(!text) return; state.reviews[p.id] = state.reviews[p.id] || []; state.reviews[p.id].unshift({name:state.user.name,rating:5,text}); save(); toast('Feedback posted'); productPage(p.id); }
+  function askAI(q){ if(!q.trim())return; const log=$('#aiLog'); log.innerHTML+=`<div class="msg user">${q}</div>`; const words=q.toLowerCase(); let matches=allProducts().filter(p=>words.includes(p.brand.toLowerCase())||words.includes(p.category.toLowerCase().split(' ')[0])||p.name.toLowerCase().includes(words.split(' ')[0])).slice(0,3); let reply=matches.length?`I found ${matches.length} options: ${matches.map(p=>p.name+' '+money(p.price)).join(', ')}.`:'Tell me budget, state and brand. I can suggest tractor, harvester or spare parts.'; log.innerHTML+=`<div class="msg">${reply}</div>`; log.scrollTop=log.scrollHeight; }
+  function initCounters(){ const counters=$$('.counter b'); if(!counters.length) return; const run=el=>{ if(el.dataset.done==='1') return; el.dataset.done='1'; animateCount(el,+el.dataset.count);}; if(!('IntersectionObserver' in window)){ counters.forEach(run); return; } const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting){run(e.target);io.unobserve(e.target);}})},{threshold:.35}); counters.forEach(el=>io.observe(el)); }
+  function animateCount(el,target){ const start=performance.now(),duration=1300; const tick=now=>{const p=Math.min(1,(now-start)/duration),e=1-Math.pow(1-p,3); el.textContent=Math.round(target*e).toLocaleString('en-IN'); if(p<1) requestAnimationFrame(tick);}; requestAnimationFrame(tick); }
+  function initScrollReveal(){ const items=$$('.section,.hero,.stats-strip,.product-card,.cat-tile,.plan-card,.badge-card,.form-card,.dash-card,.counter,.buy-box,.gallery,.feature-card,.summary-card,.cart-row'); items.forEach((el,i)=>{el.classList.add('reveal'); el.style.setProperty('--reveal-delay', Math.min(i%8,7)*55+'ms');}); if(!('IntersectionObserver' in window)){items.forEach(el=>el.classList.add('in-view')); return;} const io=new IntersectionObserver(es=>es.forEach(e=>e.target.classList.toggle('in-view',e.isIntersecting)),{threshold:.1,rootMargin:'0px 0px -6% 0px'}); items.forEach(el=>io.observe(el)); }
   init();
 })();

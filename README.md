@@ -32,6 +32,23 @@ Run `supabase-schema.sql` in Supabase SQL Editor. Enable:
 
 This is frontend-complete with Supabase/Razorpay hooks. Payment verification should be secured with a backend/edge function before taking real money.
 
-## vCheckout update
-- Added full frontend checkout flow: cart review, quantity controls, delivery details, payment mode, order summary, Razorpay-ready payment, and local demo order confirmation.
-- SQL required: No. This update only changes frontend files and localStorage demo order behavior.
+## vNext Full Systems Upgrade
+SQL required: YES. Run `supabase-update-full-systems.sql` once in Supabase SQL Editor.
+
+What this upgrade adds:
+- Account profile page with photo upload preview
+- Admin panel access protection
+- Seller dashboard and local listing management
+- Seller verification form
+- Cart quantity/remove + checkout
+- Razorpay-ready checkout flow
+- Buyer/seller chat demo with Supabase-ready SQL tables
+- Reviews, reports, orders, reward events and seller plans tables
+
+After SQL:
+1. Create Storage buckets: `product-images`, `profile-images`, `verification-docs`.
+2. Keep `product-images` and `profile-images` public. Keep `verification-docs` private.
+3. To make yourself admin:
+```sql
+update public.users set role = 'Admin' where email = 'YOUR_EMAIL_HERE';
+```
