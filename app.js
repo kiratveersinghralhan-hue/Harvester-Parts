@@ -14,7 +14,7 @@
   window.addEventListener('hashchange',()=>route());
 
   function init(){
-    setTimeout(()=>$('#intro')?.classList.add('done'),1100);
+    setTimeout(()=>$('#intro')?.classList.add('done'),1800);
     if(state.lang) $('#languageModal').classList.remove('active');
     renderLanguage(); saveCart(); bindGlobal(); route();
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
@@ -57,17 +57,23 @@
   function home(){ return `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">Premium Agri Ecommerce</p>
-        <h1>Amazon style buying. Mandi style trust.</h1>
-        <p>Harvester Parts is a verified marketplace for new and used agricultural machinery, spare parts, dealer listings, seller plans, rewards and admin approvals.</p>
+        <p class="eyebrow">Verified Agricultural Marketplace</p>
+        <h1>Buy machines. Sell equipment. Source genuine parts.</h1>
+        <p>Harvester Parts is a complete agriculture trading platform for buyers, verified sellers and dealers — combining Amazon-style product discovery with OLX-style local enquiries for tractors, harvesters, implements and spare parts.</p>
         <div class="hero-actions"><button class="btn" data-route="marketplace">Explore Marketplace</button><button class="btn dark" data-route="sell">Become Verified Seller</button></div>
-        <div class="counters"><div class="counter"><b data-count="72000">0</b><span> Products</span></div><div class="counter"><b data-count="18000">0</b><span> Dealers</span></div><div class="counter"><b data-count="640">0</b><span> Districts</span></div></div>
+        <div class="counters live-stats"><div class="counter"><b data-count="72000">0</b><span> demo products indexed</span></div><div class="counter"><b data-count="18000">0</b><span> seller/dealer profiles</span></div><div class="counter"><b data-count="640">0</b><span> Indian districts supported</span></div></div>
       </div>
-      <div class="hero-visual"><div class="live-card"><p class="eyebrow">Live Counter</p><h3><span id="liveDeals">128</span> enquiries today</h3><small>Dynamic deal interest simulation like premium landing pages.</small></div></div>
+      <div class="hero-visual"><div class="live-card"><p class="eyebrow">Live Platform Pulse</p><h3><span id="liveDeals">128</span> active enquiries</h3><small><span id="liveListings">42</span> listings reviewed today • <span id="liveBuyers">390</span> buyers browsing now</small></div></div>
     </section>
-    <section class="section"><div class="section-head"><div><p class="eyebrow">Featured Experience</p><h2>Product carousel.</h2></div><button class="btn" data-route="marketplace">View All</button></div><div class="carousel">${products.slice(0,10).map(themeCard).join('')}</div></section>
-    <section class="section"><div class="section-head"><div><p class="eyebrow">Complete Categories</p><h2>Everything agriculture.</h2></div></div><div class="category-grid">${categories.map(c=>`<div class="cat-tile"><p class="eyebrow">${c[0]}</p><h3>${c[1]}</h3><button class="ghost" data-catgo="${c[1]}">Explore</button></div>`).join('')}</div></section>
-    <section class="section"><div class="section-head"><div><p class="eyebrow">Best Deals</p><h2>New, used and spare parts.</h2></div></div><div class="products">${products.slice(12,18).map(productCard).join('')}</div></section>`; }
+    <section class="pulse-strip" aria-label="Live marketplace numbers">
+      <div><span id="pulseOne">256</span><small>live searches</small></div>
+      <div><span id="pulseTwo">74</span><small>seller approvals</small></div>
+      <div><span id="pulseThree">19</span><small>plan checks</small></div>
+      <div><span id="pulseFour">11</span><small>enquiries/min</small></div>
+    </section>
+    <section class="section"><div class="section-head"><div><p class="eyebrow">Featured Product Carousel</p><h2>Browse like a premium ecommerce store.</h2></div><button class="btn" data-route="marketplace">View All</button></div><div class="carousel product-carousel">${products.slice(0,10).map(themeCard).join('')}</div></section>
+    <section class="section"><div class="section-head"><div><p class="eyebrow">Complete Agricultural Categories</p><h2>Machinery and parts for every field operation.</h2></div></div><div class="category-grid">${categories.map(c=>`<div class="cat-tile"><p class="eyebrow">${c[0]}</p><h3>${c[1]}</h3><button class="ghost" data-catgo="${c[1]}">Explore</button></div>`).join('')}</div></section>
+    <section class="section"><div class="section-head"><div><p class="eyebrow">Demo Catalogue</p><h2>New machines, used machines and spare parts.</h2></div></div><div class="products">${products.slice(12,18).map(productCard).join('')}</div></section>`; }
   function themeCard(p){return `<article class="theme-card" onclick="location.hash='product-${p.id}'"><img src="${p.image}" alt="${p.name}"><span>${p.brand}</span></article>`}
   function productCard(p){return `<article class="product-card" onclick="location.hash='product-${p.id}'"><img src="${p.image}" alt="${p.name}"><div class="product-info"><span class="chip">${p.condition}</span> <span class="chip verified">Verified</span><h3>${p.name}</h3><p>${p.brand} • ${p.state}</p><div class="price">${money(p.price)}</div><small>⭐ ${p.rating} • ${p.seller}</small></div></article>`}
   function marketplace(){ const list=filtered(); return `<section class="section"><p class="eyebrow">Marketplace</p><h2>Search like ecommerce, negotiate like OLX.</h2></section><section class="market-layout"><aside class="filters"><input id="q" placeholder="Search tractors, harvesters, parts" value="${state.filter.q}"><select id="fType"><option value="">All types</option><option ${state.filter.type==='machine'?'selected':''} value="machine">Machines</option><option ${state.filter.type==='part'?'selected':''} value="part">Spare Parts</option></select><select id="fCat"><option value="">All categories</option>${categories.map(c=>`<option ${state.filter.category===c[1]?'selected':''}>${c[1]}</option>`)}</select><select id="fBrand"><option value="">All brands</option>${brands.map(b=>`<option ${state.filter.brand===b?'selected':''}>${b}</option>`)}</select><select id="fState"><option value="">All regions</option>${states.map(s=>`<option ${state.filter.state===s?'selected':''}>${s}</option>`)}</select><button class="btn dark" id="clearFilters">Clear Filters</button></aside><div><div class="products">${list.map(productCard).join('') || '<div class="empty">No products found.</div>'}</div></div></section>`; }
@@ -90,7 +96,14 @@
     $('#verifyForm')?.addEventListener('submit',e=>{e.preventDefault(); toast('Verification sent to admin');});
     $('#checkoutBtn')?.addEventListener('click',()=>pay('Cart checkout', state.cart.reduce((a,i)=>a+(products.find(p=>p.id===i.id)?.price||0)*i.qty,0)));
     $$('.counter b').forEach(el=>animateCount(el,+el.dataset.count));
-    if($('#liveDeals')) setInterval(()=>$('#liveDeals').textContent=128+Math.floor(Math.random()*38),2500);
+    if($('#liveDeals')) {
+      const updatePulse=()=>{
+        const set=(id,base,range)=>{ const el=$('#'+id); if(el) el.textContent=base+Math.floor(Math.random()*range); };
+        set('liveDeals',128,38); set('liveListings',42,19); set('liveBuyers',390,88);
+        set('pulseOne',256,90); set('pulseTwo',74,18); set('pulseThree',19,8); set('pulseFour',11,6);
+      };
+      updatePulse(); setInterval(updatePulse,2300);
+    }
   }
   function addCart(p){ if(p.type!=='part'){toast('Enquiry sent to seller'); return;} const item=state.cart.find(i=>i.id===p.id); item?item.qty++:state.cart.push({id:p.id,qty:1}); saveCart(); toast('Added to cart'); }
   function buyPlan(plan){ pay(plan.name+' plan',plan.price); }
