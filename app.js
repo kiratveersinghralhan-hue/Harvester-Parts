@@ -120,7 +120,20 @@
   function rewards(){return `<section class="section"><p class="eyebrow">Rewards</p><h2>Custom badges and titles.</h2></section><div class="badge-grid">${titles.map((t,i)=>`<div class="badge-card"><div class="custom-badge">${t.split(' ').map(w=>w[0]).join('')}</div><h3>${t}</h3><p>Earn through verified listings, sales, purchases, daily tasks and dealer activity.</p><b>+${(i+1)*125} points</b></div>`).join('')}</div>`}
   function sell(){return `<section class="section"><p class="eyebrow">Verified Sellers Only</p><h2>Submit product and verification.</h2></section><div class="forms-grid"><form class="form-card" id="sellForm"><h3>Product Details</h3><input required placeholder="Product title"><select>${categories.map(c=>`<option>${c[1]}</option>`)}</select><select>${brands.map(b=>`<option>${b}</option>`)}</select><input placeholder="Price in INR"><select><option>New</option><option>Used</option><option>Spare Part</option></select><input type="file" multiple><textarea placeholder="Description"></textarea><button class="btn full">Submit Listing</button></form><form class="form-card" id="verifyForm"><h3>Seller Verification</h3><input placeholder="Aadhaar number"><label>Aadhaar Front<input type="file"></label><label>Aadhaar Back<input type="file"></label><label>Shop Photo<input type="file"></label><input placeholder="Phone OTP"><button class="btn dark full">Send For Approval</button></form></div>`}
   function admin(){return `<section class="section"><p class="eyebrow">Admin</p><h2>Approval command center.</h2></section><div class="admin-grid"><div class="dash-card"><b>142</b><p>Pending Sellers</p></div><div class="dash-card"><b>318</b><p>Pending Listings</p></div><div class="dash-card"><b>₹8.4L</b><p>Plan Revenue</p></div><div class="dash-card"><b>27</b><p>Reports</p></div></div><section class="section"><div class="products">${products.slice(0,6).map(p=>`<div class="product-card">${img(p.image,p.name)}<div class="product-info"><h3>${p.name}</h3><p>${p.seller}</p><button class="btn">Approve</button> <button class="ghost">Reject</button></div></div>`).join('')}</div></section>`}
-  function cart(){ const items=state.cart.map(i=>products.find(p=>p.id===i.id)).filter(Boolean); const total=items.reduce((a,p)=>a+p.price*(state.cart.find(i=>i.id===p.id)?.qty||1),0); return `<section class="section"><p class="eyebrow">Cart</p><h2>Checkout spare parts.</h2></section><div class="forms-grid"><div>${items.map(p=>`<div class="product-card" style="margin-bottom:12px"><div class="product-info"><h3>${p.name}</h3><p>${money(p.price)}</p></div></div>`).join('')||'<div class="empty">Cart is empty.</div>'}</div><div class="form-card"><h3>Total ${money(total)}</h3><button class="btn full" id="checkoutBtn">Pay with Razorpay</button></div></div>`}
+  function cart(){
+    const lines = state.cart.map(i=>({item:i, product:products.find(p=>p.id===i.id)})).filter(x=>x.product);
+    const subtotal = lines.reduce((a,x)=>a+x.product.price*x.item.qty,0);
+    const protection = subtotal ? Math.min(999, Math.round(subtotal*0.012)) : 0;
+    const delivery = subtotal > 50000 ? 0 : (subtotal ? 249 : 0);
+    const total = subtotal + protection + delivery;
+    return `<section class="section"><p class="eyebrow">Secure Checkout</p><h2>Review cart, address and payment.</h2></section>
+    <section class="checkout-layout">
+      <div class="checkout-main">
+        <div class="checkout-card"><div class="checkout-title"><b>1</b><span>Cart items</span></div>${lines.map(({item,product:p})=>`<article class="cart-line"><div class="cart-img">${img(p.image,p.name)}</div><div><h3>${p.name}</h3><p>${p.brand} • ${p.condition} • ${p.district}, ${p.state}</p><strong>${money(p.price)}</strong></div><div class="qty-box"><button data-cart-dec="${p.id}">−</button><span>${item.qty}</span><button data-cart-inc="${p.id}">+</button></div><button class="cart-remove" data-cart-remove="${p.id}">Remove</button></article>`).join('') || '<div class="empty">Your cart is empty. Add spare parts from marketplace first.</div>'}</div>
+        <form class="checkout-card checkout-form" id="checkoutForm"><div class="checkout-title"><b>2</b><span>Buyer & delivery details</span></div><div class="forms-grid"><input id="buyerName" required placeholder="Full name" value="${state.user?.name||''}"><input id="buyerPhone" required placeholder="Phone number" value="${state.user?.phone||''}"><input id="buyerEmail" placeholder="Email address" value="${state.user?.email||''}"><select id="buyerState" required><option value="">Select state / region</option>${states.map(st=>`<option>${st}</option>`).join('')}</select><input id="buyerDistrict" required placeholder="District / City / Village"><input id="buyerPincode" required placeholder="Pincode / ZIP"><textarea id="buyerAddress" required placeholder="Complete delivery address / landmark"></textarea></div><div class="checkout-methods"><label><input type="radio" name="payMode" value="razorpay" checked> Razorpay Online</label><label><input type="radio" name="payMode" value="cod"> Pay after seller confirmation</label><label><input type="radio" name="payMode" value="enquiry"> Enquiry only</label></div><button class="btn dark full" ${!lines.length?'disabled':''}>Place Secure Order</button></form>
+      </div>
+      <aside class="checkout-summary"><p class="eyebrow">Order Summary</p><h3>${lines.length} item${lines.length===1?'':'s'}</h3><div class="summary-row"><span>Subtotal</span><b>${money(subtotal)}</b></div><div class="summary-row"><span>Protection fee</span><b>${money(protection)}</b></div><div class="summary-row"><span>Delivery estimate</span><b>${delivery?money(delivery):'Free'}</b></div><div class="summary-total"><span>Total</span><b>${money(total)}</b></div><p class="checkout-note">Online payment uses Razorpay when your key is added in config.js. Demo mode creates a local test order.</p><button class="ghost full" data-route="marketplace">Continue Shopping</button></aside>
+    </section>`}
   function chat(){return `<section class="section"><p class="eyebrow">Messages</p><h2>Buyer seller chat.</h2></section><div class="form-card"><div class="ai-log"><div class="msg">Hello, is this machine available?</div><div class="msg user">Yes, inspection can be scheduled.</div></div><form class="ai-form"><input placeholder="Type message"><button>Send</button></form></div>`}
   function afterRender(r){
     $$('[data-catgo]').forEach(b=>b.onclick=()=>{state.filter.category=b.dataset.catgo; location.hash='marketplace';});
@@ -130,7 +143,7 @@
     $$('[data-plan]').forEach(b=>b.onclick=()=>buyPlan(plans[b.dataset.plan]));
     $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault(); toast('Listing submitted for admin approval');});
     $('#verifyForm')?.addEventListener('submit',e=>{e.preventDefault(); toast('Verification sent to admin');});
-    $('#checkoutBtn')?.addEventListener('click',()=>pay('Cart checkout', state.cart.reduce((a,i)=>a+(products.find(p=>p.id===i.id)?.price||0)*i.qty,0)));
+    bindCartActions();
     initCounters();
     initScrollReveal();
     if($('#liveDeals')) {
@@ -143,8 +156,29 @@
     }
   }
   function addCart(p){ if(p.type!=='part'){toast('Enquiry sent to seller'); return;} const item=state.cart.find(i=>i.id===p.id); item?item.qty++:state.cart.push({id:p.id,qty:1}); saveCart(); toast('Added to cart'); }
+  function bindCartActions(){
+    $$('[data-cart-inc]').forEach(b=>b.onclick=()=>{ const it=state.cart.find(i=>i.id===b.dataset.cartInc); if(it) it.qty++; saveCart(); render(); });
+    $$('[data-cart-dec]').forEach(b=>b.onclick=()=>{ const it=state.cart.find(i=>i.id===b.dataset.cartDec); if(!it) return; it.qty--; if(it.qty<=0) state.cart=state.cart.filter(i=>i.id!==it.id); saveCart(); render(); });
+    $$('[data-cart-remove]').forEach(b=>b.onclick=()=>{ state.cart=state.cart.filter(i=>i.id!==b.dataset.cartRemove); saveCart(); render(); toast('Item removed'); });
+    $('#checkoutForm')?.addEventListener('submit',e=>{e.preventDefault(); placeOrder();});
+  }
+  function placeOrder(){
+    const lines=state.cart.map(i=>({item:i,product:products.find(p=>p.id===i.id)})).filter(x=>x.product);
+    if(!lines.length){ toast('Cart is empty'); return; }
+    const subtotal=lines.reduce((a,x)=>a+x.product.price*x.item.qty,0);
+    const protection=Math.min(999, Math.round(subtotal*0.012));
+    const delivery=subtotal>50000?0:249;
+    const total=subtotal+protection+delivery;
+    const order={id:'HP-'+Date.now().toString().slice(-8), date:new Date().toLocaleString(), items:lines.map(x=>({id:x.product.id,name:x.product.name,qty:x.item.qty,price:x.product.price})), total, buyer:{name:$('#buyerName').value, phone:$('#buyerPhone').value, email:$('#buyerEmail').value, state:$('#buyerState').value, district:$('#buyerDistrict').value, pincode:$('#buyerPincode').value, address:$('#buyerAddress').value}, mode:document.querySelector('input[name=payMode]:checked')?.value||'razorpay'};
+    const complete=()=>{ const orders=JSON.parse(localStorage.hp_orders||'[]'); orders.unshift(order); localStorage.hp_orders=JSON.stringify(orders.slice(0,30)); state.cart=[]; saveCart(); renderOrderSuccess(order); };
+    if(order.mode==='razorpay') pay('Order '+order.id,total,complete); else complete();
+  }
+  function renderOrderSuccess(order){
+    $('#app').innerHTML=`<section class="section"><p class="eyebrow">Order Created</p><h2>Secure order request placed.</h2></section><div class="order-success"><div class="success-mark">✓</div><h3>${order.id}</h3><p>Your order has been saved. Seller confirmation, invoice and delivery coordination are demo-ready for now.</p><div class="summary-row"><span>Payment mode</span><b>${order.mode}</b></div><div class="summary-row"><span>Total</span><b>${money(order.total)}</b></div><button class="btn dark" data-route="marketplace">Back to Marketplace</button><button class="ghost" data-route="cart">View Cart</button></div>`;
+    toast('Order placed successfully');
+  }
   function buyPlan(plan){ pay(plan.name+' plan',plan.price); }
-  function pay(name,amount){ if(!amount){toast('Nothing to pay');return;} if(window.Razorpay && !cfg.RAZORPAY_KEY_ID.includes('YOUR_')){ new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:amount*100,currency:'INR',name:'Harvester Parts',description:name,handler:()=>toast('Payment successful')}).open(); } else toast('Demo payment success. Add Razorpay key in config.js'); }
+  function pay(name,amount,onSuccess){ if(!amount){toast('Nothing to pay');return;} if(window.Razorpay && !cfg.RAZORPAY_KEY_ID.includes('YOUR_')){ new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:amount*100,currency:'INR',name:'Harvester Parts',description:name,handler:()=>{toast('Payment successful'); onSuccess&&onSuccess();}}).open(); } else { toast('Demo payment success. Add Razorpay key in config.js'); onSuccess&&onSuccess(); } }
   function askAI(q){ if(!q.trim())return; const log=$('#aiLog'); log.innerHTML+=`<div class="msg user">${q}</div>`; const words=q.toLowerCase(); let matches=products.filter(p=>words.includes(p.brand.toLowerCase())||words.includes(p.category.toLowerCase().split(' ')[0])||p.name.toLowerCase().includes(words.split(' ')[0])).slice(0,3); let reply=matches.length?`I found ${matches.length} matching options: ${matches.map(p=>p.name+' '+money(p.price)).join(', ')}.`:'Tell me your budget, state and brand. I can suggest tractor, harvester or spare parts.'; log.innerHTML+=`<div class="msg">${reply}</div>`; log.scrollTop=log.scrollHeight; }
   function initCounters(){
     const counters=$$('.counter b');

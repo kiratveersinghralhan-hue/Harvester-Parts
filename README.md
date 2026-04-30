@@ -31,3 +31,7 @@ Run `supabase-schema.sql` in Supabase SQL Editor. Enable:
 - PWA files
 
 This is frontend-complete with Supabase/Razorpay hooks. Payment verification should be secured with a backend/edge function before taking real money.
+
+## vCheckout update
+- Added full frontend checkout flow: cart review, quantity controls, delivery details, payment mode, order summary, Razorpay-ready payment, and local demo order confirmation.
+- SQL required: No. This update only changes frontend files and localStorage demo order behavior.
