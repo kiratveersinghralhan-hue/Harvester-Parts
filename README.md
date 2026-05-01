@@ -48,3 +48,17 @@ The SQL creates:
 - Seller verification now validates image-only uploads and limits Aadhaar photos to 3 MB each.
 - Admin can view seller details and open secure signed links for verification documents.
 - Product enquiry is now in-site messaging from the product page.
+
+## Farmer Mode upgrade notes
+This ZIP is a frontend/UX upgrade based on your v20 build.
+
+SQL required: No, if your v20 database is already set up.
+
+Added:
+- Farmer-first homepage with Buy Machine / Sell Machine / Spare Parts actions
+- Mobile bottom navigation
+- Faster quick-sell form with optional advanced details
+- AI helper button for listing title/description draft
+- Improved product details with trust/safety blocks
+- In-site messaging remains the main product enquiry path
+- Better mobile responsiveness and touch actions
