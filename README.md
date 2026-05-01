@@ -60,3 +60,10 @@ No full reset is required. If you want the new shipping/coupon fields to save in
 `supabase-working-addons.sql`
 
 This SQL is safe and uses `ADD COLUMN IF NOT EXISTS`.
+
+## Badges + SEO Upgrade
+- Custom minimal badge components for verified sellers, dealers, top rated sellers, popular listings and launch members.
+- SEO meta tags, Open Graph/Twitter sharing tags, canonical URL, robots.txt and sitemap.xml added.
+- Product pages update title/description dynamically from live product data.
+
+SQL required: No new SQL is required for badges + SEO. Existing ratings/dealer fields improve badge accuracy when available.
