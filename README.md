@@ -42,3 +42,9 @@ The SQL creates:
 - product-images (public)
 - profile-images (public)
 - verification-docs (private)
+
+## v20 update notes
+- SQL required: No, if you already ran v19 `final-production.sql`.
+- Seller verification now validates image-only uploads and limits Aadhaar photos to 3 MB each.
+- Admin can view seller details and open secure signed links for verification documents.
+- Product enquiry is now in-site messaging from the product page.
