@@ -42,3 +42,21 @@ The SQL creates:
 - product-images (public)
 - profile-images (public)
 - verification-docs (private)
+
+## Working Design Add-ons Included
+This build keeps the same v19 design and adds:
+- AI Helper page + floating AI button
+- Seller listing AI helper button
+- Wishlist using local storage
+- Coupon box at checkout with capped discount tiers
+- Shipping estimate by product weight
+- Admin analytics page
+- Admin seller detail view in approvals
+- Product in-site message form
+- Better badges/rewards styling without changing the main design
+
+## SQL
+No full reset is required. If you want the new shipping/coupon fields to save in Supabase, run:
+`supabase-working-addons.sql`
+
+This SQL is safe and uses `ADD COLUMN IF NOT EXISTS`.
