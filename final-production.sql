@@ -1,9 +1,21 @@
--- Harvester Parts final production database setup
--- Run once in Supabase SQL Editor. Safe to rerun: uses IF NOT EXISTS / CREATE OR REPLACE.
+-- Harvester Parts FINAL CLEAN PRODUCTION SETUP
+-- Run once for clean launch. This resets only Harvester Parts app tables.
 
 create extension if not exists pgcrypto;
+create schema if not exists public;
+grant usage on schema public to anon, authenticated, service_role;
 
-create table if not exists public.users (
+drop table if exists public.order_items cascade;
+drop table if exists public.orders cascade;
+drop table if exists public.messages cascade;
+drop table if exists public.reviews cascade;
+drop table if exists public.seller_plans cascade;
+drop table if exists public.rewards cascade;
+drop table if exists public.products cascade;
+drop table if exists public.sellers cascade;
+drop table if exists public.users cascade;
+
+create table public.users (
   id uuid primary key default gen_random_uuid(),
   auth_id uuid unique references auth.users(id) on delete cascade,
   email text unique,
@@ -17,7 +29,7 @@ create table if not exists public.users (
   updated_at timestamptz default now()
 );
 
-create table if not exists public.sellers (
+create table public.sellers (
   id uuid primary key default gen_random_uuid(),
   user_id uuid unique references public.users(id) on delete cascade,
   business_name text not null,
@@ -31,7 +43,7 @@ create table if not exists public.sellers (
   updated_at timestamptz default now()
 );
 
-create table if not exists public.products (
+create table public.products (
   id uuid primary key default gen_random_uuid(),
   seller_id uuid references public.users(id) on delete cascade,
   title text not null,
@@ -57,7 +69,7 @@ create table if not exists public.products (
   updated_at timestamptz default now()
 );
 
-create table if not exists public.orders (
+create table public.orders (
   id uuid primary key default gen_random_uuid(),
   buyer_id uuid references public.users(id) on delete set null,
   total numeric default 0,
@@ -67,7 +79,7 @@ create table if not exists public.orders (
   created_at timestamptz default now()
 );
 
-create table if not exists public.order_items (
+create table public.order_items (
   id uuid primary key default gen_random_uuid(),
   order_id uuid references public.orders(id) on delete cascade,
   product_id uuid references public.products(id) on delete set null,
@@ -75,7 +87,7 @@ create table if not exists public.order_items (
   price numeric default 0
 );
 
-create table if not exists public.messages (
+create table public.messages (
   id uuid primary key default gen_random_uuid(),
   product_id uuid references public.products(id) on delete cascade,
   sender_id uuid references public.users(id) on delete set null,
@@ -84,7 +96,7 @@ create table if not exists public.messages (
   created_at timestamptz default now()
 );
 
-create table if not exists public.reviews (
+create table public.reviews (
   id uuid primary key default gen_random_uuid(),
   product_id uuid references public.products(id) on delete cascade,
   user_id uuid references public.users(id) on delete set null,
@@ -93,7 +105,7 @@ create table if not exists public.reviews (
   created_at timestamptz default now()
 );
 
-create table if not exists public.seller_plans (
+create table public.seller_plans (
   id uuid primary key default gen_random_uuid(),
   user_id uuid references public.users(id) on delete cascade,
   plan_name text,
@@ -101,6 +113,14 @@ create table if not exists public.seller_plans (
   status text default 'active',
   created_at timestamptz default now(),
   expires_at timestamptz
+);
+
+create table public.rewards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.users(id) on delete cascade,
+  badge_name text,
+  points int default 0,
+  created_at timestamptz default now()
 );
 
 create or replace function public.handle_new_user()
@@ -111,19 +131,27 @@ begin
   on conflict (auth_id) do update set email=excluded.email, phone=excluded.phone;
   return new;
 end;
-$$ language plpgsql security definer;
+$$ language plpgsql security definer set search_path = public;
 
 drop trigger if exists on_auth_user_created on auth.users;
-create trigger on_auth_user_created
-after insert on auth.users
-for each row execute function public.handle_new_user();
+create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
 
--- Storage buckets
+insert into public.users(auth_id,email,phone,role,full_name,user_uid)
+select id,email,phone,'user',coalesce(raw_user_meta_data->>'full_name',''),'HP-' || upper(substr(replace(id::text,'-',''),1,8)) from auth.users
+on conflict (auth_id) do nothing;
+
 insert into storage.buckets (id, name, public) values ('product-images','product-images',true) on conflict (id) do nothing;
 insert into storage.buckets (id, name, public) values ('profile-images','profile-images',true) on conflict (id) do nothing;
 insert into storage.buckets (id, name, public) values ('verification-docs','verification-docs',false) on conflict (id) do nothing;
 
--- Enable RLS
+grant usage on schema public to anon, authenticated, service_role;
+grant all on all tables in schema public to anon, authenticated, service_role;
+grant all on all sequences in schema public to anon, authenticated, service_role;
+grant execute on all functions in schema public to anon, authenticated, service_role;
+alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema public grant execute on functions to anon, authenticated, service_role;
+
 alter table public.users enable row level security;
 alter table public.sellers enable row level security;
 alter table public.products enable row level security;
@@ -132,69 +160,53 @@ alter table public.order_items enable row level security;
 alter table public.messages enable row level security;
 alter table public.reviews enable row level security;
 alter table public.seller_plans enable row level security;
-
--- Helper: current app user id
-create or replace function public.is_admin()
-returns boolean language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.users where auth_id = auth.uid() and role = 'admin');
-$$;
+alter table public.rewards enable row level security;
 
 create or replace function public.current_profile_id()
-returns uuid language sql stable as $$
+returns uuid language sql stable security definer set search_path=public as $$
   select id from public.users where auth_id = auth.uid() limit 1;
 $$;
 
--- Drop old policies for clean rerun
-DO $$ DECLARE r record; BEGIN
-  FOR r IN (SELECT schemaname, tablename, policyname FROM pg_policies WHERE schemaname='public' AND tablename IN ('users','sellers','products','orders','order_items','messages','reviews','seller_plans')) LOOP
-    EXECUTE format('DROP POLICY IF EXISTS %I ON %I.%I', r.policyname, r.schemaname, r.tablename);
-  END LOOP;
-END $$;
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path=public as $$
+  select exists (select 1 from public.users where auth_id = auth.uid() and role = 'admin');
+$$;
 
--- Users
-create policy "Users can read own profile" on public.users for select using (auth_id = auth.uid() or public.is_admin());
-create policy "Users can update own profile" on public.users for update using (auth_id = auth.uid()) with check (auth_id = auth.uid());
-create policy "Admins can manage users" on public.users for all using (public.is_admin());
+create policy users_select on public.users for select using (auth_id=auth.uid() or public.is_admin());
+create policy users_insert on public.users for insert with check (auth_id=auth.uid());
+create policy users_update on public.users for update using (auth_id=auth.uid() or public.is_admin()) with check (auth_id=auth.uid() or public.is_admin());
 
--- Sellers
-create policy "Users can submit seller verification" on public.sellers for insert with check (user_id = public.current_profile_id());
-create policy "Users can read own seller verification" on public.sellers for select using (user_id = public.current_profile_id() or status='approved' or public.is_admin());
-create policy "Users can update own pending seller verification" on public.sellers for update using (user_id = public.current_profile_id());
-create policy "Admins can manage sellers" on public.sellers for all using (public.is_admin());
+create policy sellers_insert on public.sellers for insert with check (user_id=public.current_profile_id());
+create policy sellers_select on public.sellers for select using (user_id=public.current_profile_id() or status='approved' or public.is_admin());
+create policy sellers_update on public.sellers for update using (user_id=public.current_profile_id() or public.is_admin()) with check (user_id=public.current_profile_id() or public.is_admin());
 
--- Products
-create policy "Anyone can read approved products" on public.products for select using (status='approved' or seller_id=public.current_profile_id() or public.is_admin());
-create policy "Sellers can create products" on public.products for insert with check (seller_id=public.current_profile_id());
-create policy "Sellers can update own products" on public.products for update using (seller_id=public.current_profile_id());
-create policy "Admins can manage products" on public.products for all using (public.is_admin());
+create policy products_select on public.products for select using (status='approved' or seller_id=public.current_profile_id() or public.is_admin());
+create policy products_insert on public.products for insert with check (seller_id=public.current_profile_id());
+create policy products_update on public.products for update using (seller_id=public.current_profile_id() or public.is_admin()) with check (seller_id=public.current_profile_id() or public.is_admin());
 
--- Orders
-create policy "Buyers can create orders" on public.orders for insert with check (buyer_id=public.current_profile_id());
-create policy "Buyers can read own orders" on public.orders for select using (buyer_id=public.current_profile_id() or public.is_admin());
-create policy "Admins can manage orders" on public.orders for all using (public.is_admin());
-create policy "Order items insert by logged in" on public.order_items for insert with check (auth.uid() is not null);
-create policy "Order items read by logged in" on public.order_items for select using (auth.uid() is not null);
+create policy orders_insert on public.orders for insert with check (buyer_id=public.current_profile_id());
+create policy orders_select on public.orders for select using (buyer_id=public.current_profile_id() or public.is_admin());
+create policy order_items_insert on public.order_items for insert with check (auth.uid() is not null);
+create policy order_items_select on public.order_items for select using (auth.uid() is not null or public.is_admin());
 
--- Messages
-create policy "Users can send messages" on public.messages for insert with check (sender_id=public.current_profile_id());
-create policy "Users can read own messages" on public.messages for select using (sender_id=public.current_profile_id() or receiver_id=public.current_profile_id() or public.is_admin());
+create policy messages_insert on public.messages for insert with check (sender_id=public.current_profile_id());
+create policy messages_select on public.messages for select using (sender_id=public.current_profile_id() or receiver_id=public.current_profile_id() or public.is_admin());
 
--- Reviews
-create policy "Anyone can read reviews" on public.reviews for select using (true);
-create policy "Logged users can create reviews" on public.reviews for insert with check (user_id=public.current_profile_id());
+create policy reviews_select on public.reviews for select using (true);
+create policy reviews_insert on public.reviews for insert with check (user_id=public.current_profile_id());
 
--- Plans
-create policy "Users can read own plans" on public.seller_plans for select using (user_id=public.current_profile_id() or public.is_admin());
-create policy "Users can create own plans" on public.seller_plans for insert with check (user_id=public.current_profile_id());
+create policy plans_select on public.seller_plans for select using (user_id=public.current_profile_id() or public.is_admin());
+create policy plans_insert on public.seller_plans for insert with check (user_id=public.current_profile_id());
+create policy rewards_select on public.rewards for select using (user_id=public.current_profile_id() or public.is_admin());
+create policy rewards_insert on public.rewards for insert with check (user_id=public.current_profile_id() or public.is_admin());
 
--- Storage policies
-DO $$ DECLARE r record; BEGIN
-  FOR r IN (SELECT policyname FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND policyname LIKE 'HP %') LOOP
-    EXECUTE format('DROP POLICY IF EXISTS %I ON storage.objects', r.policyname);
-  END LOOP;
-END $$;
-create policy "HP public product images read" on storage.objects for select using (bucket_id in ('product-images','profile-images'));
-create policy "HP users upload product images" on storage.objects for insert with check (bucket_id in ('product-images','profile-images') and auth.uid() is not null);
-create policy "HP users update own images" on storage.objects for update using (bucket_id in ('product-images','profile-images') and auth.uid() is not null);
-create policy "HP private docs owner upload" on storage.objects for insert with check (bucket_id='verification-docs' and auth.uid() is not null);
-create policy "HP private docs owner read" on storage.objects for select using (bucket_id='verification-docs' and auth.uid() is not null);
+do $$ declare r record; begin
+  for r in (select policyname from pg_policies where schemaname='storage' and tablename='objects' and policyname like 'hp_%') loop
+    execute format('drop policy if exists %I on storage.objects', r.policyname);
+  end loop;
+end $$;
+create policy hp_public_images_read on storage.objects for select using (bucket_id in ('product-images','profile-images'));
+create policy hp_public_images_upload on storage.objects for insert with check (bucket_id in ('product-images','profile-images') and auth.uid() is not null);
+create policy hp_public_images_update on storage.objects for update using (bucket_id in ('product-images','profile-images') and auth.uid() is not null);
+create policy hp_private_docs_upload on storage.objects for insert with check (bucket_id='verification-docs' and auth.uid() is not null);
+create policy hp_private_docs_read on storage.objects for select using ((bucket_id='verification-docs' and auth.uid() is not null) or public.is_admin());

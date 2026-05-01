@@ -1,66 +1,46 @@
-# Harvester Parts — Go Live Final Build
-
-This is a clean production MVP for Harvester Parts.
+# Harvester Parts — Production Fix
 
 ## Upload
-Upload all files in this folder to GitHub Pages. No subfolders are required.
+Upload/replace these files in GitHub Pages.
 
-## Required steps before launch
-
-### 1. Add public keys
-Open `config.js` and replace:
-- `YOUR_SUPABASE_URL`
-- `YOUR_SUPABASE_ANON_KEY`
-- `YOUR_RAZORPAY_KEY_ID`
-- `YOUR_ADMIN_EMAIL`
+## Keys
+Edit `config.js` only:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `RAZORPAY_KEY_ID`
+- `ADMIN_EMAIL`
 - `WHATSAPP_NUMBER`
 
-Never add Supabase service_role key in frontend files.
-
-### 2. Run SQL once
+## SQL REQUIRED
 Run `final-production.sql` once in Supabase SQL Editor.
 
-This creates:
-- users / profiles
-- sellers verification
-- products
-- orders + order items
-- messages
-- reviews
-- seller plans
+This is a clean production setup for the Harvester Parts app tables. It fixes:
+- public schema permission denied
+- login/create account confusion
+- profile update permissions
+- admin role access
+- seller verification tables
+- product posting tables
+- orders/cart tables
+- messages/reviews/rewards/badges tables
 - storage buckets and policies
-- auth trigger for automatic profile creation
 
-### 3. Set yourself as admin
-After your account is created, run:
+After SQL, make your account admin:
 
 ```sql
-update public.users
-set role = 'admin'
-where email = 'YOUR_ADMIN_EMAIL';
+update public.users set role='admin' where email='YOUR_EMAIL_HERE';
 ```
 
-### 4. Supabase settings
-Enable Authentication with email/password.
-Buckets are created by SQL:
-- product-images public
-- profile-images public
-- verification-docs private
+## Go-live test order
+1. Create/login account
+2. Save profile and profile photo
+3. Run admin SQL above
+4. Open Admin panel
+5. Submit seller verification from another account
+6. Approve seller from admin
+7. Seller posts product
+8. Admin approves product
+9. Buyer adds spare part to cart / sends enquiry for machine
 
-### 5. Razorpay
-Add your Razorpay Key ID in `config.js`.
-Important: this frontend-only version opens Razorpay Checkout and stores paid order after success callback. For bank-grade payment verification, add a small server/edge function later to verify Razorpay signatures.
-
-## No fake catalog
-This build shows only approved products from Supabase. At launch, sellers must post listings and admin must approve them.
-
-## How users use it
-1. Create account / login
-2. Become seller and submit verification
-3. Admin approves seller
-4. Seller posts product
-5. Admin approves product
-6. Buyers browse, add spare parts to cart, checkout, or send enquiry for machinery
-
-## SQL required?
-Yes, for this build: run `final-production.sql` once.
+## Notes
+No fake catalog is included. Marketplace shows live approved products only.
