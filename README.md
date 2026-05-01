@@ -1,54 +1,66 @@
-# Harvester Parts — Fresh Complete Marketplace
+# Harvester Parts — Go Live Final Build
 
-Ready-to-publish flat frontend. Upload all files to your GitHub repo root. No build step required.
+This is a clean production MVP for Harvester Parts.
 
-## What to edit
-Open `config.js` and add:
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `RAZORPAY_KEY_ID`
+## Upload
+Upload all files in this folder to GitHub Pages. No subfolders are required.
+
+## Required steps before launch
+
+### 1. Add public keys
+Open `config.js` and replace:
+- `YOUR_SUPABASE_URL`
+- `YOUR_SUPABASE_ANON_KEY`
+- `YOUR_RAZORPAY_KEY_ID`
+- `YOUR_ADMIN_EMAIL`
 - `WHATSAPP_NUMBER`
 
-Never add Supabase service role key to frontend.
+Never add Supabase service_role key in frontend files.
 
-## Supabase
-Run `supabase-schema.sql` in Supabase SQL Editor. Enable:
-- Auth: email + phone OTP
-- Storage bucket: `product-images`
-- Realtime for `chat_messages`
+### 2. Run SQL once
+Run `final-production.sql` once in Supabase SQL Editor.
 
-## Included
-- Amazon-style marketplace and cart
-- OLX-style enquiry + WhatsApp + chat UI
-- Product carousel and product detail pages
-- Seller verification forms
-- Machine selector
-- Admin dashboard mock/structure
-- Plans ₹999–₹15,999
-- Rewards and custom badges
-- AI assistant UI
-- Language popup with Indian and global languages
-- PWA files
+This creates:
+- users / profiles
+- sellers verification
+- products
+- orders + order items
+- messages
+- reviews
+- seller plans
+- storage buckets and policies
+- auth trigger for automatic profile creation
 
-This is frontend-complete with Supabase/Razorpay hooks. Payment verification should be secured with a backend/edge function before taking real money.
+### 3. Set yourself as admin
+After your account is created, run:
 
-## vNext Full Systems Upgrade
-SQL required: YES. Run `supabase-update-full-systems.sql` once in Supabase SQL Editor.
-
-What this upgrade adds:
-- Account profile page with photo upload preview
-- Admin panel access protection
-- Seller dashboard and local listing management
-- Seller verification form
-- Cart quantity/remove + checkout
-- Razorpay-ready checkout flow
-- Buyer/seller chat demo with Supabase-ready SQL tables
-- Reviews, reports, orders, reward events and seller plans tables
-
-After SQL:
-1. Create Storage buckets: `product-images`, `profile-images`, `verification-docs`.
-2. Keep `product-images` and `profile-images` public. Keep `verification-docs` private.
-3. To make yourself admin:
 ```sql
-update public.users set role = 'Admin' where email = 'YOUR_EMAIL_HERE';
+update public.users
+set role = 'admin'
+where email = 'YOUR_ADMIN_EMAIL';
 ```
+
+### 4. Supabase settings
+Enable Authentication with email/password.
+Buckets are created by SQL:
+- product-images public
+- profile-images public
+- verification-docs private
+
+### 5. Razorpay
+Add your Razorpay Key ID in `config.js`.
+Important: this frontend-only version opens Razorpay Checkout and stores paid order after success callback. For bank-grade payment verification, add a small server/edge function later to verify Razorpay signatures.
+
+## No fake catalog
+This build shows only approved products from Supabase. At launch, sellers must post listings and admin must approve them.
+
+## How users use it
+1. Create account / login
+2. Become seller and submit verification
+3. Admin approves seller
+4. Seller posts product
+5. Admin approves product
+6. Buyers browse, add spare parts to cart, checkout, or send enquiry for machinery
+
+## SQL required?
+Yes, for this build: run `final-production.sql` once.

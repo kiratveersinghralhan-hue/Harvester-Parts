@@ -3,94 +3,45 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <title>Harvester Parts — Premium Agri Marketplace</title>
-  <meta name="description" content="Buy and sell tractors, harvesters, implements, smart farming machines and genuine spare parts with verified sellers." />
-  <meta name="theme-color" content="#f6f2e9" />
+  <title>Harvester Parts — Agricultural Machinery & Spare Parts Marketplace</title>
+  <meta name="description" content="Harvester Parts is a verified agri marketplace for tractors, harvesters, implements, smart farming machinery and spare parts." />
+  <meta name="theme-color" content="#f7f2e8" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="preconnect" href="https://images.unsplash.com" />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
   <link rel="stylesheet" href="styles.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script defer src="config.js"></script>
-  <script defer src="data.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
-  <div id="intro" class="intro" aria-hidden="true">
-    <div class="intro-minimal">
-      <span class="intro-line"></span>
-      <div class="intro-mark"><span>HP</span></div>
-      <p>Harvester Parts</p>
-      <small>Verified agricultural marketplace</small>
-      <div class="intro-progress"><i></i></div>
-    </div>
-  </div>
-
-  <div id="languageModal" class="modal active" role="dialog" aria-modal="true">
-    <div class="modal-card language-card">
-      <div class="mini-logo">HP</div>
-      <p class="eyebrow">Choose your experience</p>
-      <h1>Premium agri marketplace for every farmer, dealer and buyer.</h1>
-      <div id="languageGrid" class="language-grid"></div>
-      <button class="btn dark full" id="continueLanguage">Continue</button>
+  <div id="intro" class="intro">
+    <div class="intro-card">
+      <span class="intro-line"></span><span class="intro-logo">HP</span>
+      <b>Harvester Parts</b><small>Verified agri commerce</small>
     </div>
   </div>
 
   <header class="topbar">
-    <a class="brand" href="#home" aria-label="Harvester Parts home">
-      <span class="brand-mark">HP</span>
-      <span><b>Harvester</b><em>Parts</em></span>
-    </a>
-    <nav class="desktop-nav" aria-label="Main navigation">
-      <a href="#marketplace">Marketplace</a>
-      <a href="#selector">Machine Selector</a>
-      <a href="#plans">Plans</a>
-      <a href="#sell">Sell</a>
-      <a href="#admin">Admin</a>
-    </nav>
-    <div class="top-actions">
-      <button class="ghost" id="languageBtn">Language</button>
-      <button class="ghost" id="loginBtn">Login</button>
-      <button class="btn small" data-route="sell">Sell Now</button>
-      <button class="menu-btn" id="menuBtn" aria-label="Open menu"><span></span><span></span></button>
-    </div>
+    <a href="#home" class="brand" aria-label="Harvester Parts home"><span class="brand-mark">HP</span><span><b>Harvester</b><em>Parts</em></span></a>
+    <nav class="nav"><a href="#marketplace">Marketplace</a><a href="#sell">Sell</a><a href="#plans">Plans</a><a href="#policy">Policies</a><a href="#admin">Admin</a></nav>
+    <div class="actions"><button id="accountBtn" class="ghost">Login</button><button data-route="sell" class="btn small">Sell Now</button><button id="menuBtn" class="menu" aria-label="Open menu">☰</button></div>
   </header>
 
-  <aside id="smartMenu" class="smart-menu" aria-hidden="true">
-    <div class="menu-scrim" data-close="menu"></div>
-    <div class="menu-panel">
-      <div class="menu-head">
-        <div class="brand compact"><span class="brand-mark">HP</span><span><b>Harvester</b><em>Parts</em></span></div>
-        <button class="round" data-close="menu">×</button>
+  <aside id="drawer" class="drawer" aria-hidden="true">
+    <button class="drawer-bg" data-close></button>
+    <section class="drawer-panel">
+      <div class="drawer-head"><a href="#home" class="brand"><span class="brand-mark">HP</span><span><b>Harvester</b><em>Parts</em></span></a><button class="circle" data-close>×</button></div>
+      <div id="drawerAccount" class="drawer-account"></div>
+      <div class="drawer-grid">
+        <a href="#marketplace">Browse Marketplace</a><a href="#sell">Sell Product</a><a href="#account">My Account</a><a href="#cart">Cart</a><a href="#orders">Orders</a><a href="#messages">Messages</a><a href="#plans">Seller Plans</a><a href="#policy">Policies</a>
       </div>
-      <div id="accountBlock" class="account-block"></div>
-      <div class="menu-grid">
-        <button data-route="marketplace">Browse Marketplace</button>
-        <button data-route="sell">Sell Product</button>
-        <button data-route="selector">Machine Selector</button>
-        <button data-route="rewards">Rewards</button>
-      </div>
-      <p class="menu-title">Categories</p>
-      <div class="menu-cats" id="menuCats"></div>
-      <p class="menu-title">Quick Tools</p>
-      <div class="menu-links">
-        <a href="#cart">Cart & Orders</a><a href="#chat">Messages</a><a href="#plans">Upgrade Plan</a><a href="#admin">Admin Panel</a>
-      </div>
-    </div>
+      <div class="drawer-note">Verified sellers only. Machines use enquiry flow, spare parts use cart checkout.</div>
+    </section>
   </aside>
 
   <main id="app" class="app"></main>
-
-  <button id="cartBubble" class="cart-bubble" data-route="cart">Cart <b id="cartCount">0</b></button>
-  <button id="scrollTop" class="scroll-top" aria-label="Scroll to top">↑</button>
-  <button id="aiFab" class="ai-fab">AI</button>
-  <section id="aiPanel" class="ai-panel" aria-hidden="true">
-    <div class="ai-head"><b>Agri AI Assistant</b><button class="round" id="closeAi">×</button></div>
-    <div id="aiLog" class="ai-log"></div>
-    <form id="aiForm" class="ai-form"><input id="aiInput" placeholder="Ask: tractor under 5 lakh in Punjab..." /><button>Send</button></form>
-  </section>
-
+  <button id="cartBubble" class="cart-bubble">Cart <b id="cartCount">0</b></button>
+  <button id="scrollTop" class="scroll-top">↑</button>
   <div id="toast" class="toast"></div>
 </body>
 </html>
