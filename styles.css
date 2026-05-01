@@ -40,3 +40,10 @@ details{background:#fff;border:1px solid var(--line);border-radius:18px;padding:
 .doc-viewer-card{width:min(760px,96vw);max-height:88vh;overflow:auto;background:#fffaf0;border:1px solid var(--line);border-radius:28px;padding:18px;box-shadow:var(--shadow);position:relative}
 .doc-viewer-card img{width:100%;height:auto;border-radius:18px;border:1px solid var(--line);background:#fff;display:block;margin:10px 0}
 .doc-viewer-close{position:absolute;right:14px;top:14px;border:1px solid var(--line);background:#fff;border-radius:999px;width:42px;height:42px;font-size:22px}
+
+/* Factory spare parts catalog */
+.product.local-product img,.gallery img{object-fit:contain;background:#fff}
+.product.local-product{background:linear-gradient(180deg,#fff,#fffaf0)}
+.product.local-product .tag:first-child{background:#fff7d7;border-color:#d8bd72;color:#644600;font-weight:900}
+.gallery{background:#fff;border-radius:30px;padding:14px;border:1px solid var(--line)}
+.buybox a.btn{display:block;text-align:center}
