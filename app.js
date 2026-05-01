@@ -26,7 +26,23 @@ function updateCart(){const c=$('#cartCount'); if(c)c.textContent=S.cart.reduce(
 async function init(){setTimeout(()=>$('#intro')?.classList.add('hide'),700); bindGlobal(); await auth(); await loadProducts(); await loadCounts(); route(); if('serviceWorker'in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{})}
 function bindGlobal(){ $('#menuBtn').onclick=openDrawer; $$('[data-close]').forEach(b=>b.onclick=closeDrawer); $('#accountBtn').onclick=()=>S.user?location.hash='account':authModal(); $('#cartBubble').onclick=()=>location.hash='cart'; $('#scrollTop').onclick=()=>scrollTo({top:0,behavior:'smooth'}); document.body.onclick=e=>{let b=e.target.closest('[data-route]'); if(b){e.preventDefault(); location.hash=b.dataset.route}}; addEventListener('hashchange',route); addEventListener('scroll',()=>$('#scrollTop')?.classList.toggle('show',scrollY>500),{passive:true}); }
 async function auth(){ if(!sb)return; const {data}=await sb.auth.getSession(); S.session=data.session; S.user=data.session?.user||null; if(S.user) await loadProfile(); watchRealtime(); sb.auth.onAuthStateChange(async(_,session)=>{S.session=session;S.user=session?.user||null;if(S.user)await loadProfile();else{S.profile=null;S.seller=null} watchRealtime(); updateHeader(); route();}); }
-async function loadProfile(){ if(!sb||!S.user)return; let {data,error}=await sb.from('users').select('*').eq('auth_id',S.user.id).maybeSingle(); if(error) console.warn(error); if(!data){ await sb.from('users').insert({auth_id:S.user.id,email:S.user.email,phone:S.user.phone,full_name:S.user.user_metadata?.full_name||'',user_uid:'HP-'+S.user.id.replaceAll('-','').slice(0,8).toUpperCase()}); ({data}=await sb.from('users').select('*').eq('auth_id',S.user.id).maybeSingle()); } S.profile=data; await loadSeller(); await loadUnread(); }
+async function loadProfile(){
+  if(!sb||!S.user)return;
+  let {data,error}=await sb.from('users').select('*').eq('auth_id',S.user.id).maybeSingle();
+  if(error) console.warn(error);
+  if(!data){
+    await sb.from('users').insert({auth_id:S.user.id,email:S.user.email,phone:S.user.phone,full_name:S.user.user_metadata?.full_name||'',user_uid:'HP-'+S.user.id.replaceAll('-','').slice(0,8).toUpperCase()});
+    ({data}=await sb.from('users').select('*').eq('auth_id',S.user.id).maybeSingle());
+  }
+  const adminEmail=String(cfg.ADMIN_EMAIL||'kiratveersinghralhan@gmail.com').toLowerCase();
+  if(S.user.email && S.user.email.toLowerCase()===adminEmail && data?.role!=='admin'){
+    await sb.from('users').update({role:'admin'}).eq('auth_id',S.user.id);
+    ({data}=await sb.from('users').select('*').eq('auth_id',S.user.id).maybeSingle());
+  }
+  S.profile=data;
+  await loadSeller();
+  await loadUnread();
+}
 async function loadSeller(){ if(!sb||!S.profile){S.seller=null;return} const {data}=await sb.from('sellers').select('*').eq('user_id',authId()).maybeSingle(); S.seller=data||null; }
 async function loadProducts(){ if(!sb){S.products=[];return} const {data,error}=await sb.from('products').select('*').eq('status','approved').order('created_at',{ascending:false}); if(error){console.warn(error); S.products=[]} else S.products=data||[]; }
 async function loadCounts(){ if(!sb){S.counts={products:0,sellers:0,districts:0};return} const [p,s,d]=await Promise.all([sb.from('products').select('id',{count:'exact',head:true}).eq('status','approved'),sb.from('sellers').select('id',{count:'exact',head:true}).eq('status','approved'),sb.from('products').select('district').eq('status','approved')]); S.counts={products:p.count||0,sellers:s.count||0,districts:new Set((d.data||[]).map(x=>x.district).filter(Boolean)).size}; }
@@ -153,13 +169,11 @@ async function submitSeller(e){
     if(ai[0]==='provisional') row.status='provisional';
     row.ai_review_note=ai[1];
     let {error}=await sb.from('sellers').upsert(row,{onConflict:'user_id'});
-    if(error)toast(error.message);
-    else{
-      toast(row.status==='provisional'?'AI provisional verification submitted':'Verification submitted for review');
-      await notifyAdmin('Seller verification request',`${row.business_name||S.user.email} submitted verification. AI status: ${ai[1]}`);
-      await loadSeller();
-      route();
-    }
+    if(error){ console.error('Seller verification error:', error, row); toast(error.message||'Seller verification failed. Run database-clean-reset-full.sql once.'); return; }
+    toast(row.status==='provisional'?'AI provisional verification submitted':'Verification submitted for review');
+    await notifyAdmin('Seller verification request',`${row.business_name||S.user.email} submitted verification. AI status: ${ai[1]}`);
+    await loadSeller();
+    route();
   })
 }
 async function submitProduct(e){
