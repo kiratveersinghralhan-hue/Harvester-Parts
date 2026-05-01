@@ -47,3 +47,7 @@ details{background:#fff;border:1px solid var(--line);border-radius:18px;padding:
 .product.local-product .tag:first-child{background:#fff7d7;border-color:#d8bd72;color:#644600;font-weight:900}
 .gallery{background:#fff;border-radius:30px;padding:14px;border:1px solid var(--line)}
 .buybox a.btn{display:block;text-align:center}
+/* root-ready hotfix v41 */
+.celeb-card{position:relative;z-index:2;width:min(520px,calc(100% - 36px));text-align:center;background:rgba(255,252,244,.96);border:1px solid var(--line);border-radius:38px;padding:36px;box-shadow:0 30px 90px rgba(0,0,0,.28);animation:messageIn .65s cubic-bezier(.2,.8,.2,1)}
+.celeb-card h2{font-size:clamp(38px,8vw,76px);line-height:.95;margin:10px 0}.celeb-close{position:absolute;right:18px;top:18px;z-index:3;width:48px;height:48px;border-radius:999px;border:1px solid var(--line);background:#fff;font-size:26px}.loading-overlay{pointer-events:none}.loading-overlay.show{pointer-events:auto}.app:empty:before{content:'Loading Harvester Parts...';display:block;padding:70px 22px;text-align:center;color:#5c564c;font-weight:800}.form-card label{display:block}.form-card label input{margin-top:8px}.product .btn{margin:0 14px 14px}.drawer.open{display:block}
+@media(max-width:850px){.hero{min-height:auto!important}.hero-img{display:none}.stats{grid-template-columns:1fr!important}.app{padding-bottom:80px}.topbar{position:sticky;top:12px}.celeb-card{padding:28px 20px}}

@@ -20,11 +20,11 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Harvester Parts","url":"https://harvesterparts.in/","description":"Verified agricultural machinery and spare parts marketplace."}</script>
   <meta name="theme-color" content="#f7f2e8" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=41" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script defer src="config.js"></script>
-  <script defer src="app.js"></script>
+  <script defer src="config.js?v=41"></script>
+  <script defer src="app.js?v=41"></script>
 </head>
 <body>
   <div id="intro" class="intro">
@@ -57,5 +57,6 @@
   <button id="scrollTop" class="scroll-top">↑</button>
   <div id="toast" class="toast"></div>
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loader-card"><span class="loader-ring"></span><b id="loadingText">Processing...</b><small>Please wait, this may take a few seconds.</small></div></div>
+<script>window.__HP_ROOT_READY=true;if('caches'in window){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).catch(()=>{});}</script>
 </body>
 </html>
