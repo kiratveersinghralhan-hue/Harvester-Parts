@@ -1,46 +1,44 @@
-# Harvester Parts — Production Fix
+# Harvester Parts — Production v19
 
-## Upload
-Upload/replace these files in GitHub Pages.
+GitHub-ready one-folder website. No fake catalog: marketplace shows live approved products from Supabase only.
 
-## Keys
-Edit `config.js` only:
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `RAZORPAY_KEY_ID`
-- `ADMIN_EMAIL`
-- `WHATSAPP_NUMBER`
+## Setup
+1. Upload all files to your GitHub Pages repo.
+2. Edit `config.js` and add:
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+   - `RAZORPAY_KEY_ID`
+   - `ADMIN_EMAIL`
+3. Run `final-production.sql` once in Supabase SQL Editor.
+4. Create/login with your admin email, then run:
+   `update public.users set role='admin' where email='YOUR_EMAIL@example.com';`
 
-## SQL REQUIRED
-Run `final-production.sql` once in Supabase SQL Editor.
+## SQL required
+Yes. Run `final-production.sql` once. It is a clean production setup and resets public marketplace tables.
 
-This is a clean production setup for the Harvester Parts app tables. It fixes:
-- public schema permission denied
-- login/create account confusion
-- profile update permissions
-- admin role access
-- seller verification tables
-- product posting tables
-- orders/cart tables
-- messages/reviews/rewards/badges tables
-- storage buckets and policies
+## Included systems
+- Auth + user profiles
+- Admin-only panel
+- Seller verification approval
+- Product approval workflow
+- Live marketplace, no fake catalog
+- Seller dashboard
+- Cart + checkout
+- Razorpay frontend payment callback
+- Optional Razorpay secure Edge Function sample
+- Orders
+- Reviews
+- Reports / safety
+- Messages + realtime notifications
+- Rewards / badges page
+- Dealer storefront page
+- PWA/SEO basics
 
-After SQL, make your account admin:
+## Optional secure Razorpay verification
+Frontend-only websites cannot safely store Razorpay secret keys. For production-level verification, deploy `razorpay-edge-function.js` as a Supabase Edge Function and set `PAYMENT_VERIFY_URL` in `config.js`.
 
-```sql
-update public.users set role='admin' where email='YOUR_EMAIL_HERE';
-```
-
-## Go-live test order
-1. Create/login account
-2. Save profile and profile photo
-3. Run admin SQL above
-4. Open Admin panel
-5. Submit seller verification from another account
-6. Approve seller from admin
-7. Seller posts product
-8. Admin approves product
-9. Buyer adds spare part to cart / sends enquiry for machine
-
-## Notes
-No fake catalog is included. Marketplace shows live approved products only.
+## Storage buckets
+The SQL creates:
+- product-images (public)
+- profile-images (public)
+- verification-docs (private)
