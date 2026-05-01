@@ -1,10 +1,16 @@
-# Harvester Parts
+Harvester Parts v35 final document + approval fix
 
-## Final setup
-1. Upload all files directly to your GitHub repo root.
-2. Check `config.js` and add/replace public keys if needed.
-3. In Supabase SQL Editor, run `database-clean-reset-full.sql` once.
-4. Login with `kiratveersinghralhan@gmail.com`; this email is automatically admin.
+SQL required: YES if you want a clean database. Run database-clean-reset-full.sql once in Supabase SQL editor.
 
-## Important
-`database-clean-reset-full.sql` deletes old public tables/data and creates a clean fresh production schema.
+This version fixes:
+- Admin document buttons binding
+- Secure signed Aadhaar/shop document opening
+- Admin approval/reject buttons with visible errors
+- Seller approval updates user role and sends notification
+- Clean storage buckets and RLS policies in SQL
+
+After SQL:
+1. Add keys in config.js
+2. Upload files to GitHub root
+3. Logout/login again
+4. Test seller verification and admin approval

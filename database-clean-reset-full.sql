@@ -1,315 +1,280 @@
--- HARVESTER PARTS — FULL CLEAN PRODUCTION DATABASE RESET
--- WARNING: This deletes all PUBLIC tables/data and rebuilds the marketplace schema fresh.
--- Auth users remain in Supabase Auth. Existing auth users are re-linked into public.users.
--- Admin email is already set to: kiratveersinghralhan@gmail.com
+-- Harvester Parts clean reset + working RLS + storage buckets
+-- WARNING: Deletes all public tables/data. Run once for fresh setup.
 
-DROP SCHEMA IF EXISTS public CASCADE;
-CREATE SCHEMA public;
+drop schema public cascade;
+create schema public;
+grant usage on schema public to postgres, anon, authenticated, service_role;
+grant all on schema public to postgres, service_role;
+create extension if not exists "pgcrypto";
 
-GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
-GRANT ALL ON SCHEMA public TO postgres, service_role;
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
-CREATE TABLE public.users (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  auth_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT UNIQUE,
-  phone TEXT,
-  role TEXT DEFAULT 'user' CHECK (role IN ('user','buyer','seller','dealer','admin')),
-  full_name TEXT,
-  gender TEXT,
-  profile_image TEXT,
-  user_uid TEXT UNIQUE,
-  badge_title TEXT DEFAULT 'New Member',
-  badge_color TEXT DEFAULT 'green',
-  profile_completed BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.users (
+  id uuid primary key default gen_random_uuid(),
+  auth_id uuid unique references auth.users(id) on delete cascade,
+  email text unique,
+  phone text,
+  role text default 'user' check (role in ('user','buyer','seller','dealer','admin')),
+  full_name text,
+  gender text,
+  profile_image text,
+  user_uid text unique,
+  badge_title text default 'New Member',
+  badge_color text default 'green',
+  profile_completed boolean default false,
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.sellers (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID UNIQUE REFERENCES public.users(auth_id) ON DELETE CASCADE,
-  business_name TEXT,
-  phone TEXT,
-  state TEXT,
-  district TEXT,
-  city TEXT,
-  address TEXT,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','provisional','approved','rejected')),
-  verification_status TEXT DEFAULT 'pending',
-  aadhaar_front TEXT,
-  aadhaar_back TEXT,
-  shop_photo TEXT,
-  ai_review_note TEXT,
-  rejection_reason TEXT,
-  approved_at TIMESTAMPTZ,
-  reviewed_by UUID,
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.sellers (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid unique references public.users(auth_id) on delete cascade,
+  business_name text,
+  phone text,
+  state text,
+  district text,
+  city text,
+  address text,
+  status text default 'pending' check (status in ('pending','provisional','approved','rejected')),
+  verification_status text default 'pending',
+  aadhaar_front text,
+  aadhaar_back text,
+  shop_photo text,
+  ai_review_note text,
+  rejection_reason text,
+  approved_at timestamptz,
+  reviewed_by uuid,
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.products (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  seller_id UUID REFERENCES public.sellers(id) ON DELETE SET NULL,
-  user_id UUID REFERENCES public.users(auth_id) ON DELETE CASCADE,
-  title TEXT NOT NULL,
-  description TEXT,
-  price NUMERIC DEFAULT 0,
-  sale_type TEXT DEFAULT 'machine' CHECK (sale_type IN ('machine','spare_part')),
-  category TEXT,
-  brand TEXT,
-  model TEXT,
-  condition TEXT,
-  year INTEGER,
-  engine_number TEXT,
-  chassis_number TEXT,
-  hours_used NUMERIC,
-  weight_kg NUMERIC DEFAULT 0,
-  state TEXT,
-  district TEXT,
-  city TEXT,
-  village TEXT,
-  image_url TEXT,
-  image_urls TEXT[],
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','provisional','approved','rejected','sold','draft')),
-  views INTEGER DEFAULT 0,
-  is_featured BOOLEAN DEFAULT false,
-  is_boosted BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.products (
+  id uuid primary key default gen_random_uuid(),
+  seller_id uuid references public.sellers(id) on delete cascade,
+  user_id uuid references public.users(auth_id) on delete cascade,
+  title text not null,
+  description text,
+  price numeric default 0,
+  category text,
+  brand text,
+  model text,
+  sale_type text default 'machine',
+  condition text,
+  engine_number text,
+  chassis_number text,
+  hours_used numeric,
+  year int,
+  weight_kg numeric default 0,
+  state text,
+  district text,
+  city text,
+  village text,
+  image_url text,
+  image_urls text[],
+  status text default 'pending' check (status in ('pending','provisional','approved','rejected','sold','draft')),
+  views int default 0,
+  is_featured boolean default false,
+  is_boosted boolean default false,
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  buyer_id UUID REFERENCES public.users(auth_id),
-  user_id UUID REFERENCES public.users(auth_id),
-  amount NUMERIC DEFAULT 0,
-  shipping_amount NUMERIC DEFAULT 0,
-  discount_amount NUMERIC DEFAULT 0,
-  status TEXT DEFAULT 'pending' CHECK (status IN ('pending','paid','failed','cancelled','shipped','delivered','refunded')),
-  payment_id TEXT,
-  razorpay_order_id TEXT,
-  tracking_id TEXT,
-  tracking_url TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.orders (
+  id uuid primary key default gen_random_uuid(),
+  buyer_id uuid references public.users(auth_id),
+  user_id uuid references public.users(auth_id),
+  amount numeric default 0,
+  shipping_amount numeric default 0,
+  discount_amount numeric default 0,
+  status text default 'pending' check (status in ('pending','paid','failed','cancelled','shipped','delivered','refunded')),
+  payment_id text,
+  razorpay_order_id text,
+  tracking_id text,
+  tracking_url text,
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.order_items (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  order_id UUID REFERENCES public.orders(id) ON DELETE CASCADE,
-  product_id UUID REFERENCES public.products(id),
-  quantity INTEGER DEFAULT 1,
-  price NUMERIC DEFAULT 0
+create table public.order_items (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid references public.orders(id) on delete cascade,
+  product_id uuid references public.products(id),
+  quantity int default 1,
+  price numeric default 0
 );
 
-CREATE TABLE public.messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  sender_id UUID REFERENCES public.users(auth_id),
-  receiver_id UUID REFERENCES public.users(auth_id),
-  product_id UUID REFERENCES public.products(id),
-  message TEXT,
-  is_read BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.messages (
+  id uuid primary key default gen_random_uuid(),
+  sender_id uuid,
+  receiver_id uuid,
+  product_id uuid,
+  message text,
+  is_read boolean default false,
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.reviews (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
-  user_id UUID REFERENCES public.users(auth_id),
-  rating INTEGER CHECK (rating BETWEEN 1 AND 5),
-  comment TEXT,
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.reviews (
+  id uuid primary key default gen_random_uuid(),
+  product_id uuid references public.products(id) on delete cascade,
+  user_id uuid references public.users(auth_id),
+  rating int check (rating between 1 and 5),
+  comment text,
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.wishlist (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES public.users(auth_id) ON DELETE CASCADE,
-  product_id UUID REFERENCES public.products(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id, product_id)
+create table public.wishlist (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.users(auth_id) on delete cascade,
+  product_id uuid references public.products(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(user_id, product_id)
 );
 
-CREATE TABLE public.notifications (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES public.users(auth_id) ON DELETE CASCADE,
-  title TEXT,
-  message TEXT,
-  type TEXT DEFAULT 'info',
-  is_read BOOLEAN DEFAULT false,
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.users(auth_id) on delete cascade,
+  title text,
+  message text,
+  type text default 'info',
+  is_read boolean default false,
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.reports (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  reporter_id UUID REFERENCES public.users(auth_id),
-  target_type TEXT,
-  target_id UUID,
-  reason TEXT,
-  status TEXT DEFAULT 'open' CHECK (status IN ('open','reviewed','resolved','closed')),
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.reports (
+  id uuid primary key default gen_random_uuid(),
+  reporter_id uuid,
+  target_type text,
+  target_id uuid,
+  reason text,
+  status text default 'open' check (status in ('open','reviewed','closed','resolved')),
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.coupons (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code TEXT UNIQUE,
-  discount_type TEXT DEFAULT 'percentage',
-  discount_value NUMERIC DEFAULT 0,
-  min_order_value NUMERIC DEFAULT 0,
-  max_discount NUMERIC DEFAULT 0,
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT now()
+create table public.coupons (
+  id uuid primary key default gen_random_uuid(),
+  code text unique,
+  discount_type text default 'percentage',
+  discount_value numeric default 0,
+  min_order_value numeric default 0,
+  max_discount numeric default 0,
+  is_active boolean default true,
+  created_at timestamptz default now()
 );
 
-CREATE TABLE public.seller_plans (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES public.users(auth_id) ON DELETE CASCADE,
-  plan_name TEXT,
-  amount NUMERIC DEFAULT 0,
-  status TEXT DEFAULT 'active',
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-
-INSERT INTO public.coupons(code, discount_type, discount_value, min_order_value, max_discount, is_active) VALUES
+insert into public.coupons(code, discount_type, discount_value, min_order_value, max_discount, is_active)
+values
 ('HP2000','percentage',3,2000,100,true),
 ('HP10000','percentage',5,10000,700,true),
 ('HP100000','percentage',15,100000,10000,true)
-ON CONFLICT (code) DO NOTHING;
+on conflict (code) do nothing;
 
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  INSERT INTO public.users(auth_id, email, phone, role, full_name, user_uid)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    NEW.phone,
-    CASE WHEN lower(NEW.email) = lower('kiratveersinghralhan@gmail.com') THEN 'admin' ELSE 'user' END,
-    COALESCE(NEW.raw_user_meta_data->>'full_name',''),
-    'HP-' || upper(substr(replace(NEW.id::text,'-',''),1,8))
+create or replace function public.handle_new_user()
+returns trigger as $$
+begin
+  insert into public.users(auth_id,email,phone,role,full_name,user_uid)
+  values (
+    new.id,
+    new.email,
+    new.phone,
+    case when lower(new.email) = lower('kiratveersinghralhan@gmail.com') then 'admin' else 'user' end,
+    coalesce(new.raw_user_meta_data->>'full_name',''),
+    'HP-' || upper(substr(replace(new.id::text,'-',''),1,8))
   )
-  ON CONFLICT (auth_id) DO UPDATE SET
-    email = EXCLUDED.email,
-    phone = EXCLUDED.phone,
-    role = CASE WHEN lower(EXCLUDED.email)=lower('kiratveersinghralhan@gmail.com') THEN 'admin' ELSE public.users.role END;
-  RETURN NEW;
-END;
-$$;
+  on conflict (auth_id) do update set email=excluded.email, phone=excluded.phone;
+  return new;
+end;
+$$ language plpgsql security definer set search_path = public;
 
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-CREATE TRIGGER on_auth_user_created
-AFTER INSERT ON auth.users
-FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users for each row execute function public.handle_new_user();
 
-INSERT INTO public.users(auth_id, email, phone, role, user_uid)
-SELECT
-  id,
-  email,
-  phone,
-  CASE WHEN lower(email)=lower('kiratveersinghralhan@gmail.com') THEN 'admin' ELSE 'user' END,
-  'HP-' || upper(substr(replace(id::text,'-',''),1,8))
-FROM auth.users
-ON CONFLICT (auth_id) DO UPDATE SET
-  email = EXCLUDED.email,
-  phone = EXCLUDED.phone,
-  role = CASE WHEN lower(EXCLUDED.email)=lower('kiratveersinghralhan@gmail.com') THEN 'admin' ELSE public.users.role END;
+insert into public.users(auth_id,email,phone,role,user_uid)
+select id,email,phone,case when lower(email)=lower('kiratveersinghralhan@gmail.com') then 'admin' else 'user' end,'HP-' || upper(substr(replace(id::text,'-',''),1,8))
+from auth.users
+on conflict (auth_id) do update set email=excluded.email, phone=excluded.phone, role=case when lower(excluded.email)=lower('kiratveersinghralhan@gmail.com') then 'admin' else public.users.role end;
 
-UPDATE public.users SET role='admin' WHERE lower(email)=lower('kiratveersinghralhan@gmail.com');
+update public.users set role='admin' where lower(email)=lower('kiratveersinghralhan@gmail.com');
 
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS boolean
-LANGUAGE sql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (SELECT 1 FROM public.users WHERE auth_id = auth.uid() AND role = 'admin');
-$$;
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+as $$ select exists(select 1 from public.users where auth_id=auth.uid() and role='admin') $$;
 
-GRANT USAGE ON SCHEMA public TO anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO authenticated;
-GRANT SELECT ON public.products TO anon;
-GRANT SELECT ON public.reviews TO anon;
-GRANT SELECT ON public.coupons TO anon;
+alter table public.users enable row level security;
+alter table public.sellers enable row level security;
+alter table public.products enable row level security;
+alter table public.orders enable row level security;
+alter table public.order_items enable row level security;
+alter table public.messages enable row level security;
+alter table public.reviews enable row level security;
+alter table public.wishlist enable row level security;
+alter table public.notifications enable row level security;
+alter table public.reports enable row level security;
+alter table public.coupons enable row level security;
 
-ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sellers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reviews ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.wishlist ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.reports ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.coupons ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.seller_plans ENABLE ROW LEVEL SECURITY;
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant select on public.products to anon;
+grant select on public.coupons to anon;
 
-CREATE POLICY users_select ON public.users FOR SELECT TO authenticated USING (auth.uid()=auth_id OR public.is_admin());
-CREATE POLICY users_insert ON public.users FOR INSERT TO authenticated WITH CHECK (auth.uid()=auth_id OR public.is_admin());
-CREATE POLICY users_update ON public.users FOR UPDATE TO authenticated USING (auth.uid()=auth_id OR public.is_admin()) WITH CHECK (auth.uid()=auth_id OR public.is_admin());
+create policy users_select on public.users for select using (auth.uid()=auth_id or public.is_admin());
+create policy users_insert on public.users for insert with check (auth.uid()=auth_id or public.is_admin());
+create policy users_update on public.users for update using (auth.uid()=auth_id or public.is_admin()) with check (auth.uid()=auth_id or public.is_admin());
 
-CREATE POLICY sellers_select ON public.sellers FOR SELECT TO authenticated USING (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY sellers_insert ON public.sellers FOR INSERT TO authenticated WITH CHECK (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY sellers_update ON public.sellers FOR UPDATE TO authenticated USING (auth.uid()=user_id OR public.is_admin()) WITH CHECK (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY sellers_delete ON public.sellers FOR DELETE TO authenticated USING (public.is_admin());
+create policy sellers_select on public.sellers for select to authenticated using (auth.uid()=user_id or public.is_admin());
+create policy sellers_insert on public.sellers for insert to authenticated with check (auth.uid()=user_id or public.is_admin());
+create policy sellers_update on public.sellers for update to authenticated using (auth.uid()=user_id or public.is_admin()) with check (auth.uid()=user_id or public.is_admin());
+create policy sellers_delete on public.sellers for delete to authenticated using (public.is_admin());
 
-CREATE POLICY products_public_select ON public.products FOR SELECT TO anon, authenticated USING (status='approved' OR auth.uid()=user_id OR public.is_admin());
-CREATE POLICY products_insert ON public.products FOR INSERT TO authenticated WITH CHECK (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY products_update ON public.products FOR UPDATE TO authenticated USING (auth.uid()=user_id OR public.is_admin()) WITH CHECK (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY products_delete ON public.products FOR DELETE TO authenticated USING (auth.uid()=user_id OR public.is_admin());
+create policy products_select on public.products for select using (status='approved' or auth.uid()=user_id or public.is_admin());
+create policy products_insert on public.products for insert to authenticated with check (auth.uid()=user_id or public.is_admin());
+create policy products_update on public.products for update to authenticated using (auth.uid()=user_id or public.is_admin()) with check (auth.uid()=user_id or public.is_admin());
+create policy products_delete on public.products for delete to authenticated using (auth.uid()=user_id or public.is_admin());
 
-CREATE POLICY orders_select ON public.orders FOR SELECT TO authenticated USING (auth.uid()=buyer_id OR auth.uid()=user_id OR public.is_admin());
-CREATE POLICY orders_insert ON public.orders FOR INSERT TO authenticated WITH CHECK (auth.uid()=buyer_id OR auth.uid()=user_id OR public.is_admin());
-CREATE POLICY orders_update ON public.orders FOR UPDATE TO authenticated USING (auth.uid()=buyer_id OR auth.uid()=user_id OR public.is_admin()) WITH CHECK (auth.uid()=buyer_id OR auth.uid()=user_id OR public.is_admin());
+create policy orders_select on public.orders for select to authenticated using (auth.uid()=buyer_id or auth.uid()=user_id or public.is_admin());
+create policy orders_insert on public.orders for insert to authenticated with check (auth.uid()=buyer_id or auth.uid()=user_id or public.is_admin());
+create policy orders_update on public.orders for update to authenticated using (auth.uid()=buyer_id or auth.uid()=user_id or public.is_admin()) with check (auth.uid()=buyer_id or auth.uid()=user_id or public.is_admin());
 
-CREATE POLICY order_items_select ON public.order_items FOR SELECT TO authenticated USING (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders o WHERE o.id=order_id AND (o.buyer_id=auth.uid() OR o.user_id=auth.uid())));
-CREATE POLICY order_items_insert ON public.order_items FOR INSERT TO authenticated WITH CHECK (public.is_admin() OR EXISTS (SELECT 1 FROM public.orders o WHERE o.id=order_id AND (o.buyer_id=auth.uid() OR o.user_id=auth.uid())));
+create policy order_items_select on public.order_items for select to authenticated using (public.is_admin() or exists(select 1 from public.orders o where o.id=order_id and (o.buyer_id=auth.uid() or o.user_id=auth.uid())));
+create policy order_items_insert on public.order_items for insert to authenticated with check (public.is_admin() or exists(select 1 from public.orders o where o.id=order_id and (o.buyer_id=auth.uid() or o.user_id=auth.uid())));
 
-CREATE POLICY messages_select ON public.messages FOR SELECT TO authenticated USING (auth.uid()=sender_id OR auth.uid()=receiver_id OR public.is_admin());
-CREATE POLICY messages_insert ON public.messages FOR INSERT TO authenticated WITH CHECK (auth.uid()=sender_id OR public.is_admin());
-CREATE POLICY messages_update ON public.messages FOR UPDATE TO authenticated USING (auth.uid()=sender_id OR auth.uid()=receiver_id OR public.is_admin()) WITH CHECK (auth.uid()=sender_id OR auth.uid()=receiver_id OR public.is_admin());
+create policy messages_select on public.messages for select to authenticated using (auth.uid()=sender_id or auth.uid()=receiver_id or public.is_admin());
+create policy messages_insert on public.messages for insert to authenticated with check (auth.uid()=sender_id or public.is_admin());
+create policy messages_update on public.messages for update to authenticated using (auth.uid()=sender_id or auth.uid()=receiver_id or public.is_admin()) with check (auth.uid()=sender_id or auth.uid()=receiver_id or public.is_admin());
 
-CREATE POLICY reviews_select ON public.reviews FOR SELECT TO anon, authenticated USING (true);
-CREATE POLICY reviews_insert ON public.reviews FOR INSERT TO authenticated WITH CHECK (auth.uid()=user_id);
-CREATE POLICY reviews_update ON public.reviews FOR UPDATE TO authenticated USING (auth.uid()=user_id OR public.is_admin()) WITH CHECK (auth.uid()=user_id OR public.is_admin());
+create policy reviews_select on public.reviews for select using (true);
+create policy reviews_insert on public.reviews for insert to authenticated with check (auth.uid()=user_id);
+create policy reviews_update on public.reviews for update to authenticated using (auth.uid()=user_id or public.is_admin()) with check (auth.uid()=user_id or public.is_admin());
 
-CREATE POLICY wishlist_select ON public.wishlist FOR SELECT TO authenticated USING (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY wishlist_insert ON public.wishlist FOR INSERT TO authenticated WITH CHECK (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY wishlist_delete ON public.wishlist FOR DELETE TO authenticated USING (auth.uid()=user_id OR public.is_admin());
+create policy wishlist_select on public.wishlist for select to authenticated using (auth.uid()=user_id or public.is_admin());
+create policy wishlist_insert on public.wishlist for insert to authenticated with check (auth.uid()=user_id or public.is_admin());
+create policy wishlist_delete on public.wishlist for delete to authenticated using (auth.uid()=user_id or public.is_admin());
 
-CREATE POLICY notifications_select ON public.notifications FOR SELECT TO authenticated USING (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY notifications_insert ON public.notifications FOR INSERT TO authenticated WITH CHECK (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY notifications_update ON public.notifications FOR UPDATE TO authenticated USING (auth.uid()=user_id OR public.is_admin()) WITH CHECK (auth.uid()=user_id OR public.is_admin());
+create policy notifications_select on public.notifications for select to authenticated using (auth.uid()=user_id or public.is_admin());
+create policy notifications_insert on public.notifications for insert to authenticated with check (auth.uid()=user_id or public.is_admin());
+create policy notifications_update on public.notifications for update to authenticated using (auth.uid()=user_id or public.is_admin()) with check (auth.uid()=user_id or public.is_admin());
 
-CREATE POLICY reports_insert ON public.reports FOR INSERT TO authenticated WITH CHECK (auth.uid()=reporter_id OR public.is_admin());
-CREATE POLICY reports_select ON public.reports FOR SELECT TO authenticated USING (auth.uid()=reporter_id OR public.is_admin());
-CREATE POLICY reports_update ON public.reports FOR UPDATE TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+create policy reports_insert on public.reports for insert to authenticated with check (auth.uid()=reporter_id or public.is_admin());
+create policy reports_select on public.reports for select to authenticated using (auth.uid()=reporter_id or public.is_admin());
+create policy reports_update on public.reports for update to authenticated using (public.is_admin()) with check (public.is_admin());
 
-CREATE POLICY coupons_select ON public.coupons FOR SELECT TO anon, authenticated USING (is_active=true OR public.is_admin());
-CREATE POLICY coupons_admin ON public.coupons FOR ALL TO authenticated USING (public.is_admin()) WITH CHECK (public.is_admin());
+create policy coupons_select on public.coupons for select using (is_active=true or public.is_admin());
+create policy coupons_admin_insert on public.coupons for insert to authenticated with check (public.is_admin());
+create policy coupons_admin_update on public.coupons for update to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy coupons_admin_delete on public.coupons for delete to authenticated using (public.is_admin());
 
-CREATE POLICY seller_plans_select ON public.seller_plans FOR SELECT TO authenticated USING (auth.uid()=user_id OR public.is_admin());
-CREATE POLICY seller_plans_insert ON public.seller_plans FOR INSERT TO authenticated WITH CHECK (auth.uid()=user_id OR public.is_admin());
+insert into storage.buckets (id, name, public)
+values ('product-images','product-images',true),('profile-images','profile-images',true),('verification-docs','verification-docs',false)
+on conflict (id) do update set public=excluded.public;
 
-INSERT INTO storage.buckets(id, name, public) VALUES
-('product-images','product-images',true),
-('profile-images','profile-images',true),
-('verification-docs','verification-docs',false)
-ON CONFLICT (id) DO NOTHING;
+drop policy if exists "hp product images read" on storage.objects;
+drop policy if exists "hp product images upload" on storage.objects;
+drop policy if exists "hp profile images read" on storage.objects;
+drop policy if exists "hp profile images upload" on storage.objects;
+drop policy if exists "hp verification docs upload" on storage.objects;
+drop policy if exists "hp verification docs read" on storage.objects;
 
-DROP POLICY IF EXISTS "hp product images public read" ON storage.objects;
-DROP POLICY IF EXISTS "hp product images upload" ON storage.objects;
-DROP POLICY IF EXISTS "hp profile images public read" ON storage.objects;
-DROP POLICY IF EXISTS "hp profile images upload" ON storage.objects;
-DROP POLICY IF EXISTS "hp verification docs owner admin read" ON storage.objects;
-DROP POLICY IF EXISTS "hp verification docs owner upload" ON storage.objects;
+create policy "hp product images read" on storage.objects for select using (bucket_id='product-images');
+create policy "hp product images upload" on storage.objects for insert to authenticated with check (bucket_id='product-images' and auth.uid() is not null);
+create policy "hp profile images read" on storage.objects for select using (bucket_id='profile-images');
+create policy "hp profile images upload" on storage.objects for insert to authenticated with check (bucket_id='profile-images' and auth.uid() is not null);
+create policy "hp verification docs upload" on storage.objects for insert to authenticated with check (bucket_id='verification-docs' and auth.uid() is not null);
+create policy "hp verification docs read" on storage.objects for select to authenticated using (bucket_id='verification-docs' and (public.is_admin() or (storage.foldername(name))[2]=auth.uid()::text));
 
-CREATE POLICY "hp product images public read" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id='product-images');
-CREATE POLICY "hp product images upload" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id='product-images' AND auth.uid() IS NOT NULL);
-CREATE POLICY "hp profile images public read" ON storage.objects FOR SELECT TO anon, authenticated USING (bucket_id='profile-images');
-CREATE POLICY "hp profile images upload" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id='profile-images' AND auth.uid() IS NOT NULL);
-CREATE POLICY "hp verification docs owner upload" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id='verification-docs' AND auth.uid() IS NOT NULL);
-CREATE POLICY "hp verification docs owner admin read" ON storage.objects FOR SELECT TO authenticated USING (bucket_id='verification-docs' AND (public.is_admin() OR (storage.foldername(name))[2] = auth.uid()::text));
-
-SELECT email, role, auth_id FROM public.users WHERE lower(email)=lower('kiratveersinghralhan@gmail.com');
+select email, role, auth_id from public.users where lower(email)=lower('kiratveersinghralhan@gmail.com');
