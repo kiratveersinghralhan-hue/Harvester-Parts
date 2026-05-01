@@ -23,7 +23,7 @@ const isSeller=()=>isAdmin()||S.seller?.status==='approved'||['seller','dealer']
 function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
 function saveCart(){localStorage.hp_cart=JSON.stringify(S.cart); updateCart()}
 function updateCart(){const c=$('#cartCount'); if(c)c.textContent=S.cart.reduce((a,b)=>a+(b.qty||1),0)}
-async function init(){setTimeout(()=>$('#intro')?.classList.add('hide'),700); bindGlobal(); await auth(); await loadProducts(); await loadCounts(); route(); if('serviceWorker'in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{})}
+async function init(){const hideIntro=()=>{const i=$('#intro');if(i){i.classList.add('hide');setTimeout(()=>i.remove(),900)}};setTimeout(hideIntro,900);try{bindGlobal();await auth();await loadProducts();await loadCounts();route();if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(err){console.error('Startup error',err);toast('Startup error: '+(err.message||err));try{route()}catch(e){console.error(e)}}finally{setTimeout(hideIntro,1200)}}
 function bindGlobal(){ $('#menuBtn').onclick=openDrawer; $$('[data-close]').forEach(b=>b.onclick=closeDrawer); $('#accountBtn').onclick=()=>S.user?location.hash='account':authModal(); $('#cartBubble').onclick=()=>location.hash='cart'; $('#scrollTop').onclick=()=>scrollTo({top:0,behavior:'smooth'}); document.body.onclick=e=>{let b=e.target.closest('[data-route]'); if(b){e.preventDefault(); location.hash=b.dataset.route}}; addEventListener('hashchange',route); addEventListener('scroll',()=>$('#scrollTop')?.classList.toggle('show',scrollY>500),{passive:true}); }
 async function auth(){ if(!sb)return; const {data}=await sb.auth.getSession(); S.session=data.session; S.user=data.session?.user||null; if(S.user) await loadProfile(); watchRealtime(); sb.auth.onAuthStateChange(async(_,session)=>{S.session=session;S.user=session?.user||null;if(S.user)await loadProfile();else{S.profile=null;S.seller=null} watchRealtime(); updateHeader(); route();}); }
 async function loadProfile(){
@@ -128,11 +128,11 @@ function normalizeDocPath(raw){
       const u=new URL(raw);
       let p=decodeURIComponent(u.pathname);
       const markers=['/object/sign/verification-docs/','/object/public/verification-docs/','/verification-docs/'];
-      for(const m of markers){ const i=p.indexOf(m); if(i>-1)return p.slice(i+m.length).replace(/^\/+,''); }
+      for(const m of markers){ const i=p.indexOf(m); if(i>-1)return p.slice(i+m.length).replace(/^[/]+/, ''); }
       return raw;
     }catch(e){return raw}
   }
-  return raw.replace(/^verification-docs\//,'').replace(/^\/+,'');
+  return (raw.startsWith('verification-docs/')?raw.slice(18):raw).replace(/^[/]+/, '');
 }
 function showDocViewer(url,label='Verification document'){
   const old=document.querySelector('.doc-viewer'); if(old)old.remove();

@@ -32,3 +32,11 @@ details{background:#fff;border:1px solid var(--line);border-radius:18px;padding:
 .doc-viewer-card img{width:100%;max-height:70vh;object-fit:contain;border-radius:18px;background:#fff;border:1px solid rgba(0,0,0,.08);margin:12px 0}
 .doc-viewer-close{position:absolute;right:14px;top:12px;width:38px;height:38px;border-radius:50%;border:0;background:#11291c;color:#fff;font-size:24px}
 .doc-fallback{padding:18px;border-radius:16px;background:#fff7df;color:#5c3c00}
+/* v39 safety: intro never traps the app, even if a browser delays JS */
+.intro{animation:introSafetyFade 1.9s ease 1.2s forwards}
+.intro.hide{opacity:0!important;pointer-events:none!important;visibility:hidden!important}
+@keyframes introSafetyFade{to{opacity:0;visibility:hidden;pointer-events:none}}
+.doc-viewer{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.55);display:grid;place-items:center;padding:18px}
+.doc-viewer-card{width:min(760px,96vw);max-height:88vh;overflow:auto;background:#fffaf0;border:1px solid var(--line);border-radius:28px;padding:18px;box-shadow:var(--shadow);position:relative}
+.doc-viewer-card img{width:100%;height:auto;border-radius:18px;border:1px solid var(--line);background:#fff;display:block;margin:10px 0}
+.doc-viewer-close{position:absolute;right:14px;top:14px;border:1px solid var(--line);background:#fff;border-radius:999px;width:42px;height:42px;font-size:22px}
