@@ -136,7 +136,71 @@ async function loadMessages(){if(!sb||!S.user)return; const {data}=await sb.from
 async function loadNotifications(){if(!sb||!S.user)return; const {data}=await sb.from('notifications').select('*').eq('user_id',authId()).order('created_at',{ascending:false}); $('#notificationList').innerHTML=(data||[]).map(n=>`<div class="card"><b>${esc(n.title)}</b><p>${esc(n.message||'')}</p></div>`).join('')||'<div class="empty">No notifications yet.</div>'; const a=(data||[]).find(n=>!n.is_read&&(n.type==='approval'||String(n.title).toLowerCase().includes('approved'))); if(a)celebration(a.title,a.message); await sb.from('notifications').update({is_read:true}).eq('user_id',authId()); loadUnread();}
 async function loadDashboard(){if(!sb||!S.user)return; const {data}=await sb.from('products').select('*').eq('user_id',authId()).order('created_at',{ascending:false}); $('#dashProducts')&&($('#dashProducts').textContent=(data||[]).length); $('#myListings')&&($('#myListings').innerHTML=(data||[]).map(productCard).join('')||'<div class="empty">No listings yet.</div>')}
 async function loadReports(){const el=$('#adminReports'); if(!el||!sb)return; const q=isAdmin()?sb.from('reports').select('*').order('created_at',{ascending:false}):sb.from('reports').select('*').eq('reporter_id',authId()); const {data}=await q; el.innerHTML=(data||[]).map(r=>`<div class="card"><b>${esc(r.reason)}</b><p>${esc(r.status)}</p></div>`).join('')||'<div class="empty">No open reports.</div>'}
-async function loadReviews(){const box=$('#reviewsBox'); if(!box)return; const id=decodeURIComponent((location.hash.split('/')[1]||'')); if(!sb){box.innerHTML='<p><b>★ 4.6</b> Buyer rating preview</p><p class="smalltxt">Reviews connect after Supabase keys are added.</p>'; return;} const {data}=await sb.from('reviews').select('*').eq('product_id',id).order('created_at',{ascending:false}).limit(5); box.innerHTML=`<div class="review-summary"><b>★ ${(data?.length? (data.reduce((a,r)=>a+Number(r.rating||0),0)/data.length):4.6).toFixed(1)}</b><span>${data?.length||0} reviews</span></div>`+(data||[]).map(r=>`<div class="review-item"><b>${'★'.repeat(Number(r.rating||5))}</b><p>${esc(r.comment||'')}</p></div>`).join('')+`<form id="reviewForm" class="forms"><select name="rating"><option>5</option><option>4</option><option>3</option><option>2</option><option>1</option></select><input name="comment" placeholder="Write a review"><button class="btn small">Post review</button></form>`; $('#reviewForm')?.addEventListener('submit',async e=>{e.preventDefault(); if(!S.user)return authModal(); const fd=new FormData(e.target); await sb.from('reviews').insert({product_id:id,user_id:authId(),rating:+fd.get('rating'),comment:fd.get('comment')}); toast('Review posted'); loadReviews();});}
+async function loadReviews(){
+  const box=$('#reviewsBox');
+  if(!box) return;
+  const id=decodeURIComponent((location.hash.split('/')[1]||''));
+  const preview = [{rating:5,comment:'Clean photos and clear product details. Good for inspection before purchase.'},{rating:4,comment:'Verified seller badge makes the listing feel safer.'}];
+  let reviews = [];
+  if(sb){
+    const {data,error}=await sb.from('reviews').select('*').eq('product_id',id).order('created_at',{ascending:false}).limit(8);
+    if(!error && data) reviews=data;
+  } else {
+    reviews = [];
+  }
+  const count = reviews.length;
+  const avg = count ? (reviews.reduce((a,r)=>a+Number(r.rating||0),0)/count) : 4.6;
+  const bars=[5,4,3,2,1].map(star=>{
+    const n = count ? reviews.filter(r=>Number(r.rating||0)===star).length : (star===5?8:star===4?3:star===3?1:0);
+    const total = count || 12;
+    const pct = Math.round((n/total)*100);
+    return `<div class="rating-bar"><span>${star}</span><div><i style="width:${pct}%"></i></div><b>${count?n:''}</b></div>`;
+  }).join('');
+  const reviewList = (reviews.length?reviews:preview).map(r=>`<article class="premium-review-item">
+      <div><b>${'★'.repeat(Number(r.rating||5))}</b><span>${Number(r.rating||5).toFixed(1)}</span></div>
+      <p>${esc(r.comment||'')}</p>
+    </article>`).join('');
+  box.innerHTML=`
+    <div class="premium-review-card">
+      <div class="review-score-orb">
+        <strong>${avg.toFixed(1)}</strong>
+        <span>★★★★★</span>
+        <small>${count||0} verified reviews</small>
+      </div>
+      <div class="review-bars">${bars}</div>
+    </div>
+    <div class="review-promise">
+      <span>Buyer Protection</span><span>Verified seller</span><span>Inspection friendly</span>
+    </div>
+    <form id="reviewForm" class="premium-review-form">
+      <label>Your rating</label>
+      <div class="star-picker" data-rating="5">
+        ${[1,2,3,4,5].map(i=>`<button type="button" data-star="${i}" class="on">★</button>`).join('')}
+      </div>
+      <input name="comment" placeholder="Share product condition, fitment or seller experience">
+      <button class="btn review-submit">Post premium review</button>
+    </form>
+    <div class="premium-review-list">${reviewList}</div>`;
+  const picker=$('.star-picker');
+  picker?.querySelectorAll('button').forEach(btn=>btn.addEventListener('click',()=>{
+    const val=Number(btn.dataset.star); picker.dataset.rating=val;
+    picker.querySelectorAll('button').forEach(b=>b.classList.toggle('on',Number(b.dataset.star)<=val));
+  }));
+  $('#reviewForm')?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    if(!S.user) return authModal();
+    const fd=new FormData(e.target);
+    const rating=Number($('.star-picker')?.dataset.rating||5);
+    const comment=String(fd.get('comment')||'').trim();
+    if(!comment) return toast('Write a short review');
+    if(sb){
+      const {error}=await sb.from('reviews').insert({product_id:id,user_id:authId(),rating,comment});
+      if(error) return toast(error.message||'Review failed');
+    }
+    toast('Review posted');
+    loadReviews();
+  });
+}
 function aiAnswer(q){const log=$('#aiLog'); if(!log)return; const found=S.products.filter(p=>JSON.stringify(p).toLowerCase().includes(String(q).toLowerCase())).slice(0,3); log.innerHTML+=`<p><b>You:</b> ${esc(q)}</p><p><b>AI:</b> ${found.length?'I found matching products: '+found.map(p=>p.title).join(', '):'Tell me category, brand, budget and location for better suggestions.'}</p>`}
 function celebration(title,msg){document.querySelectorAll('.celebration').forEach(x=>x.remove()); const m=document.createElement('div');m.className='celebration canva-confetti'; let dots=Array.from({length:96},(_,i)=>`<i style="--x:${Math.random()*100}vw;--d:${Math.random()*1.8}s;--r:${Math.random()*360}deg;--s:${6+Math.random()*9}px"></i>`).join('');m.innerHTML=`<button class="circle celeb-close">×</button><div class="confetti-rain">${dots}</div><div class="celeb-card"><p class="eyebrow">Success</p><h2>${esc(title||'Approved')}</h2><p>${esc(msg||'Your account is verified.')}</p></div>`;document.body.appendChild(m);m.querySelector('.celeb-close').onclick=()=>m.remove();setTimeout(()=>m.remove(),8000)}
 window.addEventListener('DOMContentLoaded',init);
