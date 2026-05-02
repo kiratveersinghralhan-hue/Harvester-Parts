@@ -1,16 +1,13 @@
-Harvester Parts v35 final document + approval fix
+Harvester Parts v43 Premium Buyer Flow
 
-SQL required: YES if you want a clean database. Run database-clean-reset-full.sql once in Supabase SQL editor.
+Upload all files directly to your GitHub repo root.
+SQL: No new SQL required if your clean Supabase schema is already running.
 
-This version fixes:
-- Admin document buttons binding
-- Secure signed Aadhaar/shop document opening
-- Admin approval/reject buttons with visible errors
-- Seller approval updates user role and sends notification
-- Clean storage buckets and RLS policies in SQL
-
-After SQL:
-1. Add keys in config.js
-2. Upload files to GitHub root
-3. Logout/login again
-4. Test seller verification and admin approval
+Fixes:
+- Menu auto-closes on route/menu clicks.
+- Drawer login button fixed.
+- Seller verified celebration appears once per approved account.
+- Product cards/pages use Details, Add to Cart, Buy Now, Wishlist, Message Seller correctly.
+- Cart handling fee is calculated only when cart has items.
+- Checkout has shipping, handling, coupons and full live totals.
+- Premium glass-style UI polish, custom badges, category cards and smoother animations.
