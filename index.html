@@ -25,8 +25,8 @@
   <link rel="stylesheet" href="styles.css?v=45" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script defer src="config.js?v=50"></script>
-  <script defer src="app.js?v=50"></script>
+  <script defer src="config.js?v=51"></script>
+  <script defer src="app.js?v=51"></script>
 </head>
 <body>
   <div id="intro" class="intro">
@@ -55,10 +55,29 @@
   </aside>
 
   <main id="app" class="app"></main>
-  <button id="cartBubble" class="cart-bubble" type="button" onclick="window.openCartPage && window.openCartPage(event)">Cart <b id="cartCount">0</b></button>
+  <a id="cartBubble" class="cart-bubble" href="#cart" role="button" aria-label="Open cart">Cart <b id="cartCount">0</b></a>
   <button id="scrollTop" class="scroll-top">↑</button>
   <div id="toast" class="toast"></div>
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loader-card"><span class="loader-ring"></span><b id="loadingText">Processing...</b><small>Please wait, this may take a few seconds.</small></div></div>
-<script>window.__HP_ROOT_READY=true;window.HP_VERSION="50";if('caches'in window){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).catch(()=>{});}</script>
+<script>window.__HP_ROOT_READY=true;window.HP_VERSION="51";if('caches'in window){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).catch(()=>{});}</script>
+
+<script>
+// v51 emergency cart/open fallback: keeps cart navigation working even if old JS is cached on iPhone.
+(function(){
+  function getCart(){try{return JSON.parse(localStorage.getItem('hp_cart')||'[]')}catch(e){return []}}
+  function count(){return getCart().reduce(function(a,i){return a+(Number(i.qty)||1)},0)}
+  function refreshCartBadge(){var n=count();document.querySelectorAll('#cartCount,.cart-count,[data-cart-count]').forEach(function(el){el.textContent=n});document.querySelectorAll('#cartBubble,.cart-bubble').forEach(function(el){el.setAttribute('data-count',n)});}
+  window.hpRefreshCartBadge=refreshCartBadge;
+  window.openCartPage=function(e){if(e){e.preventDefault();e.stopPropagation();}document.body.classList.remove('drawer-open');var d=document.getElementById('drawer');if(d){d.classList.remove('open');d.setAttribute('aria-hidden','true')}if(location.hash==='#cart'){window.dispatchEvent(new HashChangeEvent('hashchange'));}else{location.hash='cart'}setTimeout(refreshCartBadge,50);return false;};
+  document.addEventListener('click',function(e){
+    var cart=e.target.closest('#cartBubble,.cart-bubble,a[href="#cart"],button[data-route="cart"],[data-route="cart"]');
+    if(cart){window.openCartPage(e);return;}
+    var link=e.target.closest('#drawer a[href^="#"],.drawer a[href^="#"],[data-route]');
+    if(link){var dr=document.getElementById('drawer'); if(dr){setTimeout(function(){dr.classList.remove('open');dr.setAttribute('aria-hidden','true');document.body.classList.remove('drawer-open')},0)}}
+  },true);
+  window.addEventListener('storage',refreshCartBadge);
+  document.addEventListener('DOMContentLoaded',function(){refreshCartBadge();setInterval(refreshCartBadge,1000)});
+})();
+</script>
 </body>
 </html>
