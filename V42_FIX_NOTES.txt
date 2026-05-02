@@ -1,0 +1,12 @@
+V42 final buyer-flow fixes
+- Menu auto-closes on every route/page change.
+- Product cards now have Details, Add to Cart, and Buy Now buttons.
+- Product detail page now has Buy Now, Add to Cart, Wishlist, Message Seller, and report actions.
+- Cart page has subtotal, estimated shipping, handling fee, and total estimate.
+- Checkout page now has customer info, city, pincode, full address, shipping method, coupon codes, payment choice, and live order summary.
+- Shipping estimate uses product weight and standard/premium method.
+- Coupon codes supported in checkout: HP2000, HP10000, HP100000.
+- Cart counter updates live.
+- Home counters animate/live from loaded products and sellers.
+- Design kept the same.
+SQL required: No, if the latest clean Supabase schema is already running.
