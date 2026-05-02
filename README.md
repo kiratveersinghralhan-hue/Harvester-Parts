@@ -11,3 +11,7 @@ Fixes:
 - Cart handling fee is calculated only when cart has items.
 - Checkout has shipping, handling, coupons and full live totals.
 - Premium glass-style UI polish, custom badges, category cards and smoother animations.
+
+## v46 Commerce Upgrade
+Run `SUPABASE_COMMERCE_UPGRADE.sql` once if you want stock, tracking, reviews and analytics fields.
+Read `RAZORPAY_SETUP_MONDAY.md` and `DELIVERY_SETUP.md` before connecting live payments and logistics.
