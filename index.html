@@ -12,7 +12,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Harvester Parts — Verified Agricultural Machinery Marketplace" />
   <meta property="og:description" content="Buy and sell tractors, harvesters, implements and spare parts with verified sellers, secure checkout, shipping and rewards." />
-  <meta property="og:image" content="https://placehold.co/1200x630/0f2b1d/f8df87?text=Harvester+Parts" />
+  <meta property="og:image" content="https://harvesterparts.in/harvester-logo-full.jpg" />
   <meta property="og:url" content="https://harvesterparts.in/" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Harvester Parts — Agri Marketplace" />
@@ -20,22 +20,24 @@
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Harvester Parts","url":"https://harvesterparts.in/","description":"Verified agricultural machinery and spare parts marketplace."}</script>
   <meta name="theme-color" content="#f7f2e8" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css?v=42" />
+  <link rel="icon" type="image/png" sizes="32x32" href="logo-32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="logo-180.png" />
+  <link rel="stylesheet" href="styles.css?v=45" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script defer src="config.js?v=42"></script>
-  <script defer src="app.js?v=42"></script>
+  <script defer src="config.js?v=45"></script>
+  <script defer src="app.js?v=45"></script>
 </head>
 <body>
   <div id="intro" class="intro">
     <div class="intro-card">
-      <span class="intro-line"></span><span class="intro-logo">HP</span>
+      <span class="intro-line"></span><span class="intro-logo"><img src="logo-512.png" alt="Harvester Parts logo"></span>
       <b>Harvester Parts</b><small>Verified spare parts & agri commerce</small>
     </div>
   </div>
 
   <header class="topbar">
-    <a href="#home" class="brand" aria-label="Harvester Parts home"><span class="brand-mark">HP</span><span><b>Harvester</b><em>Parts</em></span></a>
+    <a href="#home" class="brand" aria-label="Harvester Parts home"><span class="brand-mark"><img src="logo-192.png" alt="Harvester Parts logo"></span><span><b>Harvester</b><em>Parts</em></span></a>
     <nav class="nav"><a href="#marketplace">Marketplace</a><a href="#sell">Sell</a><a href="#dashboard">Dashboard</a><a href="#plans">Plans</a><a href="#badges">Badges</a><a href="#policy">Policies</a><a href="#admin">Admin</a><a href="#ai">AI</a></nav>
     <div class="actions"><button id="accountBtn" class="ghost">Login</button><button data-route="sell" class="btn small">Sell Now</button><button id="menuBtn" class="menu" aria-label="Open menu">☰</button></div>
   </header>
@@ -43,7 +45,7 @@
   <aside id="drawer" class="drawer" aria-hidden="true">
     <button class="drawer-bg" data-close></button>
     <section class="drawer-panel">
-      <div class="drawer-head"><a href="#home" class="brand"><span class="brand-mark">HP</span><span><b>Harvester</b><em>Parts</em></span></a><button class="circle" data-close>×</button></div>
+      <div class="drawer-head"><a href="#home" class="brand"><span class="brand-mark"><img src="logo-192.png" alt="Harvester Parts logo"></span><span><b>Harvester</b><em>Parts</em></span></a><button class="circle" data-close>×</button></div>
       <div id="drawerAccount" class="drawer-account"></div>
       <div class="drawer-grid">
         <a href="#marketplace">Browse Marketplace</a><a href="#sell">Sell Product</a><a href="#dashboard">Seller Dashboard</a><a href="#account">My Account</a><a href="#cart">Cart</a><a href="#orders">Orders</a><a href="#messages">Messages</a><a href="#wishlist">Wishlist</a><a href="#ai">AI Helper</a><a href="#notifications">Notifications <b id="notifBadge"></b></a><a href="#plans">Seller Plans</a><a href="#badges">Rewards & Badges</a><a href="#admin">Admin Login</a><a href="#reports">Reports</a><a href="#policy">Policies</a>
@@ -57,6 +59,6 @@
   <button id="scrollTop" class="scroll-top">↑</button>
   <div id="toast" class="toast"></div>
   <div id="loadingOverlay" class="loading-overlay" aria-hidden="true"><div class="loader-card"><span class="loader-ring"></span><b id="loadingText">Processing...</b><small>Please wait, this may take a few seconds.</small></div></div>
-<script>window.__HP_ROOT_READY=true;window.HP_VERSION="42";if('caches'in window){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).catch(()=>{});}</script>
+<script>window.__HP_ROOT_READY=true;window.HP_VERSION="45";if('caches'in window){caches.keys().then(keys=>keys.forEach(k=>caches.delete(k))).catch(()=>{});}</script>
 </body>
 </html>
