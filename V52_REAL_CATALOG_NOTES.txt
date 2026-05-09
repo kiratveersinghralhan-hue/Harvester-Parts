@@ -1,0 +1,1 @@
+Replaced old fake 36-item catalog with 95 real spare-parts list items from your paper list. Images are safe category placeholders now; replace with real photos later. Prices are estimates and every listing says contact seller for exact final price. Seller email: qq299629@gmail.com. Optional Supabase seed: REAL_CATALOG_SEED.sql
