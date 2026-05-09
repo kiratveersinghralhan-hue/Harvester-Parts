@@ -1,0 +1,7 @@
+V53 changes:
+- Browse marketplace filters out old demo/fake catalog titles and prioritizes the new real spare-parts catalog.
+- Buyer progressive platform fee added to cart and checkout.
+- Seller progressive platform/marketing fee preview added in product listing form.
+- Seller example: list at Rs 10,000, seller estimated earning Rs 9,500, platform fee Rs 500.
+- Buyer example: Rs 5,000 cart adds Rs 200 buyer platform fee; Rs 10,00,000 cart adds Rs 30,000 platform fee.
+- Added smoother scroll, card hover, glass style and drawer animations.

@@ -1,0 +1,14 @@
+V54 Seller Product Boost System
+
+What changed:
+- Seller dashboard/product cards now show Promote button for seller-owned products.
+- Normal boost price: ₹50.
+- First boost price: ₹30 with visible ₹20 discount.
+- Razorpay opens through existing RAZORPAY_KEY_ID config.
+- After successful payment, the product gets marked boosted and sorted to the top.
+- Boost lasts 7 days in the UI logic.
+- If Supabase boost columns are not present, local fallback still boosts on the current device.
+
+SQL:
+- No SQL required for basic local fallback.
+- Run SUPABASE_BOOST_SYSTEM.sql once to persist boosts in Supabase.
