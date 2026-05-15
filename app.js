@@ -76,7 +76,7 @@
   });
   ['ta','te','bn','mr','gu'].forEach(l=>{ COMMON_TRANSLATIONS[l] = Object.assign({}, COMMON_TRANSLATIONS.hi, uiText[l]||{}); });
 
-  // v74: Core renderer stays in clean English. The standalone language patch
+  // v75: Core renderer stays in clean English. The standalone language patch
   // translates the visible UI safely after render, so words never get mixed.
   function translateVisibleText(root=document.body){ return; }
   function localizeHtml(html){ return html; }
@@ -89,7 +89,7 @@
     // Header is outside the routed page, so always rebuild its text from English keys.
     const authText = state.user ? 'My Account' : 'Login';
     const authButton = $('#authButton'); if(authButton) authButton.textContent = tx(authText);
-    const menuLogin = $('#menuLoginBtn'); if(menuLogin) menuLogin.textContent = tx(state.user ? 'My Account' : 'Login / Signup');
+    const menuLogin = $('#menuLoginBtn'); if(menuLogin){ menuLogin.textContent = tx('Login / Signup'); menuLogin.classList.toggle('hidden', !!state.user); }
     const logoutBtn = $('#logoutBtn'); if(logoutBtn) logoutBtn.textContent = tx('Logout');
     const cartButton = $('.header-actions .icon-btn[data-route="cart"]');
     if(cartButton){
@@ -169,7 +169,8 @@
     const lower = msg.toLowerCase();
     if(lower.includes('email not confirmed')) return 'Email not confirmed. Open the confirmation email, then login again.';
     if(lower.includes('invalid login credentials')) return 'Wrong email or password, or this email is not confirmed yet.';
-    if(lower.includes('sms') || lower.includes('phone') || lower.includes('provider')) return msg + ' — Enable Phone provider and SMS provider in Supabase Auth.';
+    if(lower.includes('60200') || lower.includes('invalid parameter')) return 'Phone OTP setup error: Twilio rejected the request. Use a real mobile number in +country format and check Supabase Phone provider is Twilio Verify with the correct Account SID, Auth Token and Verify Service SID.';
+    if(lower.includes('sms') || lower.includes('phone') || lower.includes('provider')) return msg + ' — Enable Phone provider and SMS provider in Supabase Auth, then save the correct SMS provider credentials.';
     return msg;
   }
   async function signup(email,password,name){
@@ -197,22 +198,41 @@
     if(show) setTimeout(()=>$('#otpCodeInput')?.focus(),80);
   }
   function cleanPhone(phone){
-    return String(phone||'').trim().replace(/[\s()-]/g,'');
+    const raw=String(phone||'').trim();
+    const hasPlus=raw.startsWith('+');
+    const digits=raw.replace(/\D/g,'');
+    return hasPlus ? '+'+digits : digits;
   }
+  function normalizePhone(phone,countryCode='+91'){
+    const p=cleanPhone(phone);
+    if(!p) return '';
+    if(p.startsWith('+')) return p;
+    const code=cleanPhone(countryCode).startsWith('+') ? cleanPhone(countryCode) : '+'+cleanPhone(countryCode);
+    const codeDigits=code.replace(/\D/g,'');
+    if(p.startsWith(codeDigits) && p.length>10) return '+'+p;
+    return code+p;
+  }
+  function getOtpPhone(){
+    const phone=normalizePhone($('#phoneOtpInput')?.value||'', $('#countryCodeSelect')?.value||'+91');
+    const input=$('#phoneOtpInput'); if(input && phone) input.dataset.fullPhone=phone;
+    return phone;
+  }
+  function isValidE164(phone){ return /^\+[1-9]\d{7,14}$/.test(phone); }
   async function sendPhoneOtp(phone){
     if(!sb) return toast('Add Supabase keys first');
-    phone = cleanPhone(phone);
-    if(!phone || !phone.startsWith('+')) return toast('Enter phone with country code, e.g. +919814800017');
-    const {error}=await sb.auth.signInWithOtp({phone});
+    phone = normalizePhone(phone, $('#countryCodeSelect')?.value||'+91');
+    if(!isValidE164(phone)) return toast('Enter a valid mobile number with country code. Example: +919814800017');
+    $('#phoneOtpInput') && ($('#phoneOtpInput').dataset.fullPhone=phone);
+    const {error}=await sb.auth.signInWithOtp({phone, options:{shouldCreateUser:true}});
     if(error) return toast(friendlyAuthError(error));
     toggleOtpFields(true);
     toast('OTP sent. Enter the 6 digit code.');
   }
   async function verifyPhoneOtp(phone,token){
     if(!sb) return toast('Add Supabase keys first');
-    phone = cleanPhone(phone);
+    phone = normalizePhone(phone || $('#phoneOtpInput')?.dataset.fullPhone || '', $('#countryCodeSelect')?.value||'+91');
     token = String(token||'').trim();
-    if(!phone || !phone.startsWith('+')) return toast('Enter phone with country code, e.g. +919814800017');
+    if(!isValidE164(phone)) return toast('Enter a valid mobile number with country code. Example: +919814800017');
     if(!token) return toast('Enter OTP code');
     const {error}=await sb.auth.verifyOtp({phone,token,type:'sms'});
     if(error) return toast(friendlyAuthError(error));
@@ -229,7 +249,11 @@
   function syncMenu(updateLang=true){
     const isAdmin=(state.profile?.role==='admin') || ((state.user?.email||'').toLowerCase()===ADMIN_EMAIL);
     $('#authButton') && ($('#authButton').textContent=state.user?tx('My Account'):tx('Login'));
-    $('#menuLoginBtn') && ($('#menuLoginBtn').textContent=state.user?tx('My Account'):tx('Login / Signup'));
+    const menuLoginBtn = $('#menuLoginBtn');
+    if(menuLoginBtn){
+      menuLoginBtn.textContent=tx('Login / Signup');
+      menuLoginBtn.classList.toggle('hidden', !!state.user);
+    }
     $('#logoutBtn')?.classList.toggle('hidden',!state.user);
     $('#menuName') && ($('#menuName').textContent=state.profile?.full_name || state.user?.email || tx('Guest'));
     $('#menuRole') && ($('#menuRole').textContent=isAdmin?tx('Platform Owner / Admin'):(state.profile?.badge_title || tx('Buyer / Seller')));
@@ -342,10 +366,33 @@
     if(cfg.RAZORPAY_KEY_ID && !cfg.RAZORPAY_KEY_ID.includes('YOUR_') && window.Razorpay){ const rz=new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:Math.round(totals.total*100),currency:'INR',name:'Harvester Parts',description:'Order '+orderId,handler:async(resp)=>{ if(sb) await sb.from('orders').update({status:'paid',payment_id:resp.razorpay_payment_id}).eq('id',orderId); state.cart=[]; saveCart(); toast('Payment successful. Order placed.'); route('orders'); }}); rz.open(); } else { state.cart=[]; saveCart(); toast('Order saved. Connect Razorpay key for online payment.'); route('orders'); } }
   function changeQty(id,delta){ const it=state.cart.find(i=>String(i.id)===String(id)); if(!it)return; it.qty+=delta; if(it.qty<=0)state.cart=state.cart.filter(i=>String(i.id)!==String(id)); saveCart(); render(); }
   function removeCart(id){ state.cart=state.cart.filter(i=>String(i.id)!==String(id)); saveCart(); render(); }
-  function loginPage(){ return `<section class="page-card auth-card"><h1>Login / Create Account</h1><div class="notice auth-notice">For launch: email/password works after Supabase Auth is configured. If Confirm Email is ON, users must verify email before first login. Phone OTP works only after Phone provider + SMS provider are enabled.</div><form id="loginForm" class="form"><input name="email" type="email" autocomplete="email" placeholder="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" required><button class="primary">Login</button><button type="button" class="ghost" id="signupSwitch">Create new account</button><button type="button" class="link-btn" id="forgotBtn">Forgot password?</button></form><div class="auth-divider"><span>or</span></div><button class="google-btn" id="googleLoginBtn">Continue with Google</button><div class="phone-login"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Use +91 format. Example: +919814800017</p><input id="phoneOtpInput" type="tel" inputmode="tel" autocomplete="tel" placeholder="Phone with country code, e.g. +919814800017"><button class="ghost" id="sendOtpBtn">Send OTP</button><input id="otpCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="OTP code"><button class="secondary" id="verifyOtpBtn">Verify OTP</button></div></section>`; }
+  function countryOptions(){
+    const list = [
+      ['+91','🇮🇳 India'],['+1','🇺🇸 United States / Canada'],['+44','🇬🇧 United Kingdom'],['+61','🇦🇺 Australia'],['+971','🇦🇪 UAE'],['+966','🇸🇦 Saudi Arabia'],['+974','🇶🇦 Qatar'],['+965','🇰🇼 Kuwait'],['+968','🇴🇲 Oman'],['+973','🇧🇭 Bahrain'],['+92','🇵🇰 Pakistan'],['+880','🇧🇩 Bangladesh'],['+977','🇳🇵 Nepal'],['+94','🇱🇰 Sri Lanka'],['+60','🇲🇾 Malaysia'],['+65','🇸🇬 Singapore'],['+66','🇹🇭 Thailand'],['+62','🇮🇩 Indonesia'],['+63','🇵🇭 Philippines'],['+49','🇩🇪 Germany'],['+33','🇫🇷 France'],['+39','🇮🇹 Italy'],['+34','🇪🇸 Spain'],['+31','🇳🇱 Netherlands'],['+27','🇿🇦 South Africa'],['+254','🇰🇪 Kenya'],['+234','🇳🇬 Nigeria'],['+81','🇯🇵 Japan'],['+82','🇰🇷 South Korea'],['+86','🇨🇳 China']
+    ];
+    return list.map(([code,label])=>`<option value="${code}" ${code==='+91'?'selected':''}>${label} ${code}</option>`).join('');
+  }
+
+  function loginPage(){ return `<section class="page-card auth-card"><h1>Login / Create Account</h1><div class="notice auth-notice">Email login works after Supabase Auth is configured. Phone OTP needs Supabase Phone provider + Twilio Verify credentials saved in the dashboard.</div><form id="loginForm" class="form"><input name="email" type="email" autocomplete="email" placeholder="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" required><button class="primary">Login</button><button type="button" class="ghost" id="signupSwitch">Create new account</button><button type="button" class="link-btn" id="forgotBtn">Forgot password?</button></form><div class="auth-divider"><span>or</span></div><button class="google-btn" id="googleLoginBtn">Continue with Google</button><div class="phone-login"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Choose country code, then enter mobile number. Example: 9814800017</p><div class="phone-row"><select id="countryCodeSelect" data-no-translate aria-label="Country code">${countryOptions()}</select><input id="phoneOtpInput" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="Mobile number"></div><button class="ghost" id="sendOtpBtn">Send OTP</button><input id="otpCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="OTP code"><button class="secondary" id="verifyOtpBtn">Verify OTP</button><p class="muted tiny-note otp-help">If OTP fails with Twilio 60200, check the SMS provider credentials in Supabase. The website formats the number before sending.</p></div></section>`; }
   
-  function accountPage(){ if(!state.user)return loginPage(); const isAdmin=state.profile?.role==='admin'||(state.user.email||'').toLowerCase()===ADMIN_EMAIL; return `<section class="page-card"><div class="menu-head" style="background:${isAdmin?'linear-gradient(135deg,rgba(217,177,95,.28),rgba(255,255,255,.08))':'rgba(255,255,255,.08)'}"><img src="./logo-192.png"><div><h2>${state.profile?.full_name||state.user.email}</h2><p>${state.profile?.user_uid||'HP Account'} • ${isAdmin?'Platform Owner / Admin':state.profile?.badge_title||'Member'}</p></div></div><form id="profileForm" class="form"><input name="full_name" value="${state.profile?.full_name||''}" placeholder="Full name"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></section>`; }
-  async function saveProfile(form){ if(!sb||!state.user)return; const fd=new FormData(form); const {error}=await sb.from('users').update({full_name:fd.get('full_name'),gender:fd.get('gender'),profile_completed:true}).eq('auth_id',state.user.id); if(error)toast(error.message); else{toast('Profile saved'); await loadSession(); syncMenu(); render();} }
+  function accountPage(){
+    if(!state.user)return loginPage();
+    const isAdmin=state.profile?.role==='admin'||(state.user.email||'').toLowerCase()===ADMIN_EMAIL;
+    const profileName=state.profile?.full_name || state.user.user_metadata?.full_name || '';
+    const email=state.user.email || 'Phone login account';
+    const fullName=profileName || email;
+    const phone=state.profile?.phone || state.user.phone || '';
+    const uid=state.profile?.user_uid || ('HP-'+String(state.user.id||'account').replaceAll('-','').slice(0,8).toUpperCase());
+    const role=isAdmin?'Platform Owner / Admin':(state.profile?.badge_title || (state.seller?.status==='approved'?'Verified Seller':'Buyer / Seller'));
+    const myProducts=state.products.filter(p=>String(p.user_id||'')===String(state.user.id));
+    const approvedListings=myProducts.filter(p=>p.status==='approved').length;
+    const pendingListings=myProducts.filter(p=>p.status!=='approved').length;
+    const sellerStatus=state.seller?.status || (isAdmin?'approved':'not verified');
+    const avatarText=(fullName||email||'HP').split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'HP';
+    return `<section class="profile-page"><div class="profile-cover page-card"><div class="profile-avatar"><img src="./logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${fullName}</h1><p>${email}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${role}</span></div><div class="profile-id"><span data-no-translate>${uid}</span> • <span>${sellerStatus}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${state.wishlist.length}</b><span>Wishlist</span></div><div><b>${state.cart.reduce((s,i)=>s+Number(i.qty||1),0)}</b><span>Cart</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${profileName}" placeholder="Full name"><input name="phone" type="tel" value="${phone}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${uid}</b></div><div><span>Email</span><b data-no-translate>${email}</b></div><div><span>Phone</span><b>${phone || 'Not added'}</b></div><div><span>Seller status</span><b>${sellerStatus}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div><div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Browse Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div><div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
+  }
+
+  async function saveProfile(form){ if(!sb||!state.user)return; const fd=new FormData(form); const {error}=await sb.from('users').update({full_name:fd.get('full_name'),phone:fd.get('phone')||state.user.phone||'',gender:fd.get('gender'),profile_completed:true}).eq('auth_id',state.user.id); if(error)toast(error.message); else{toast('Profile saved'); await loadSession(); syncMenu(); render();} }
   function sellerStatusCard(){
     const st=(state.seller?.status||state.seller?.verification_status||'not_submitted').toLowerCase();
     if(st==='approved') return '';
@@ -459,8 +506,8 @@
     $('#signupSwitch')?.addEventListener('click',()=>{ const f=$('#loginForm'); const fd=new FormData(f); const email=fd.get('email'), pass=fd.get('password'); if(!email||!pass)return toast('Enter email and password first'); signup(email,pass,''); });
     $('#forgotBtn')?.addEventListener('click',()=>{ const fd=new FormData($('#loginForm')); forgotPassword(fd.get('email')); });
     $('#googleLoginBtn')?.addEventListener('click',loginGoogle);
-    $('#sendOtpBtn')?.addEventListener('click',()=>sendPhoneOtp($('#phoneOtpInput')?.value.trim()));
-    $('#verifyOtpBtn')?.addEventListener('click',()=>verifyPhoneOtp($('#phoneOtpInput')?.value.trim(), $('#otpCodeInput')?.value.trim()));
+    $('#sendOtpBtn')?.addEventListener('click',()=>sendPhoneOtp(getOtpPhone()));
+    $('#verifyOtpBtn')?.addEventListener('click',()=>verifyPhoneOtp(getOtpPhone(), $('#otpCodeInput')?.value.trim()));
     $('#profileForm')?.addEventListener('submit',e=>{e.preventDefault();saveProfile(e.target)});
     $('#sellerVerifyForm')?.addEventListener('submit',e=>{e.preventDefault();submitSellerVerification(e.target)});
     $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault();submitProduct(e.target)});
@@ -473,6 +520,6 @@
   }
   function filterMarket(){ const q=($('#searchInput')?.value||'').toLowerCase(); const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat; const sort=$('#sortFilter')?.value||'new'; let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model].join(' ').toLowerCase().includes(q))&&(!cat||p.category===cat)); if(sort==='low')arr.sort((a,b)=>a.price-b.price); if(sort==='high')arr.sort((a,b)=>b.price-a.price); $('#marketGrid').innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,approveSeller,rejectSeller,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,approveSeller,rejectSeller,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone};
   document.addEventListener('DOMContentLoaded',init);
 })();
