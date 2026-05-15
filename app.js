@@ -4,6 +4,8 @@
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
   const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{}} };
+  const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','categories','about','contact','how','support']);
+  function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',order:'orders',message:'messages',parts:'market',browse:'market'}[r] || r); }
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const app = $('#app');
@@ -206,6 +208,7 @@
       el.dataset.rawText = key;
       el.textContent = tx(key);
     });
+    $$('.menu-group-label').forEach(el=>{ const key=(el.textContent||'').trim().toLowerCase()==='main'?'Main':(el.textContent||'').trim().toLowerCase()==='company'?'Company':(el.textContent||'').trim().toLowerCase()==='account'?'Account':el.textContent.trim(); el.textContent=tx(key); });
     const label=$('.menu-lang label'); if(label) label.textContent=tx('Language');
     syncMenu(false);
     translateVisibleText(document.body);
@@ -262,7 +265,17 @@
   function toast(msg){ const el=$('#toast'); el.textContent=localText(msg); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
   function closeMenu(){ $('#sideMenu')?.classList.remove('open'); $('#backdrop')?.classList.remove('show'); }
   function openMenu(){ $('#sideMenu')?.classList.add('open'); $('#backdrop')?.classList.add('show'); }
-  function route(name, params={}){ closeMenu(); if(params.category){ sessionStorage.hp_market_category=params.category; } state.route=name; history.replaceState(null,'','#'+name+(params.id?`/${params.id}`:'')); render(); setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),30); }
+  function route(name, params={}){
+    name = normalizeRouteName(name);
+    if(!VALID_ROUTES.has(name)) name='home';
+    closeMenu();
+    if(params.category){ sessionStorage.hp_market_category=params.category; }
+    state.route=name;
+    const nextHash = '#'+name+(params.id?`/${params.id}`:'');
+    if(location.hash !== nextHash) history.replaceState(null,'',nextHash);
+    render();
+    setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),30);
+  }
   function parseRoute(){ const h=location.hash.replace('#',''); if(!h) return ['home']; return h.split('/'); }
   function placeholder(cat='parts'){ const c=(cat||'parts').toLowerCase(); if(c.includes('bearing'))return 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=900&q=75'; if(c.includes('tractor'))return 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=900&q=75'; if(c.includes('harvester'))return 'https://images.unsplash.com/photo-1598514982195-f36b96d1e8d4?auto=format&fit=crop&w=900&q=75'; if(c.includes('rubber'))return 'https://images.unsplash.com/photo-1581091215367-59ab6b292ddb?auto=format&fit=crop&w=900&q=75'; return 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=900&q=75'; }
   function productImage(p){ return (Array.isArray(p.image_urls)&&p.image_urls[0]) || p.image || placeholder(p.category); }
@@ -278,11 +291,18 @@
   }
   function bindShell(){
     document.addEventListener('click', e=>{
-      const routeEl=e.target.closest('[data-route]');
-      if(routeEl){ e.preventDefault(); route(routeEl.dataset.route); return; }
+      // v80: protect forms/inputs from accidental route bubbling on mobile Safari.
+      if(e.target.closest('input, textarea, select, option, label')) return;
+      const routeEl=e.target.closest('button[data-route],a[data-route],[role="button"][data-route],.brand[data-route],.icon-btn[data-route]');
+      if(routeEl){
+        e.preventDefault();
+        e.stopPropagation();
+        route(routeEl.dataset.route);
+        return;
+      }
       const close=e.target.closest('[data-close-modal]');
       if(close){ const id=close.dataset.closeModal; $('#'+id)?.classList.remove('show'); if(id==='installModal' && $('#dontShowInstall')?.checked) localStorage.hp_install_done='1'; }
-    });
+    }, true);
     $('#menuButton')?.addEventListener('click',openMenu); $('#closeMenu')?.addEventListener('click',closeMenu); $('#backdrop')?.addEventListener('click',closeMenu);
     $('#authButton')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
     $('#menuLoginBtn')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
@@ -797,6 +817,7 @@
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
   function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else html=home(); app.innerHTML=localizeHtml(html); syncMenu(); bindPage(); applyLang(); animateCounters(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
   function bindPage(){
+    $$('#app input, #app textarea, #app select').forEach(el=>el.addEventListener('click',e=>e.stopPropagation()));
     $('#loginForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); login(fd.get('email'),fd.get('password'));});
     $('#signupSwitch')?.addEventListener('click',()=>{ const f=$('#loginForm'); const fd=new FormData(f); const email=fd.get('email'), pass=fd.get('password'); if(!email||!pass)return toast('Enter email and password first'); signup(email,pass,''); });
     $('#forgotBtn')?.addEventListener('click',()=>{ const fd=new FormData($('#loginForm')); forgotPassword(fd.get('email')); });
@@ -812,7 +833,7 @@
     $('#checkoutForm select[name="shipping"]')?.addEventListener('change',e=>{ $('#checkoutSummary').innerHTML=localizeHtml(summaryRows(getTotals(e.target.value))); });
     $('#messageForm')?.addEventListener('submit',e=>{e.preventDefault();sendMsg(e.target)});
     $('#contactForm')?.addEventListener('submit',e=>{e.preventDefault();sendContact(e.target)});
-    $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',()=>purchaseMembership(btn.dataset.planKey)));
+    $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); purchaseMembership(btn.dataset.planKey); }));
     $('#searchInput')?.addEventListener('input',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
   }
   function bindSellTypeChooser(){

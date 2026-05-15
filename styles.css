@@ -163,3 +163,21 @@ body{touch-action:manipulation;overscroll-behavior-x:none}#app,main,.topbar,.bot
   .brand{max-width:calc(100vw - 204px)!important}.brand img{width:36px!important;height:36px!important}.header-actions .icon-btn{max-width:54px}.header-actions .primary.small{max-width:112px}.side-menu{padding:14px!important;gap:6px!important}.side-menu.founder-menu .menu-head{padding-right:104px}.side-menu.founder-menu .menu-head:after{right:10px;bottom:7px;font-size:9px;max-width:88px}.side-menu button{font-size:16px!important;padding:11px 14px!important}.menu-head img{width:46px!important;height:46px!important;flex:0 0 46px}.bottom-nav{grid-template-columns:1fr 1fr 74px 1fr 1fr!important;padding:8px!important}.bottom-nav button{padding:8px 4px!important}.bottom-nav button[data-route="membership"]{font-size:10.5px!important;line-height:1.02!important}
 }
 @supports (-webkit-touch-callout:none){input,select,textarea{font-size:16px!important}body{min-width:0!important}.modal,.side-menu,.bottom-nav{transform:translateZ(0)}}
+
+
+/* v80 click-target and mobile layout hardening */
+@media(max-width:900px){
+  html,body{width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:hidden!important;-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;}
+  main{width:100%!important;max-width:100%!important;margin:0!important;padding-left:10px!important;padding-right:10px!important;padding-bottom:96px!important;}
+  #app{width:100%!important;max-width:100%!important;overflow:hidden!important;}
+  .page-card,.hero-card,.product-card,.membership-card,.side-menu,.topbar{max-width:100%!important;}
+  .bottom-nav{position:fixed!important;left:10px!important;right:10px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;width:auto!important;max-width:none!important;transform:none!important;z-index:70!important;display:grid!important;grid-template-columns:1fr 1fr 72px 1fr 1fr!important;}
+  .bottom-nav button{position:relative!important;z-index:1!important;pointer-events:auto!important;}
+  .side-menu{left:10px!important;right:10px!important;width:auto!important;transform:translate3d(120%,0,0)!important;}
+  .side-menu.open{transform:translate3d(0,0,0)!important;}
+  .auth-card,.phone-login,.form{position:relative!important;z-index:2!important;}
+  .auth-card input,.auth-card select,.auth-card textarea,.auth-card button,.form input,.form select,.form textarea{touch-action:manipulation!important;}
+}
+@supports (-webkit-touch-callout:none){
+  @media(max-width:900px){.bottom-nav{transform:none!important}.side-menu.open{transform:translate3d(0,0,0)!important}}
+}
