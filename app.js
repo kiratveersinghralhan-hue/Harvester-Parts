@@ -132,7 +132,7 @@
     }
   };
   function t(k){return (i18n.en&&i18n.en[k])||k}
-  function tx(text){ return text; }
+  function tx(text){ return (window.HP_TRANSLATE ? window.HP_TRANSLATE(text) : text); }
   const COMMON_TRANSLATIONS = {
     hi:{
       'Guest':'अतिथि','Buyer':'खरीदार','Buyer / Seller':'खरीदार / विक्रेता','Platform Owner / Admin':'प्लेटफॉर्म मालिक / एडमिन','Home':'होम','Market':'मार्केट','Chat':'चैट','Account':'अकाउंट','Cart':'कार्ट','Login':'लॉगिन','Logout':'लॉगआउट','Login / Signup':'लॉगिन / साइनअप','My Account':'मेरा अकाउंट','My Orders':'मेरे ऑर्डर','Messages':'संदेश','Checkout':'चेकआउट','Browse Marketplace':'मार्केट देखें','Sell a Part':'पार्ट बेचें','List Product':'प्रोडक्ट जोड़ें','Sell a Product':'प्रोडक्ट बेचें','Admin Panel':'एडमिन पैनल','Admin':'एडमिन','Language':'भाषा',
@@ -195,18 +195,21 @@
     }
 
     const routeLabels = {
-      home:'Home', market:'Market', sell:'Sell a Part', membership:'Membership & Rewards', messages:'Chat', account:'Account',
-      cart:'Cart', checkout:'Checkout', orders:'My Orders', admin:'Admin Panel'
+      home:'Home', market:'Market', sell:'Sell a Part', membership:'Membership & Rewards', categories:'Categories', how:'How it works',
+      about:'About Us', contact:'Contact Us', support:'Support', messages:'Chat', account:'Account', cart:'Cart', checkout:'Checkout', orders:'My Orders', admin:'Admin Panel'
     };
     $$('.side-menu button[data-route], .bottom-nav button, .nav-tabs button').forEach(el=>{
       if(el.classList.contains('sell-fab') || el.textContent.trim()==='＋'){ el.dataset.rawText='＋'; el.textContent='＋'; return; }
-      const key = routeLabels[el.dataset.route] || el.dataset.i18n || el.dataset.label || el.textContent.trim();
+      let key = routeLabels[el.dataset.route] || el.dataset.i18n || el.dataset.label || el.textContent.trim();
+      if(el.closest('.bottom-nav') && el.dataset.route === 'membership') key = 'Plans';
+      if(el.closest('.nav-tabs') && el.dataset.route === 'membership') key = 'Plans';
       el.dataset.rawText = key;
       el.textContent = tx(key);
     });
     const label=$('.menu-lang label'); if(label) label.textContent=tx('Language');
     syncMenu(false);
     translateVisibleText(document.body);
+    if(window.HP_APPLY_LANGUAGE) window.HP_APPLY_LANGUAGE();
     updateCartCount();
   }
   function money(n){return '₹' + Math.round(Number(n||0)).toLocaleString('en-IN')}
