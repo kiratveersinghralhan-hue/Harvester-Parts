@@ -34,8 +34,8 @@
       'Login / Create Account':'ਲਾਗਇਨ / ਖਾਤਾ ਬਣਾਓ','Email':'ਈਮੇਲ','Password':'ਪਾਸਵਰਡ','Continue':'ਜਾਰੀ ਰੱਖੋ','New users are created automatically.':'ਨਵੇਂ users automatically ਬਣ ਜਾਂਦੇ ਹਨ.','List a Product':'Product list ਕਰੋ','Product name':'Product name','Listing price':'Listing price','Category e.g. Bearing, Cutter Part':'Category e.g. Bearing, Cutter Part','Submit Listing for Approval':'Approval ਲਈ listing submit ਕਰੋ','No orders yet.':'ਅਜੇ ਕੋਈ order ਨਹੀਂ.'
     }
   };
-  function t(k){return (i18n[state.lang]||i18n.en)[k]||i18n.en[k]||k}
-  function tx(text){ const pack=uiText[state.lang]||{}; return pack[text] || text; }
+  function t(k){return (i18n.en&&i18n.en[k])||k}
+  function tx(text){ return text; }
   const COMMON_TRANSLATIONS = {
     hi:{
       'Guest':'अतिथि','Buyer':'खरीदार','Buyer / Seller':'खरीदार / विक्रेता','Platform Owner / Admin':'प्लेटफॉर्म मालिक / एडमिन','Home':'होम','Market':'मार्केट','Chat':'चैट','Account':'अकाउंट','Cart':'कार्ट','Login':'लॉगिन','Logout':'लॉगआउट','Login / Signup':'लॉगिन / साइनअप','My Account':'मेरा अकाउंट','My Orders':'मेरे ऑर्डर','Messages':'संदेश','Checkout':'चेकआउट','Browse Marketplace':'मार्केट देखें','Sell a Part':'पार्ट बेचें','List Product':'प्रोडक्ट जोड़ें','Sell a Product':'प्रोडक्ट बेचें','Admin Panel':'एडमिन पैनल','Admin':'एडमिन','Language':'भाषा',
@@ -76,48 +76,11 @@
   });
   ['ta','te','bn','mr','gu'].forEach(l=>{ COMMON_TRANSLATIONS[l] = Object.assign({}, COMMON_TRANSLATIONS.hi, uiText[l]||{}); });
 
-  function translateVisibleText(root=document.body){
-    if(state.lang==='en') return;
-    const pack=Object.assign({}, COMMON_TRANSLATIONS[state.lang]||{}, uiText[state.lang]||{});
-    const translateString = (v)=>{ const clean=String(v||'').trim(); return pack[clean] || v; };
-    const walker=document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {acceptNode(node){
-      if(!node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
-      const p=node.parentElement; if(!p || ['SCRIPT','STYLE','TEXTAREA'].includes(p.tagName)) return NodeFilter.FILTER_REJECT;
-      return NodeFilter.FILTER_ACCEPT;
-    }});
-    const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
-    nodes.forEach(n=>{ const raw=n.nodeValue; const trimmed=raw.trim(); const tr=pack[trimmed]; if(tr) n.nodeValue=raw.replace(trimmed,tr); });
-    root.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el=>{ const tr=translateString(el.getAttribute('placeholder')); if(tr) el.setAttribute('placeholder',tr); });
-    root.querySelectorAll('option').forEach(el=>{ const tr=translateString(el.textContent); if(tr) el.textContent=tr; });
-  }
-
-  function localizeHtml(html){
-    if(state.lang==='en') return html;
-    const pack = Object.assign({}, COMMON_TRANSLATIONS[state.lang]||{}, uiText[state.lang]||{});
-    Object.keys(pack)
-      .filter(k => k && k.length > 1)
-      .sort((a,b)=>b.length-a.length)
-      .forEach(key=>{
-        const esc = key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-        html = html.replace(new RegExp(esc,'g'), pack[key]);
-      });
-    return html;
-  }
-  function localText(text){
-    if(state.lang==='en') return text;
-    const pack = Object.assign({}, COMMON_TRANSLATIONS[state.lang]||{}, uiText[state.lang]||{});
-    const raw = String(text||'');
-    const trimmed = raw.trim();
-    if(pack[trimmed]) return raw.replace(trimmed, pack[trimmed]);
-    let out = raw;
-    Object.keys(pack).filter(k=>k.length>3).sort((a,b)=>b.length-a.length).forEach(key=>{
-      if(out.includes(key)){
-        const esc = key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-        out = out.replace(new RegExp(esc,'g'), pack[key]);
-      }
-    });
-    return out;
-  }
+  // v73: Core renderer stays in clean English. The standalone language patch
+  // translates the visible UI safely after render, so words never get mixed.
+  function translateVisibleText(root=document.body){ return; }
+  function localizeHtml(html){ return html; }
+  function localText(text){ return text; }
   function applyLang(){
     $$('[data-i18n]').forEach(el=>el.textContent=t(el.dataset.i18n));
     $('#languageSelect') && ($('#languageSelect').value=state.lang);
