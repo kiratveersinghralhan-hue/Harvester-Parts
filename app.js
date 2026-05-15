@@ -3,7 +3,7 @@
   const hasConfig = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('YOUR_') && cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes('YOUR_');
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
-  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],docUrls:{}} };
+  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{}} };
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const app = $('#app');
@@ -12,23 +12,38 @@
 
 
   const RANK_RULES = [
-    {key:'starter', title:'Farm Starter', min:0, banner:'Starter Banner', next:'rising'},
-    {key:'rising', title:'Rising Trader', min:120, banner:'Rising Trader Banner', next:'trusted'},
-    {key:'trusted', title:'Trusted Dealer', min:400, banner:'Trusted Dealer Banner', next:'pro'},
-    {key:'pro', title:'Pro Seller', min:900, banner:'Pro Seller Banner', next:'elite'},
-    {key:'elite', title:'Elite Harvester Seller', min:1800, banner:'Elite Seller Banner', next:'legend'},
-    {key:'legend', title:'Marketplace Legend', min:3500, banner:'Legend Banner', next:null},
-    {key:'founder', title:'Founder 1 of 1', min:999999, banner:'Original Founder Banner', next:null}
+    {key:'starter', title:'Farm Starter', min:0, banner:'Field Starter', next:'rising', subtitle:'New member learning the marketplace'},
+    {key:'rising', title:'Rising Trader', min:120, banner:'Rising Trader', next:'trusted', subtitle:'Active seller building first trust'},
+    {key:'trusted', title:'Trusted Dealer', min:400, banner:'Trusted Dealer', next:'pro', subtitle:'Verified activity and clean listings'},
+    {key:'pro', title:'Pro Seller', min:900, banner:'Pro Seller', next:'elite', subtitle:'Strong catalog and consistent activity'},
+    {key:'elite', title:'Elite Harvester Seller', min:1800, banner:'Elite Harvester Seller', next:'legend', subtitle:'Premium seller reputation'},
+    {key:'legend', title:'Marketplace Legend', min:3500, banner:'Marketplace Legend', next:null, subtitle:'Top marketplace identity'},
+    {key:'founder', title:'Founder 1 of 1', min:999999, banner:'Original Founder', next:null, subtitle:'One-of-one platform owner identity'}
   ];
   const CUSTOM_BADGE_DEFS = {
-    founder_1_of_1:{name:'Founder 1 of 1', title:'Platform Founder', tier:'founder', line:'Original owner badge', rarity:'1 of 1'},
-    admin_crown:{name:'Admin Control', title:'Admin Authority', tier:'admin', line:'Can review and control platform safety', rarity:'Unique'},
-    verified_seller:{name:'Verified Seller', title:'Trusted Seller', tier:'green', line:'Seller documents approved', rarity:'Verified'},
-    first_listing:{name:'First Listing', title:'Marketplace Starter', tier:'bronze', line:'Posted first product', rarity:'Starter'},
-    growth_seller:{name:'Growth Seller', title:'Listing Builder', tier:'silver', line:'Posted multiple products', rarity:'Growth'},
-    trusted_dealer:{name:'Trusted Dealer', title:'Dealer Rank', tier:'gold', line:'Strong approved catalog', rarity:'High'},
-    buyer_member:{name:'Buyer Member', title:'Market Member', tier:'base', line:'Joined Harvester Parts', rarity:'Member'}
+    founder_1_of_1:{name:'Founder 1 of 1', title:'Platform Founder', tier:'founder', line:'One owner. One original account. Permanent identity.', rarity:'1 OF 1'},
+    original_builder:{name:'Original Builder', title:'Built the Market', tier:'founder', line:'Reserved founder-series badge for the platform creator.', rarity:'FOUNDER'},
+    admin_crown:{name:'Admin Authority', title:'Control Center', tier:'admin', line:'Can approve, reject, ban and protect platform quality.', rarity:'UNIQUE'},
+    market_guardian:{name:'Market Guardian', title:'Safety Admin', tier:'admin', line:'Protects buyers, sellers, documents and marketplace trust.', rarity:'ADMIN'},
+    verified_seller:{name:'Verified Seller', title:'Trusted Seller', tier:'green', line:'Documents approved and seller profile reviewed.', rarity:'VERIFIED'},
+    first_listing:{name:'First Listing', title:'Marketplace Starter', tier:'bronze', line:'Posted the first product for admin approval.', rarity:'STARTER'},
+    growth_seller:{name:'Growth Seller', title:'Listing Builder', tier:'silver', line:'Multiple listings created and seller activity started.', rarity:'GROWTH'},
+    trusted_dealer:{name:'Trusted Dealer', title:'Dealer Rank', tier:'gold', line:'High approved catalog activity and trust signals.', rarity:'HIGH'},
+    premium_member:{name:'Premium Member', title:'Plan Holder', tier:'premium', line:'Membership plan active with extra rewards and visibility.', rarity:'PLAN'},
+    event_champion:{name:'Event Champion', title:'Campaign Winner', tier:'event', line:'Limited reward for future leaderboard events.', rarity:'EVENT'},
+    buyer_member:{name:'Buyer Member', title:'Market Member', tier:'base', line:'Joined Harvester Parts marketplace.', rarity:'MEMBER'}
   };
+
+  const MEMBERSHIP_PLANS = [
+    {key:'starter_49', name:'Starter Boost', price:49, days:7, title:'Starter Supporter', banner:'Starter Boost Banner', badge:'Starter Boost', tag:'Entry', listings:1, boost:0, reward:60, benefits:['Supporter title for 7 days','Basic member badge','Good for first-time testing']},
+    {key:'basic_99', name:'Basic Member', price:99, days:15, title:'Basic Member', banner:'Basic Member Banner', badge:'Basic Member', tag:'Popular start', listings:2, boost:1, reward:130, benefits:['Member title for 15 days','1 listing visibility boost','Profile reward points']},
+    {key:'seller_199', name:'Seller Plus', price:199, days:30, title:'Seller Plus', banner:'Seller Plus Banner', badge:'Seller Plus', tag:'Seller', listings:5, boost:2, reward:280, benefits:['Seller Plus title','2 boosted listing days','Higher trust display on profile']},
+    {key:'growth_499', name:'Growth Seller', price:499, days:30, title:'Growth Seller Pro', banner:'Growth Seller Banner', badge:'Growth Plan', tag:'Growth', listings:12, boost:5, reward:700, benefits:['Growth Seller title','5 boosted listing days','Priority review request']},
+    {key:'pro_999', name:'Pro Dealer', price:999, days:45, title:'Pro Dealer', banner:'Pro Dealer Banner', badge:'Pro Dealer', tag:'Best value', listings:25, boost:12, reward:1500, benefits:['Pro Dealer title','12 boost days','Priority seller support']},
+    {key:'elite_1999', name:'Elite Dealer', price:1999, days:60, title:'Elite Dealer', banner:'Elite Dealer Banner', badge:'Elite Dealer', tag:'Premium', listings:50, boost:25, reward:3300, benefits:['Elite Dealer title','25 boost days','Premium profile presence']},
+    {key:'partner_2999', name:'Market Partner', price:2999, days:75, title:'Market Partner', banner:'Market Partner Banner', badge:'Market Partner', tag:'Partner', listings:80, boost:40, reward:5200, benefits:['Partner title and banner','40 boost days','Top trust styling on account']},
+    {key:'leader_5999', name:'Market Leader', price:5999, days:120, title:'Market Leader', banner:'Market Leader Banner', badge:'Market Leader', tag:'Maximum', listings:200, boost:100, reward:12000, benefits:['Highest paid member title','100 boost days','Maximum earning visibility pack']}
+  ];
   function userPoints(user=state.profile, seller=state.seller, products=state.products){
     const uid=state.user?.id || user?.auth_id || user?.user_id;
     const mine=(products||[]).filter(p=>String(p.user_id||'')===String(uid));
@@ -58,7 +73,8 @@
     const mine=state.products.filter(p=>String(p.user_id||'')===String(state.user?.id));
     const approved=mine.filter(p=>p.status==='approved').length;
     const arr=['buyer_member'];
-    if(isAdminUser()) arr.unshift('founder_1_of_1','admin_crown');
+    if(isAdminUser()) arr.unshift('founder_1_of_1','original_builder','admin_crown','market_guardian');
+    if(state.profile?.active_membership) arr.push('premium_member');
     if(state.seller?.status==='approved') arr.push('verified_seller');
     if(mine.length>=1) arr.push('first_listing');
     if(mine.length>=3) arr.push('growth_seller');
@@ -67,19 +83,22 @@
   }
   function customBadge(key, locked=false){
     const b=CUSTOM_BADGE_DEFS[key] || CUSTOM_BADGE_DEFS.buyer_member;
-    return `<div class="custom-badge tier-${esc(b.tier)} ${locked?'locked':''}"><span>${esc(b.rarity)}</span><b>${esc(b.name)}</b><small>${esc(b.title)}</small></div>`;
+    return `<div class="custom-badge tier-${esc(b.tier)} ${locked?'locked':''}"><span>${esc(b.rarity)}</span><b>${esc(b.name)}</b><small>${esc(b.title)}</small><p>${esc(b.line||'Custom badge')}</p></div>`;
   }
   function userBanner(){
-    if(isAdminUser()) return `<div class="unique-founder-banner"><div><span>ONE OF ONE</span><h2>Original Founder</h2><p>Unique platform owner banner, title and badge reserved for ${esc(ADMIN_EMAIL)}.</p></div><b>1 / 1</b></div>`;
+    if(isAdminUser()) return `<div class="unique-founder-banner"><div><span>ONE OF ONE • NEVER DUPLICATED</span><h2>Original Founder</h2><p><strong>Platform Founder</strong> title, Founder 1 of 1 custom badge and unique owner banner reserved only for ${esc(ADMIN_EMAIL)}.</p><div class="title-row"><em>Title: Platform Founder</em><em>Badge: Founder 1 of 1</em><em>Banner: Original Founder</em></div></div><b>1 / 1</b></div>`;
     const pts=userPoints(); const info=nextRankInfo(pts);
-    return `<div class="rank-banner tier-${esc(info.current.key)}"><div><span>${esc(info.current.banner)}</span><h2>${esc(info.current.title)}</h2><p>${info.next?`${info.needed} points to ${esc(info.next.title)}`:'Highest rank unlocked'}</p></div><b>${pts>=999999?'MAX':pts}</b></div>`;
+    const plan=activePlan();
+    const title=plan?.title || state.profile?.membership_title || info.current.title;
+    const banner=plan?.banner || state.profile?.banner_title || info.current.banner;
+    return `<div class="rank-banner tier-${esc(info.current.key)} ${plan?'has-plan':''}"><div><span>${esc(plan?plan.tag+' MEMBER':banner)}</span><h2>${esc(title)}</h2><p>${plan?`Active ${esc(plan.name)} membership • ${plan.boost} boost days • ${plan.reward} reward points`:(info.next?`${info.needed} points to ${esc(info.next.title)}`:'Highest rank unlocked')}</p><div class="title-row"><em>Rank: ${esc(info.current.title)}</em><em>Title: ${esc(title)}</em><em>Badge: ${esc(plan?.badge || state.profile?.badge_title || 'Member')}</em></div></div><b>${pts>=999999?'MAX':pts}</b></div>`;
   }
   function rankProgressCard(){
     const pts=userPoints(); const info=nextRankInfo(pts);
     return `<div class="page-card rank-card"><div class="section-head compact"><h2>Rank progress</h2><span class="badge owner">${esc(info.current.title)}</span></div><div class="rank-progress"><div style="width:${info.progress}%"></div></div><div class="rank-meta"><span>${pts>=999999?'Founder rank locked as 1 of 1':`${pts} points earned`}</span><b>${info.next?`${info.progress}% to ${esc(info.next.title)}`:'Top rank'}</b></div><div class="rank-ways"><div><b>+120</b><span>approved listing</span></div><div><b>+180</b><span>seller verified</span></div><div><b>+25</b><span>pending listing</span></div><div><b>+50</b><span>profile complete</span></div></div></div>`;
   }
   function badgeCollectionCard(){
-    const have=earnedBadges(); const all=['founder_1_of_1','admin_crown','verified_seller','first_listing','growth_seller','trusted_dealer','buyer_member'];
+    const have=earnedBadges(); const all=['founder_1_of_1','original_builder','admin_crown','market_guardian','premium_member','verified_seller','first_listing','growth_seller','trusted_dealer','event_champion','buyer_member'];
     return `<div class="page-card badge-collection"><div class="section-head compact"><h2>Badge collection</h2><span class="badge">${have.length} earned</span></div><p class="muted">Custom text badges only. No icon badges. More event badges can be added later.</p><div class="badge-grid-custom">${all.map(k=>customBadge(k,!have.includes(k))).join('')}</div></div>`;
   }
   function eventPreviewCard(){
@@ -176,7 +195,7 @@
     }
 
     const routeLabels = {
-      home:'Home', market:'Market', sell:'Sell a Part', messages:'Chat', account:'Account',
+      home:'Home', market:'Market', sell:'Sell a Part', membership:'Membership & Rewards', messages:'Chat', account:'Account',
       cart:'Cart', checkout:'Checkout', orders:'My Orders', admin:'Admin Panel'
     };
     $$('.side-menu button[data-route], .bottom-nav button, .nav-tabs button').forEach(el=>{
@@ -191,6 +210,52 @@
     updateCartCount();
   }
   function money(n){return '₹' + Math.round(Number(n||0)).toLocaleString('en-IN')}
+  function activePlan(){
+    const key=state.profile?.active_membership || state.profile?.membership_key || '';
+    return MEMBERSHIP_PLANS.find(p=>p.key===key) || null;
+  }
+  function membershipExpiryText(){
+    const exp=state.profile?.membership_expires_at;
+    if(!exp) return '';
+    try{return new Date(exp).toLocaleDateString('en-IN')}catch(e){return ''}
+  }
+  function planCard(p){
+    const active=(state.profile?.active_membership===p.key || state.profile?.membership_key===p.key);
+    return `<article class="membership-card ${active?'active':''}"><div class="plan-ribbon">${esc(p.tag)}</div><div class="plan-head"><span>${esc(p.banner)}</span><h3>${esc(p.name)}</h3><div class="plan-price">₹${Number(p.price).toLocaleString('en-IN')}<small>/${p.days} days</small></div></div><div class="plan-title-preview"><b>${esc(p.title)}</b><small>${esc(p.badge)} custom badge • no icons</small></div><div class="plan-stats"><div><b>${p.listings}</b><span>listing limit</span></div><div><b>${p.boost}</b><span>boost days</span></div><div><b>${p.reward}</b><span>points</span></div></div><ul>${p.benefits.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="${active?'secondary':'primary'}" data-plan-key="${esc(p.key)}">${active?'Current Plan':'Choose Plan'}</button></article>`;
+  }
+  function membershipPage(){
+    const plan=activePlan();
+    return `<section class="membership-hero page-card"><div><span class="eyebrow">Membership & rewards</span><h1>Plans that make sellers post more, rank higher and earn more visibility.</h1><p class="muted">Start from ₹49. Paid plans unlock custom titles, custom banners, reward points and listing boost days. This is built so later you can run events like highest listings, top dealer week and festival rewards.</p><div class="hero-actions"><button class="primary" data-route="sell">Start Selling</button><button class="ghost" data-route="account">View My Badges</button></div></div><div class="membership-current ${plan?'active':''}"><span>${plan?'ACTIVE PLAN':'NO ACTIVE PLAN'}</span><h2>${esc(plan?.name || 'Free Member')}</h2><p>${plan?`${esc(plan.title)} • expires ${membershipExpiryText()||'after plan duration'}`:'Choose a plan to unlock member title, badge and banner.'}</p></div></section><section><div class="section-head"><h2>Choose your plan</h2><p class="muted">8 options from ₹49 to ₹5,999.</p></div><div class="membership-grid">${MEMBERSHIP_PLANS.map(planCard).join('')}</div></section><section class="page-card reward-system-card"><div class="section-head compact"><h2>X Rewards system</h2><span class="badge owner">Future ready</span></div><div class="reward-columns"><div><b>Post more</b><span>Points for approved listings and seller verification.</span></div><div><b>Rank higher</b><span>Ranks and titles unlock as activity grows.</span></div><div><b>Win events</b><span>Later you can reward top sellers with limited badges and banners.</span></div></div></section>`;
+  }
+  async function purchaseMembership(key){
+    if(!state.user) return route('login');
+    const plan=MEMBERSHIP_PLANS.find(p=>p.key===key);
+    if(!plan) return toast('Plan not found');
+    const start=new Date(); const exp=new Date(Date.now()+plan.days*86400000);
+    const purchase={user_id:state.user.id, plan_key:plan.key, plan_name:plan.name, amount:plan.price, status:'pending', starts_at:start.toISOString(), expires_at:exp.toISOString()};
+    let purchaseId=null;
+    if(sb){
+      try{
+        const {data,error}=await sb.from('membership_purchases').insert(purchase).select('id').single();
+        if(error) throw error; purchaseId=data?.id||null;
+      }catch(e){ return toast('Run SUPABASE_v78_MEMBERSHIP_PATCH.sql once, then try plan purchase.'); }
+    }
+    const activate=async(paymentId='manual_pending')=>{
+      if(sb){
+        await sb.from('membership_purchases').update({status:paymentId==='manual_pending'?'pending':'paid',payment_id:paymentId,updated_at:new Date().toISOString()}).eq('id',purchaseId);
+        await sb.from('users').update({active_membership:plan.key,membership_key:plan.key,membership_title:plan.title,membership_badge:plan.badge,membership_banner:plan.banner,membership_expires_at:exp.toISOString(),badge_key:'premium_member',badge_title:plan.title,banner_key:plan.key,banner_title:plan.banner,points:Math.max(Number(state.profile?.points||0), userPoints()+plan.reward)}).eq('auth_id',state.user.id);
+        await loadSession();
+      }
+      toast(paymentId==='manual_pending'?'Membership request saved. Connect Razorpay/admin confirmation for live payments.':'Membership activated');
+      route('account');
+    };
+    if(cfg.RAZORPAY_KEY_ID && !cfg.RAZORPAY_KEY_ID.includes('YOUR_') && window.Razorpay){
+      const rz=new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:Math.round(plan.price*100),currency:'INR',name:'Harvester Parts',description:plan.name,handler:async(resp)=>activate(resp.razorpay_payment_id)});
+      rz.open();
+    } else {
+      await activate('manual_pending');
+    }
+  }
   function toast(msg){ const el=$('#toast'); el.textContent=localText(msg); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
   function closeMenu(){ $('#sideMenu')?.classList.remove('open'); $('#backdrop')?.classList.remove('show'); }
   function openMenu(){ $('#sideMenu')?.classList.add('open'); $('#backdrop')?.classList.add('show'); }
@@ -239,8 +304,8 @@
     if(!sb||!state.user)return;
     const isOwner=(state.user.email||'').toLowerCase()===ADMIN_EMAIL;
     const base={auth_id:state.user.id,email:state.user.email,phone:state.user.phone||'',role:isOwner?'admin':'user',user_uid:'HP-'+state.user.id.replaceAll('-','').slice(0,8).toUpperCase()};
-    const extended={...base,rank_key:isOwner?'founder':'starter',rank_title:isOwner?'Founder 1 of 1':'Farm Starter',badge_key:isOwner?'founder_1_of_1':'buyer_member',badge_title:isOwner?'Founder 1 of 1':'Market Member',banner_key:isOwner?'founder_1_of_1':'starter',banner_title:isOwner?'Original Founder • One of One':'Starter Banner',title_prefix:isOwner?'Platform Founder':null,is_founder:isOwner,founder_number:isOwner?1:null,points:isOwner?999999:0};
-    let {error}=await sb.from('users').upsert(extended,{onConflict:'auth_id'});
+    const extended={...base,rank_key:'founder',rank_title:'Founder 1 of 1',badge_key:'founder_1_of_1',badge_title:'Founder 1 of 1',banner_key:'founder_1_of_1',banner_title:'Original Founder • One of One',title_prefix:'Platform Founder',is_founder:true,founder_number:1,points:999999};
+    let {error}=await sb.from('users').upsert(isOwner?extended:base,{onConflict:'auth_id'});
     if(error && /rank_key|badge_key|banner_key|is_founder|points|founder/i.test(String(error.message||''))){
       await sb.from('users').upsert(base,{onConflict:'auth_id'});
     }
@@ -340,7 +405,9 @@
     }
     $('#logoutBtn')?.classList.toggle('hidden',!state.user);
     $('#menuName') && ($('#menuName').textContent=state.profile?.full_name || state.user?.email || tx('Guest'));
-    $('#menuRole') && ($('#menuRole').textContent=isAdmin?tx('Platform Owner / Admin'):(state.profile?.badge_title || tx('Buyer / Seller')));
+    $('#menuRole') && ($('#menuRole').textContent=isAdmin?'Founder 1 of 1 • Platform Founder':(state.profile?.membership_title || state.profile?.badge_title || tx('Buyer / Seller')));
+    $('#sideMenu')?.classList.toggle('founder-menu', !!isAdmin);
+    $('#sideMenu')?.classList.toggle('member-menu', !!state.profile?.active_membership && !isAdmin);
     $$('[data-admin-only]').forEach(el=>el.style.display=isAdmin?'':'none');
     updateCartCount();
     if(updateLang) {
@@ -467,6 +534,11 @@
 
   function loginPage(){ return `<section class="page-card auth-card"><h1>Login / Create Account</h1><div class="notice auth-notice">Email login works after Supabase Auth is configured. Phone OTP needs Supabase Phone provider + Twilio Verify credentials saved in the dashboard.</div><form id="loginForm" class="form"><input name="email" type="email" autocomplete="email" placeholder="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" required><button class="primary">Login</button><button type="button" class="ghost" id="signupSwitch">Create new account</button><button type="button" class="link-btn" id="forgotBtn">Forgot password?</button></form><div class="auth-divider"><span>or</span></div><button class="google-btn" id="googleLoginBtn">Continue with Google</button><div class="phone-login"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Choose country code, then enter mobile number. Example: 9814800017</p><div class="phone-row"><select id="countryCodeSelect" data-no-translate aria-label="Country code">${countryOptions()}</select><input id="phoneOtpInput" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="Mobile number"></div><button class="ghost" id="sendOtpBtn">Send OTP</button><input id="otpCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="OTP code"><button class="secondary" id="verifyOtpBtn">Verify OTP</button><p class="muted tiny-note otp-help">If OTP fails with Twilio 60200, check the SMS provider credentials in Supabase. The website formats the number before sending.</p></div></section>`; }
   
+
+  function membershipMiniCard(){
+    const plan=activePlan();
+    return `<div class="page-card membership-mini-card"><div class="section-head compact"><h2>Membership</h2><span class="badge ${plan?'owner':''}">${plan?'Active':'Free'}</span></div>${plan?`<div class="mini-plan-banner"><b>${esc(plan.title)}</b><span>${esc(plan.banner)} • expires ${membershipExpiryText()||'soon'}</span></div><div class="rank-ways"><div><b>${plan.boost}</b><span>boost days</span></div><div><b>${plan.listings}</b><span>listing limit</span></div><div><b>${plan.reward}</b><span>reward pts</span></div><div><b>${money(plan.price)}</b><span>value</span></div></div>`:`<p class="muted">Unlock custom title, profile banner, extra reward points and boost days from ₹49.</p>`}<button class="primary" data-route="membership">${plan?'Upgrade Plan':'View Plans'}</button></div>`;
+  }
   function accountPage(){
     if(!state.user)return loginPage();
     const isAdmin=state.profile?.role==='admin'||(state.user.email||'').toLowerCase()===ADMIN_EMAIL;
@@ -476,13 +548,14 @@
     const phone=state.profile?.phone || state.user.phone || '';
     const uid=state.profile?.user_uid || ('HP-'+String(state.user.id||'account').replaceAll('-','').slice(0,8).toUpperCase());
     const pts=userPoints(); const rank=rankForPoints(pts);
-    const role=isAdmin?'Platform Founder • 1 of 1':(state.profile?.badge_title || (state.seller?.status==='approved'?'Verified Seller':'Buyer / Seller'));
+    const memberPlan=activePlan();
+    const role=isAdmin?'Platform Founder • 1 of 1':(memberPlan?.title || state.profile?.membership_title || state.profile?.badge_title || (state.seller?.status==='approved'?'Verified Seller':'Buyer / Seller'));
     const myProducts=state.products.filter(p=>String(p.user_id||'')===String(state.user.id));
     const approvedListings=myProducts.filter(p=>p.status==='approved').length;
     const pendingListings=myProducts.filter(p=>p.status!=='approved').length;
     const sellerStatus=state.seller?.status || (isAdmin?'approved':'not verified');
     const avatarText=(fullName||email||'HP').split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'HP';
-    return `<section class="profile-page">${userBanner()}<div class="profile-cover page-card ${isAdmin?'founder-profile-cover':''}"><div class="profile-avatar"><img src="./logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${esc(fullName)}</h1><p>${esc(email)}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${esc(role)}</span></div><div class="profile-id"><span data-no-translate>${esc(uid)}</span> • <span>${esc(rank.title)}</span> • <span>${esc(sellerStatus)}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${pts>=999999?'MAX':pts}</b><span>Points</span></div><div><b>${earnedBadges().length}</b><span>Badges</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${esc(profileName)}" placeholder="Full name"><input name="phone" type="tel" value="${esc(phone)}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${esc(uid)}</b></div><div><span>Email</span><b data-no-translate>${esc(email)}</b></div><div><span>Phone</span><b>${esc(phone || 'Not added')}</b></div><div><span>Seller status</span><b>${esc(sellerStatus)}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div>${rankProgressCard()}${badgeCollectionCard()}<div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Browse Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div>${eventPreviewCard()}<div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
+    return `<section class="profile-page">${userBanner()}<div class="profile-cover page-card ${isAdmin?'founder-profile-cover':''}"><div class="profile-avatar"><img src="./logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${esc(fullName)}</h1><p>${esc(email)}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${esc(role)}</span></div><div class="profile-id"><span data-no-translate>${esc(uid)}</span> • <span>${esc(rank.title)}</span> • <span>${esc(sellerStatus)}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${pts>=999999?'MAX':pts}</b><span>Points</span></div><div><b>${earnedBadges().length}</b><span>Badges</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${esc(profileName)}" placeholder="Full name"><input name="phone" type="tel" value="${esc(phone)}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${esc(uid)}</b></div><div><span>Email</span><b data-no-translate>${esc(email)}</b></div><div><span>Phone</span><b>${esc(phone || 'Not added')}</b></div><div><span>Seller status</span><b>${esc(sellerStatus)}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div>${rankProgressCard()}${membershipMiniCard()}${badgeCollectionCard()}<div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Browse Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div>${eventPreviewCard()}<div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
   }
 
   async function saveProfile(form){ if(!sb||!state.user)return; const fd=new FormData(form); const {error}=await sb.from('users').update({full_name:fd.get('full_name'),phone:fd.get('phone')||state.user.phone||'',gender:fd.get('gender'),profile_completed:true}).eq('auth_id',state.user.id); if(error)toast(error.message); else{toast('Profile saved'); await loadSession(); syncMenu(); render();} }
@@ -541,6 +614,7 @@
     const contacts=state.admin.contacts||[];
     const plans=state.admin.plans||[];
     const boosts=state.admin.boosts||[];
+    const memberships=state.admin.memberships||[];
     const gross=orders.reduce((s,o)=>s+Number(o.amount||0),0);
     const paid=orders.filter(o=>['paid','confirmed','shipped','delivered'].includes(o.status)).reduce((s,o)=>s+Number(o.amount||0),0);
     const platform=orders.reduce((s,o)=>s+Number(o.platform_fee||0),0);
@@ -577,7 +651,7 @@
     </section>
     <section class="page-card admin-panel"><div class="section-head compact"><h2>Revenue systems</h2><span class="badge owner">Plans • Boosts • Fees</span></div>
       <div class="revenue-mini-grid">
-        <div><b>Seller Plans</b><span>${plans.length} purchases</span><strong>${adminMoney(plans.reduce((s,p)=>s+Number(p.amount||0),0))}</strong></div>
+        <div><b>Memberships</b><span>${memberships.length} purchases</span><strong>${adminMoney(memberships.reduce((s,p)=>s+Number(p.amount||0),0))}</strong></div><div><b>Seller Plans</b><span>${plans.length} purchases</span><strong>${adminMoney(plans.reduce((s,p)=>s+Number(p.amount||0),0))}</strong></div>
         <div><b>Boosted Listings</b><span>${products.filter(p=>p.is_boosted).length} active / ${boosts.length} logs</span><strong>${adminMoney(boosts.reduce((s,b)=>s+Number(b.amount||0),0))}</strong></div>
         <div><b>Approved Products</b><span>${products.filter(p=>p.status==='approved').length} live</span><strong>${products.length} total</strong></div>
         <div><b>Seller Pipeline</b><span>${sellers.length} sellers</span><strong>${sellers.filter(s=>s.status==='approved').length} approved</strong></div>
@@ -586,7 +660,7 @@
     <section class="admin-columns">
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Ranks & badges</h2><span class="badge owner">Motivation system</span></div><div id="adminRanksList">${adminRanksList()}</div></div>
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Events & rewards</h2><span class="badge">Future ready</span></div><div id="adminEventsList">${adminEventsList()}</div></div>
-    </section>`;
+    </section><section class="page-card admin-panel"><div class="section-head compact"><h2>Membership purchases</h2><span class="badge owner">₹49 to ₹5999</span></div><div id="adminMembershipList">${adminMembershipList(memberships)}</div></section>`;
   }
 
   function adminRanksList(){
@@ -605,6 +679,10 @@
     return (ev.length?ev:fallback).map(e=>`<div class="event-admin-row"><div><b>${esc(e.title)}</b><span>${esc(e.description||'Event reward challenge')}</span></div><span class="badge">${esc(e.status||'draft')}</span></div>`).join('');
   }
 
+
+  function adminMembershipList(rows=[]){
+    return (rows||[]).slice(0,30).map(m=>`<details class="admin-detail-card"><summary><div><b>${esc(m.plan_name||m.plan_key||'Membership')}</b><p>${money(m.amount)} • ${esc(m.status||'pending')}</p><small data-no-translate>${esc(m.users?.email||m.user_id||'')}</small></div>${statusBadge(m.status||'pending')}</summary><div class="info-list"><div><span>Plan key</span><b>${esc(m.plan_key||'')}</b></div><div><span>Payment</span><b>${esc(m.payment_id||'Not paid online')}</b></div><div><span>Expires</span><b>${m.expires_at?new Date(m.expires_at).toLocaleDateString('en-IN'):'—'}</b></div><div><span>Created</span><b>${m.created_at?new Date(m.created_at).toLocaleDateString('en-IN'):'—'}</b></div></div></details>`).join('')||empty('No membership purchases yet');
+  }
   function sellerDocUrl(path){ return state.admin.docUrls?.[path] || ''; }
   function adminDocPreview(path,label){
     if(!path) return `<div class="doc-tile missing"><b>${label}</b><span>Not uploaded</span></div>`;
@@ -646,6 +724,7 @@
     state.admin.users=await safe(()=>sb.from('users').select('*').order('created_at',{ascending:false}).limit(120));
     state.admin.badges=await safe(()=>sb.from('badge_definitions').select('*').order('sort_order',{ascending:true}).limit(120));
     state.admin.events=await safe(()=>sb.from('platform_events').select('*').order('created_at',{ascending:false}).limit(80));
+    state.admin.memberships=await safe(()=>sb.from('membership_purchases').select('*, users(email,full_name)').order('created_at',{ascending:false}).limit(100));
     await prepareAdminDocUrls(state.admin.sellers);
     refreshAdminLists();
   }
@@ -671,9 +750,10 @@
     const cw=$('#adminContactsList'); if(cw) cw.innerHTML=adminContactsList(state.admin.contacts);
     const rl=$('#adminRanksList'); if(rl) rl.innerHTML=adminRanksList();
     const ev=$('#adminEventsList'); if(ev) ev.innerHTML=adminEventsList();
+    const ml=$('#adminMembershipList'); if(ml) ml.innerHTML=adminMembershipList(state.admin.memberships);
   }
   async function loadAdminSellers(){ await loadAdminProData(); }
-  function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'Run SUPABASE_v77_RANK_BADGE_PATCH.sql once in Supabase, then try again.'; return msg; }
+  function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'Run SUPABASE_v78_MEMBERSHIP_PATCH.sql once in Supabase, then try again.'; return msg; }
   async function updateUserRankPatch(userId,patch){
     if(!sb||!userId)return;
     let {error}=await sb.from('users').update(patch).eq('auth_id',userId);
@@ -712,7 +792,7 @@
   async function setReportStatus(id,status){ if(!sb)return; const {error}=await sb.from('reports').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); toast('Report updated'); await loadAdminProData(); }
   async function setContactStatus(id,status){ if(!sb)return; const {error}=await sb.from('contact_messages').update({status}).eq('id',id); if(error)return toast(error.message); toast('Support message updated'); await loadAdminProData(); }
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
-  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else html=home(); app.innerHTML=localizeHtml(html); syncMenu(); bindPage(); applyLang(); animateCounters(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
+  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else html=home(); app.innerHTML=localizeHtml(html); syncMenu(); bindPage(); applyLang(); animateCounters(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
   function bindPage(){
     $('#loginForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); login(fd.get('email'),fd.get('password'));});
     $('#signupSwitch')?.addEventListener('click',()=>{ const f=$('#loginForm'); const fd=new FormData(f); const email=fd.get('email'), pass=fd.get('password'); if(!email||!pass)return toast('Enter email and password first'); signup(email,pass,''); });
@@ -729,6 +809,7 @@
     $('#checkoutForm select[name="shipping"]')?.addEventListener('change',e=>{ $('#checkoutSummary').innerHTML=localizeHtml(summaryRows(getTotals(e.target.value))); });
     $('#messageForm')?.addEventListener('submit',e=>{e.preventDefault();sendMsg(e.target)});
     $('#contactForm')?.addEventListener('submit',e=>{e.preventDefault();sendContact(e.target)});
+    $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',()=>purchaseMembership(btn.dataset.planKey)));
     $('#searchInput')?.addEventListener('input',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
   }
   function bindSellTypeChooser(){
@@ -744,6 +825,6 @@
   }
   function filterMarket(){ const q=($('#searchInput')?.value||'').toLowerCase(); const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat; const sort=$('#sortFilter')?.value||'new'; let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model].join(' ').toLowerCase().includes(q))&&(!cat||p.category===cat)); if(sort==='low')arr.sort((a,b)=>a.price-b.price); if(sort==='high')arr.sort((a,b)=>b.price-a.price); $('#marketGrid').innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership};
   document.addEventListener('DOMContentLoaded',init);
 })();
