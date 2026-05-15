@@ -87,5 +87,41 @@ option{background:#102419;color:#fff}
 @media(max-width:920px){.admin-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-columns{grid-template-columns:1fr}.revenue-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-rich-row{grid-template-columns:auto 1fr}.approval-actions{grid-column:1/-1;justify-content:stretch}.approval-actions button{flex:1}}
 @media(max-width:560px){.admin-kpi-grid,.revenue-mini-grid{grid-template-columns:1fr}.admin-owner-row{align-items:flex-start}.admin-owner-row img{width:62px;height:62px;border-radius:20px}.admin-quick-actions{display:grid}.admin-quick-actions button{width:100%}.admin-rich-row{grid-template-columns:1fr!important}.admin-rich-row img,.admin-rich-row .doc-avatar{margin-bottom:6px}.section-head.compact{align-items:flex-start;flex-direction:column}.admin-kpi{border-radius:24px;padding:17px}}
 
-/* v73 mobile modal + checkbox layout fix */
+/* v74 mobile modal + checkbox layout fix */
 .modal-card{max-height:calc(100vh - 36px);overflow:auto}.modal-card .steps{padding-left:24px;margin:12px 0 16px}.modal-card .steps li{margin:6px 0;line-height:1.35}.check-row{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:12px!important;width:100%!important;margin:16px 0!important;padding:0!important;color:rgba(255,255,255,.92)!important;line-height:1.3!important}.check-row input[type="checkbox"]{-webkit-appearance:none!important;appearance:none!important;width:24px!important;height:24px!important;min-width:24px!important;max-width:24px!important;padding:0!important;margin:0!important;border-radius:8px!important;border:2px solid rgba(255,255,255,.72)!important;background:rgba(255,255,255,.09)!important;box-shadow:none!important;display:inline-grid!important;place-items:center!important;position:relative!important;flex:0 0 24px!important;outline:none!important}.check-row input[type="checkbox"]:checked{background:linear-gradient(135deg,#f0cc72,#b9832f)!important;border-color:#f0cc72!important}.check-row input[type="checkbox"]:checked::after{content:"✓";font-size:16px;font-weight:950;color:#12100a;line-height:1}.check-row span{display:inline-block!important;flex:1 1 auto!important;font-weight:800!important;min-width:0!important}.modal-card>.primary{margin-top:6px}.menu-head div{min-width:0}.menu-head b,.menu-head small{display:block}.menu-head small{opacity:.78;margin-top:2px}.side-menu .menu-head b,.side-menu .menu-head small{line-height:1.25}@media(max-width:520px){.modal{align-items:center;padding:14px}.modal-card{width:100%;border-radius:26px;padding:22px}.modal-card h2{font-size:28px;line-height:1.1;margin:12px 0}.modal-card p,.modal-card li{font-size:16px}.check-row{align-items:center!important}.check-row span{font-size:16px}.topbar .brand span{line-height:1.05}.header-actions{gap:6px}.header-actions .icon-btn{padding:8px 10px;line-height:1.05}.primary.small{padding:10px 12px}}
+
+
+/* v74 final mobile responsiveness + auth polish */
+html,body{width:100%;max-width:100%;overflow-x:hidden;-webkit-text-size-adjust:100%}
+body{touch-action:manipulation}
+main,#app,.hero,.page-card,.product-card,.agri-category-card,.hero-card{min-width:0}
+img,video,canvas,svg{max-width:100%}
+button,input,select,textarea{max-width:100%}
+.tiny-note{font-size:13px;margin:0 0 8px}.auth-notice{margin:0 0 16px;line-height:1.45}.phone-login input,.phone-login button{width:100%}
+#otpCodeInput,#verifyOtpBtn{transition:.24s ease}
+#otpCodeInput.otp-visible,#verifyOtpBtn.otp-visible{display:block!important;opacity:1!important;transform:none!important}
+@media(max-width:900px){
+  body{background-attachment:scroll}
+  .topbar{max-width:none!important;width:calc(100% - 16px)!important;margin:8px auto!important;padding:8px 10px!important;gap:8px!important;border-radius:22px!important}
+  main{max-width:none!important;width:100%!important;margin:0!important;padding:12px 10px calc(98px + env(safe-area-inset-bottom))!important}
+  #app{width:100%!important;display:block!important}
+  .hero{display:grid!important;grid-template-columns:minmax(0,1fr)!important;width:100%!important;gap:14px!important}
+  .hero>div{width:100%!important;min-width:0!important}
+  .hero-card{min-height:auto!important;padding:14px!important;border-radius:26px!important}
+  .hero-card img{height:220px!important;border-radius:20px!important}
+  .section-head{gap:12px;align-items:flex-start}.section-head p{max-width:55%}
+  .grid,.agri-category-grid,.agri-category-grid.compact{grid-template-columns:minmax(0,1fr)!important;width:100%!important}
+  .product-card,.agri-category-card,.page-card,.checkout-grid,.product-page,.contact-grid,.about-grid{width:100%!important;max-width:100%!important}
+  .bottom-nav{left:10px!important;right:10px!important;width:auto!important;bottom:calc(10px + env(safe-area-inset-bottom))!important}
+  .side-menu{right:10px!important;left:10px!important;width:auto!important;max-width:none!important;top:70px!important;max-height:calc(100dvh - 92px)!important}
+}
+@media(max-width:520px){
+  .brand{min-width:0;flex:1 1 auto}.brand span{font-size:clamp(19px,6.2vw,27px)!important;line-height:1.05;white-space:normal!important;overflow-wrap:anywhere}.brand img{width:36px;height:36px;flex:0 0 36px}
+  .header-actions{flex:0 0 auto}.header-actions .icon-btn{font-size:12px;min-width:48px}.header-actions .primary.small{font-size:14px;min-width:62px}.hamb{width:38px;height:38px;flex:0 0 38px}
+  .hero h1{font-size:clamp(40px,13vw,58px)!important;letter-spacing:-2.5px!important;line-height:.92!important}.hero p{font-size:16px!important;line-height:1.45!important}.eyebrow{font-size:14px;white-space:normal}
+  .stats{grid-template-columns:1fr 1fr!important;gap:10px!important}.stat{padding:13px!important}.stat b{font-size:24px!important}.stat span{font-size:13px!important}
+  .section-head{display:grid!important;grid-template-columns:1fr 1fr!important;align-items:start!important}.section-head h2{font-size:34px!important;line-height:.95}.section-head p{max-width:none!important;font-size:14px!important;line-height:1.35;margin-top:4px!important}
+  .agri-category-card{display:flex!important;gap:12px!important;padding:16px!important}.agri-category-card p{font-size:14px!important;line-height:1.42!important}
+  .modal{padding:12px!important}.modal-card{max-height:calc(100dvh - 24px)!important}.check-row{display:grid!important;grid-template-columns:24px minmax(0,1fr)!important;align-items:center!important}.check-row span{overflow-wrap:break-word!important}
+  .cart-item{grid-template-columns:64px minmax(0,1fr)!important}.cart-item img{width:64px!important;height:58px!important}.qty{flex-wrap:wrap!important}.actions{grid-template-columns:1fr!important}.actions .wide{grid-column:auto!important}
+}
