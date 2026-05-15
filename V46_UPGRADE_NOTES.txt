@@ -1,7 +1,0 @@
-Harvester Parts v46 upgrades:
-- Product cards now show rating, ETA, stock/trust details.
-- Product page has Buy Now, Add to Cart, Wishlist, Message Seller, reviews and buyer protection.
-- Orders page has tracking-style progress UI.
-- Home page has trending/deals sections and premium category cards.
-- CSS upgraded with glass cards, reveal animations and premium commerce polish.
-- Optional Supabase SQL file included: SUPABASE_COMMERCE_UPGRADE.sql
