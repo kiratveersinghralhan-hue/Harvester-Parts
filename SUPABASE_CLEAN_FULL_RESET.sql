@@ -97,11 +97,14 @@ create table public.sellers (
   district text,
   city text,
   address text,
-  status text not null default 'pending' check (status in ('pending', 'provisional', 'approved', 'rejected')),
-  verification_status text not null default 'pending' check (verification_status in ('pending', 'provisional', 'approved', 'rejected')),
+  status text not null default 'pending' check (status in ('pending', 'provisional', 'approved', 'rejected', 'banned')),
+  verification_status text not null default 'pending' check (verification_status in ('pending', 'provisional', 'approved', 'rejected', 'banned')),
   aadhaar_front text,
+  aadhaar_back text,
   shop_photo text,
   approved_at timestamptz,
+  banned_at timestamptz,
+  ban_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -124,7 +127,9 @@ create table public.products (
   description text,
   image text,
   image_urls jsonb not null default '[]'::jsonb,
-  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected')),
+  status text not null default 'pending' check (status in ('pending', 'approved', 'rejected', 'banned')),
+  rejection_reason text,
+  banned_at timestamptz,
   is_boosted boolean not null default false,
   boost_until timestamptz,
   views integer not null default 0 check (views >= 0),
@@ -282,20 +287,26 @@ begin
       new.verification_status := 'pending';
       new.approved_at := null;
     else
-      if old.status = 'approved' then
+      if old.status in ('approved', 'banned') then
         new.status := old.status;
         new.verification_status := old.verification_status;
         new.approved_at := old.approved_at;
+        new.banned_at := old.banned_at;
+        new.ban_reason := old.ban_reason;
       else
         new.status := 'pending';
         new.verification_status := 'pending';
         new.approved_at := null;
+        new.banned_at := null;
       end if;
       new.user_id := old.user_id;
     end if;
   else
     if new.status = 'approved' and new.approved_at is null then
       new.approved_at := now();
+    end if;
+    if new.status = 'banned' and new.banned_at is null then
+      new.banned_at := now();
     end if;
   end if;
 
@@ -321,6 +332,7 @@ begin
       new.is_boosted := false;
       new.boost_until := null;
       new.approved_at := null;
+      new.banned_at := null;
       new.seller_id := (select s.id from public.sellers s where s.user_id = new.user_id and s.status = 'approved' limit 1);
     else
       new.user_id := old.user_id;
@@ -329,10 +341,14 @@ begin
       new.is_boosted := old.is_boosted;
       new.boost_until := old.boost_until;
       new.approved_at := old.approved_at;
+      new.banned_at := old.banned_at;
     end if;
   else
     if new.status = 'approved' and new.approved_at is null then
       new.approved_at := now();
+    end if;
+    if new.status = 'banned' and new.banned_at is null then
+      new.banned_at := now();
     end if;
     if new.seller_id is null then
       new.seller_id := (select s.id from public.sellers s where s.user_id = new.user_id limit 1);

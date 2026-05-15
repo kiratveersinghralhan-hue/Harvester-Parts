@@ -3,10 +3,88 @@
   const hasConfig = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('YOUR_') && cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes('YOUR_');
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
-  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],reports:[],plans:[],boosts:[]} };
+  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],docUrls:{}} };
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const app = $('#app');
+  function isAdminUser(){ return (state.profile?.role==='admin') || ((state.user?.email||'').toLowerCase()===ADMIN_EMAIL); }
+  function esc(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+
+  const RANK_RULES = [
+    {key:'starter', title:'Farm Starter', min:0, banner:'Starter Banner', next:'rising'},
+    {key:'rising', title:'Rising Trader', min:120, banner:'Rising Trader Banner', next:'trusted'},
+    {key:'trusted', title:'Trusted Dealer', min:400, banner:'Trusted Dealer Banner', next:'pro'},
+    {key:'pro', title:'Pro Seller', min:900, banner:'Pro Seller Banner', next:'elite'},
+    {key:'elite', title:'Elite Harvester Seller', min:1800, banner:'Elite Seller Banner', next:'legend'},
+    {key:'legend', title:'Marketplace Legend', min:3500, banner:'Legend Banner', next:null},
+    {key:'founder', title:'Founder 1 of 1', min:999999, banner:'Original Founder Banner', next:null}
+  ];
+  const CUSTOM_BADGE_DEFS = {
+    founder_1_of_1:{name:'Founder 1 of 1', title:'Platform Founder', tier:'founder', line:'Original owner badge', rarity:'1 of 1'},
+    admin_crown:{name:'Admin Control', title:'Admin Authority', tier:'admin', line:'Can review and control platform safety', rarity:'Unique'},
+    verified_seller:{name:'Verified Seller', title:'Trusted Seller', tier:'green', line:'Seller documents approved', rarity:'Verified'},
+    first_listing:{name:'First Listing', title:'Marketplace Starter', tier:'bronze', line:'Posted first product', rarity:'Starter'},
+    growth_seller:{name:'Growth Seller', title:'Listing Builder', tier:'silver', line:'Posted multiple products', rarity:'Growth'},
+    trusted_dealer:{name:'Trusted Dealer', title:'Dealer Rank', tier:'gold', line:'Strong approved catalog', rarity:'High'},
+    buyer_member:{name:'Buyer Member', title:'Market Member', tier:'base', line:'Joined Harvester Parts', rarity:'Member'}
+  };
+  function userPoints(user=state.profile, seller=state.seller, products=state.products){
+    const uid=state.user?.id || user?.auth_id || user?.user_id;
+    const mine=(products||[]).filter(p=>String(p.user_id||'')===String(uid));
+    const approved=mine.filter(p=>p.status==='approved').length;
+    const pending=mine.filter(p=>p.status==='pending').length;
+    let pts=approved*120 + pending*25 + mine.length*15;
+    if(user?.profile_completed) pts+=50;
+    if(seller?.status==='approved') pts+=180;
+    if((user?.role==='admin') || ((state.user?.email||user?.email||'').toLowerCase()===ADMIN_EMAIL)) pts=999999;
+    return pts;
+  }
+  function rankForPoints(points){
+    if(points>=999999) return RANK_RULES.find(r=>r.key==='founder');
+    let rank=RANK_RULES[0];
+    for(const r of RANK_RULES.filter(x=>x.key!=='founder')) if(points>=r.min) rank=r;
+    return rank;
+  }
+  function nextRankInfo(points){
+    const current=rankForPoints(points);
+    if(!current.next) return {current,next:null,progress:100,needed:0};
+    const next=RANK_RULES.find(r=>r.key===current.next);
+    const progress=Math.max(0,Math.min(100,Math.round(((points-current.min)/(next.min-current.min))*100)));
+    return {current,next,progress,needed:Math.max(0,next.min-points)};
+  }
+  function earnedBadges(){
+    const pts=userPoints();
+    const mine=state.products.filter(p=>String(p.user_id||'')===String(state.user?.id));
+    const approved=mine.filter(p=>p.status==='approved').length;
+    const arr=['buyer_member'];
+    if(isAdminUser()) arr.unshift('founder_1_of_1','admin_crown');
+    if(state.seller?.status==='approved') arr.push('verified_seller');
+    if(mine.length>=1) arr.push('first_listing');
+    if(mine.length>=3) arr.push('growth_seller');
+    if(approved>=10 || pts>=900) arr.push('trusted_dealer');
+    return [...new Set(arr)];
+  }
+  function customBadge(key, locked=false){
+    const b=CUSTOM_BADGE_DEFS[key] || CUSTOM_BADGE_DEFS.buyer_member;
+    return `<div class="custom-badge tier-${esc(b.tier)} ${locked?'locked':''}"><span>${esc(b.rarity)}</span><b>${esc(b.name)}</b><small>${esc(b.title)}</small></div>`;
+  }
+  function userBanner(){
+    if(isAdminUser()) return `<div class="unique-founder-banner"><div><span>ONE OF ONE</span><h2>Original Founder</h2><p>Unique platform owner banner, title and badge reserved for ${esc(ADMIN_EMAIL)}.</p></div><b>1 / 1</b></div>`;
+    const pts=userPoints(); const info=nextRankInfo(pts);
+    return `<div class="rank-banner tier-${esc(info.current.key)}"><div><span>${esc(info.current.banner)}</span><h2>${esc(info.current.title)}</h2><p>${info.next?`${info.needed} points to ${esc(info.next.title)}`:'Highest rank unlocked'}</p></div><b>${pts>=999999?'MAX':pts}</b></div>`;
+  }
+  function rankProgressCard(){
+    const pts=userPoints(); const info=nextRankInfo(pts);
+    return `<div class="page-card rank-card"><div class="section-head compact"><h2>Rank progress</h2><span class="badge owner">${esc(info.current.title)}</span></div><div class="rank-progress"><div style="width:${info.progress}%"></div></div><div class="rank-meta"><span>${pts>=999999?'Founder rank locked as 1 of 1':`${pts} points earned`}</span><b>${info.next?`${info.progress}% to ${esc(info.next.title)}`:'Top rank'}</b></div><div class="rank-ways"><div><b>+120</b><span>approved listing</span></div><div><b>+180</b><span>seller verified</span></div><div><b>+25</b><span>pending listing</span></div><div><b>+50</b><span>profile complete</span></div></div></div>`;
+  }
+  function badgeCollectionCard(){
+    const have=earnedBadges(); const all=['founder_1_of_1','admin_crown','verified_seller','first_listing','growth_seller','trusted_dealer','buyer_member'];
+    return `<div class="page-card badge-collection"><div class="section-head compact"><h2>Badge collection</h2><span class="badge">${have.length} earned</span></div><p class="muted">Custom text badges only. No icon badges. More event badges can be added later.</p><div class="badge-grid-custom">${all.map(k=>customBadge(k,!have.includes(k))).join('')}</div></div>`;
+  }
+  function eventPreviewCard(){
+    return `<div class="page-card event-preview-card"><div class="section-head compact"><h2>Future events</h2><span class="badge owner">Ready</span></div><p class="muted">Use this system later for challenges like highest listings, most approved sellers, most orders or festival rewards.</p><div class="event-strip"><div><b>Listing Sprint</b><span>Highest approved listings wins a custom event badge.</span></div><div><b>Dealer Week</b><span>Top seller gets a limited banner and title.</span></div><div><b>Buyer Trust Drive</b><span>Reward trusted buying activity and completed profiles.</span></div></div></div>`;
+  }
 
   const i18n = {
     en:{choose_language:'Choose your language',language_hint:'You can change it anytime from the menu.',dont_show:'Do not show again',install_title:'Add Harvester Parts to your phone',install_hint:'For faster access, install it like an app.',parts:'Parts',sell:'Sell',orders:'Orders'},
@@ -76,7 +154,7 @@
   });
   ['ta','te','bn','mr','gu'].forEach(l=>{ COMMON_TRANSLATIONS[l] = Object.assign({}, COMMON_TRANSLATIONS.hi, uiText[l]||{}); });
 
-  // v75: Core renderer stays in clean English. The standalone language patch
+  // v77: Core renderer stays in clean English. The standalone language patch
   // translates the visible UI safely after render, so words never get mixed.
   function translateVisibleText(root=document.body){ return; }
   function localizeHtml(html){ return html; }
@@ -159,7 +237,13 @@
   }
   async function ensureProfile(){
     if(!sb||!state.user)return;
-    await sb.from('users').upsert({auth_id:state.user.id,email:state.user.email,phone:state.user.phone||'',role:(state.user.email||'').toLowerCase()===ADMIN_EMAIL?'admin':'user',user_uid:'HP-'+state.user.id.replaceAll('-','').slice(0,8).toUpperCase()},{onConflict:'auth_id'});
+    const isOwner=(state.user.email||'').toLowerCase()===ADMIN_EMAIL;
+    const base={auth_id:state.user.id,email:state.user.email,phone:state.user.phone||'',role:isOwner?'admin':'user',user_uid:'HP-'+state.user.id.replaceAll('-','').slice(0,8).toUpperCase()};
+    const extended={...base,rank_key:isOwner?'founder':'starter',rank_title:isOwner?'Founder 1 of 1':'Farm Starter',badge_key:isOwner?'founder_1_of_1':'buyer_member',badge_title:isOwner?'Founder 1 of 1':'Market Member',banner_key:isOwner?'founder_1_of_1':'starter',banner_title:isOwner?'Original Founder • One of One':'Starter Banner',title_prefix:isOwner?'Platform Founder':null,is_founder:isOwner,founder_number:isOwner?1:null,points:isOwner?999999:0};
+    let {error}=await sb.from('users').upsert(extended,{onConflict:'auth_id'});
+    if(error && /rank_key|badge_key|banner_key|is_founder|points|founder/i.test(String(error.message||''))){
+      await sb.from('users').upsert(base,{onConflict:'auth_id'});
+    }
   }
   function authRedirectUrl(){
     return location.origin + location.pathname;
@@ -270,15 +354,21 @@
   
   async function loadProducts(){
     if(sb){
-      let q=sb.from('products').select('*, sellers(business_name,status), users(email,full_name,badge_title)');
-      const visibleUid = state.user?.id || '00000000-0000-0000-0000-000000000000';
-      const {data,error}=await q.or(`status.eq.approved,user_id.eq.${visibleUid}`).order('is_boosted',{ascending:false}).order('created_at',{ascending:false});
+      const cols='*, sellers(business_name,status), users(email,full_name,badge_title)';
+      let query=sb.from('products').select(cols);
+      if(isAdminUser()){
+        query=query.order('status',{ascending:true}).order('is_boosted',{ascending:false}).order('created_at',{ascending:false});
+      } else {
+        const visibleUid = state.user?.id || '00000000-0000-0000-0000-000000000000';
+        query=query.or(`status.eq.approved,user_id.eq.${visibleUid}`).order('is_boosted',{ascending:false}).order('created_at',{ascending:false});
+      }
+      const {data,error}=await query;
       if(!error && data){
         state.products=data;
         const cats=[...new Set(data.map(p=>p.category).filter(Boolean))];
-        state.stats.products=data.length;
+        state.stats.products=data.filter(p=>p.status==='approved').length;
         state.stats.categories=cats.length || 0;
-        state.stats.sellers=[...new Set(data.map(p=>p.user_id||p.seller_id).filter(Boolean))].length || 0;
+        state.stats.sellers=[...new Set(data.filter(p=>p.status==='approved').map(p=>p.user_id||p.seller_id).filter(Boolean))].length || 0;
         try{ const {count}=await sb.from('orders').select('*',{count:'exact',head:true}); state.stats.orders=count||0; }catch(e){}
         return;
       }
@@ -320,6 +410,8 @@
     const count = state.products.filter(p=> c.filters.some(f=>String(p.category||'').toLowerCase().includes(f.toLowerCase()) || String(p.title||'').toLowerCase().includes(f.toLowerCase()))).length;
     return `<article class="agri-category-card pro-cat fade-up" onclick="HP.route('market',{category:'${c.title}'})"><div class="cat-mark">${c.icon}</div><div><small>${c.group}</small><h3>${c.title}</h3><p>${c.desc}</p><span>${count} active listings</span></div></article>`;
   }
+  function categoriesBySellType(type){ return AGRI_CATEGORIES.filter(c => type==='machine' ? c.group==='Machines' : c.group==='Spare Parts'); }
+  function categoryOptionsFor(type){ return categoriesBySellType(type).map(c=>`<option value="${esc(c.title)}">${esc(c.title)}</option>`).join(''); }
 
 
   function home(){
@@ -383,13 +475,14 @@
     const fullName=profileName || email;
     const phone=state.profile?.phone || state.user.phone || '';
     const uid=state.profile?.user_uid || ('HP-'+String(state.user.id||'account').replaceAll('-','').slice(0,8).toUpperCase());
-    const role=isAdmin?'Platform Owner / Admin':(state.profile?.badge_title || (state.seller?.status==='approved'?'Verified Seller':'Buyer / Seller'));
+    const pts=userPoints(); const rank=rankForPoints(pts);
+    const role=isAdmin?'Platform Founder • 1 of 1':(state.profile?.badge_title || (state.seller?.status==='approved'?'Verified Seller':'Buyer / Seller'));
     const myProducts=state.products.filter(p=>String(p.user_id||'')===String(state.user.id));
     const approvedListings=myProducts.filter(p=>p.status==='approved').length;
     const pendingListings=myProducts.filter(p=>p.status!=='approved').length;
     const sellerStatus=state.seller?.status || (isAdmin?'approved':'not verified');
     const avatarText=(fullName||email||'HP').split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'HP';
-    return `<section class="profile-page"><div class="profile-cover page-card"><div class="profile-avatar"><img src="./logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${fullName}</h1><p>${email}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${role}</span></div><div class="profile-id"><span data-no-translate>${uid}</span> • <span>${sellerStatus}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${state.wishlist.length}</b><span>Wishlist</span></div><div><b>${state.cart.reduce((s,i)=>s+Number(i.qty||1),0)}</b><span>Cart</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${profileName}" placeholder="Full name"><input name="phone" type="tel" value="${phone}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${uid}</b></div><div><span>Email</span><b data-no-translate>${email}</b></div><div><span>Phone</span><b>${phone || 'Not added'}</b></div><div><span>Seller status</span><b>${sellerStatus}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div><div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Browse Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div><div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
+    return `<section class="profile-page">${userBanner()}<div class="profile-cover page-card ${isAdmin?'founder-profile-cover':''}"><div class="profile-avatar"><img src="./logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${esc(fullName)}</h1><p>${esc(email)}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${esc(role)}</span></div><div class="profile-id"><span data-no-translate>${esc(uid)}</span> • <span>${esc(rank.title)}</span> • <span>${esc(sellerStatus)}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${pts>=999999?'MAX':pts}</b><span>Points</span></div><div><b>${earnedBadges().length}</b><span>Badges</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${esc(profileName)}" placeholder="Full name"><input name="phone" type="tel" value="${esc(phone)}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${esc(uid)}</b></div><div><span>Email</span><b data-no-translate>${esc(email)}</b></div><div><span>Phone</span><b>${esc(phone || 'Not added')}</b></div><div><span>Seller status</span><b>${esc(sellerStatus)}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div>${rankProgressCard()}${badgeCollectionCard()}<div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Browse Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div>${eventPreviewCard()}<div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
   }
 
   async function saveProfile(form){ if(!sb||!state.user)return; const fd=new FormData(form); const {error}=await sb.from('users').update({full_name:fd.get('full_name'),phone:fd.get('phone')||state.user.phone||'',gender:fd.get('gender'),profile_completed:true}).eq('auth_id',state.user.id); if(error)toast(error.message); else{toast('Profile saved'); await loadSession(); syncMenu(); render();} }
@@ -401,21 +494,29 @@
     return `<section class="page-card sell-gate"><span class="eyebrow">Seller verification required</span><h1>Get verified before selling machinery or spare parts.</h1><p class="muted">For buyer safety, only approved sellers can post products. Submit your business/contact details first.</p>${sellerVerificationForm()}</section>`;
   }
   function sellerVerificationForm(){
-    return `<form id="sellerVerifyForm" class="form seller-verify-form"><input name="business_name" placeholder="Business / seller name" required><input name="phone" placeholder="Phone number" required><input name="state" placeholder="State" required><input name="district" placeholder="District" required><input name="city" placeholder="City / village" required><textarea name="address" placeholder="Pickup/shop address"></textarea><label class="file-label">Aadhaar front / ID document<input name="aadhaar_front" type="file" accept="image/*"></label><label class="file-label">Shop or stock photo<input name="shop_photo" type="file" accept="image/*"></label><button class="primary">Submit Seller Verification</button></form>`;
+    return `<form id="sellerVerifyForm" class="form seller-verify-form"><input name="business_name" placeholder="Business / seller name" required><input name="phone" placeholder="Phone number" required><input name="state" placeholder="State" required><input name="district" placeholder="District" required><input name="city" placeholder="City / village" required><textarea name="address" placeholder="Pickup/shop address"></textarea><div class="doc-upload-grid"><label class="file-label">Aadhaar front photo<input name="aadhaar_front" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Aadhaar back photo<input name="aadhaar_back" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Shop / stock photo<input name="shop_photo" type="file" accept="image/*,application/pdf"></label></div><div class="notice tiny-note">Upload clear front and back Aadhaar photos. Only admin can view verification documents.</div><button class="primary">Submit Seller Verification</button></form>`;
   }
   function sellPage(){
     if(!state.user)return loginPage();
     const gate=sellerStatusCard();
     if(gate) return gate;
-    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Sell machinery or spare parts.</h1><p class="muted">Choose what you are selling, set condition, price and exact location. Listing goes to admin approval before appearing live.</p></section><section class="page-card"><form id="sellForm" class="form sell-form"><div class="sell-choice"><label><input type="radio" name="sell_type" value="machine" checked><span><b>Machinery</b><small>Combine harvester, tractor, seed drill, straw reaper, implements</small></span></label><label><input type="radio" name="sell_type" value="spare"><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, gears, hydraulic parts</small></span></label></div><select name="condition" required><option value="New">New</option><option value="Used">Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" placeholder="Product name" required><input name="price" type="number" placeholder="Listing price" required><select name="category" required><option value="Combine Harvester">Combine Harvester</option><option value="Tractor">Tractor</option><option value="Seed Drill">Seed Drill</option><option value="Straw Reaper">Straw Reaper</option><option value="Rotavator & Tillage">Rotavator & Tillage</option><option value="Belts & Chains">Belts & Chains</option><option value="Bearings">Bearings</option><option value="Blades & Cutter Parts">Blades & Cutter Parts</option><option value="Shafts & Gears">Shafts & Gears</option><option value="Rubber Seals & Bushes">Rubber Seals & Bushes</option><option value="Hydraulic Parts">Hydraulic Parts</option></select><input name="brand" placeholder="Brand / machine"><input name="model" placeholder="Model / compatibility"><input name="weight_kg" type="number" step="0.1" placeholder="Weight kg"><input name="state" placeholder="State" required><input name="district" placeholder="District" required><input name="city" placeholder="City / village" required><textarea name="description" placeholder="Describe condition, exact location, compatibility"></textarea><input name="images" type="file" accept="image/*" multiple><div class="notice" id="sellerFeePreview">Enter price to see seller payout.</div><button class="primary">Submit Listing for Approval</button></form></section>`;
+    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Sell machinery or spare parts.</h1><p class="muted">Choose Machinery or Spare Part first. The category list changes automatically, then your listing goes to admin approval.</p></section><section class="page-card"><form id="sellForm" class="form sell-form"><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card active" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" checked><span class="sell-dot"></span><span><b>Machinery</b><small>Combine harvester, tractor, seed drill, straw reaper, implements</small></span></label><label class="sell-type-card" data-sell-card="spare"><input type="radio" name="sell_type" value="spare"><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, gears, hydraulic parts</small></span></label></div><select name="condition" required><option value="New">New</option><option value="Used" selected>Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" placeholder="Product name" required><input name="price" type="number" min="0" placeholder="Listing price" required><select name="category" id="sellCategorySelect" required>${categoryOptionsFor('machine')}</select><input name="brand" placeholder="Brand / machine"><input name="model" placeholder="Model / compatibility"><input name="weight_kg" type="number" step="0.1" placeholder="Weight kg"><input name="state" placeholder="State" required><input name="district" placeholder="District" required><input name="city" placeholder="City / village" required><textarea name="description" placeholder="Describe condition, exact location, compatibility"></textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to see seller payout.</div><button class="primary">Submit Listing for Approval</button></form></section>`;
   }
   async function submitSellerVerification(form){
     if(!state.user)return route('login');
-    const fd=new FormData(form); let aadhaar_front='', shop_photo='';
-    async function uploadDoc(field){ const f=fd.get(field); if(!sb||!f||!f.name)return ''; const path=`${state.user.id}/${field}-${Date.now()}-${f.name.replace(/[^a-z0-9.]/gi,'-')}`; const {error}=await sb.storage.from('verification-docs').upload(path,f,{upsert:true}); if(error){ toast(error.message); return ''; } return path; }
-    aadhaar_front=await uploadDoc('aadhaar_front'); shop_photo=await uploadDoc('shop_photo');
-    const payload={user_id:state.user.id,business_name:fd.get('business_name'),phone:fd.get('phone'),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),address:fd.get('address'),aadhaar_front,shop_photo,status:'pending',verification_status:'pending'};
-    if(sb){ const {error}=await sb.from('sellers').upsert(payload,{onConflict:'user_id'}); if(error)return toast(error.message); }
+    const fd=new FormData(form); let aadhaar_front='', aadhaar_back='', shop_photo='';
+    async function uploadDoc(field){ const f=fd.get(field); if(!sb||!f||!f.name)return ''; const safeName=f.name.replace(/[^a-z0-9.]/gi,'-'); const path=`${state.user.id}/${field}-${Date.now()}-${safeName}`; const {error}=await sb.storage.from('verification-docs').upload(path,f,{upsert:true}); if(error){ toast(error.message); return ''; } return path; }
+    aadhaar_front=await uploadDoc('aadhaar_front'); aadhaar_back=await uploadDoc('aadhaar_back'); shop_photo=await uploadDoc('shop_photo');
+    const payload={user_id:state.user.id,business_name:fd.get('business_name'),phone:fd.get('phone'),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),address:fd.get('address'),aadhaar_front,aadhaar_back,shop_photo,status:'pending',verification_status:'pending'};
+    if(sb){
+      let {error}=await sb.from('sellers').upsert(payload,{onConflict:'user_id'});
+      if(error && String(error.message||'').includes('aadhaar_back')){
+        const fallback={...payload}; delete fallback.aadhaar_back;
+        const res=await sb.from('sellers').upsert(fallback,{onConflict:'user_id'}); error=res.error;
+        if(error) return toast(error.message);
+        toast('Seller request saved. Run the v77 SQL patch to store Aadhaar back photo too.');
+      } else if(error) return toast(error.message);
+    }
     state.seller=payload; toast('Seller verification submitted for admin approval'); render();
   }
   async function submitProduct(form){ if(!state.user)return route('login'); const fd=new FormData(form); const price=Number(fd.get('price')||0); let image_urls=[]; const files=[...(fd.getAll('images')||[])].filter(f=>f&&f.name); if(sb&&files.length){ for(const f of files){ const path=`${state.user.id}/${Date.now()}-${f.name.replace(/[^a-z0-9.]/gi,'-')}`; const {error}=await sb.storage.from('product-images').upload(path,f,{upsert:true}); if(!error){ const {data}=sb.storage.from('product-images').getPublicUrl(path); image_urls.push(data.publicUrl); } } }
@@ -430,75 +531,186 @@
   async function loadOrders(){ if(!sb||!state.user)return; const {data}=await sb.from('orders').select('*').or(`buyer_id.eq.${state.user.id},user_id.eq.${state.user.id}`).order('created_at',{ascending:false}); $('#ordersList') && ($('#ordersList').innerHTML=localizeHtml((data||[]).map(o=>`<div class="cart-item"><div><b>Order ${String(o.id).slice(0,8)}</b><p>${money(o.amount)} • ${o.status}</p></div><span class="badge">${new Date(o.created_at).toLocaleDateString()}</span></div>`).join('')||empty('No orders yet.'))); }
   function sum(arr,key){ return (arr||[]).reduce((s,x)=>s+Number(x?.[key]||0),0); }
   function adminMoney(n){ return money(Number(n||0)); }
+  function statusBadge(status){ const st=String(status||'pending'); return `<span class="badge ${st==='approved'||st==='paid'||st==='delivered'?'verified':(st==='rejected'||st==='banned'||st==='cancelled'?'danger-soft':'')}">${esc(st)}</span>`; }
   function adminPage(){
-    const isAdmin=state.profile?.role==='admin'||(state.user?.email||'').toLowerCase()===ADMIN_EMAIL;
-    if(!state.user)return loginPage();
-    if(!isAdmin)return emptyPage('Admin access only');
-    const pendingProducts=state.products.filter(p=>p.status==='pending');
-    const boostedCount=state.products.filter(p=>p.is_boosted || (p.boost_until && new Date(p.boost_until)>new Date())).length;
+    if(!isAdminUser()) return emptyPage('Admin access only');
+    const products=(state.admin.products&&state.admin.products.length?state.admin.products:state.products)||[];
     const orders=state.admin.orders||[];
     const sellers=state.admin.sellers||[];
     const reports=state.admin.reports||[];
+    const contacts=state.admin.contacts||[];
     const plans=state.admin.plans||[];
     const boosts=state.admin.boosts||[];
-    const gross=sum(orders,'amount');
-    const paid=sum(orders.filter(o=>o.status==='paid'),'amount');
-    const platform=sum(orders,'platform_fee') || Math.round(gross*.04);
-    const planRev=sum(plans,'amount') || 0;
-    const boostRev=sum(boosts,'amount') || boostedCount*50;
-    const today=new Date().toISOString().slice(0,10);
-    const todayOrders=orders.filter(o=>(o.created_at||'').slice(0,10)===today).length;
+    const gross=orders.reduce((s,o)=>s+Number(o.amount||0),0);
+    const paid=orders.filter(o=>['paid','confirmed','shipped','delivered'].includes(o.status)).reduce((s,o)=>s+Number(o.amount||0),0);
+    const platform=orders.reduce((s,o)=>s+Number(o.platform_fee||0),0);
+    const pendingProducts=products.filter(p=>p.status==='pending');
+    const pendingSellers=sellers.filter(s=>['pending','provisional'].includes(s.status));
     return `<section class="admin-hero-pro page-card">
       <div class="admin-orb"></div>
-      <div class="admin-owner-row"><img src="./logo-192.png" alt=""><div><span class="badge owner">ADMIN CONTROL CENTER</span><h1>Platform Owner Dashboard</h1><p>${state.user.email}</p></div></div>
+      <div class="admin-owner-row"><img src="./logo-192.png" alt=""><div><span class="badge owner">ADMIN CONTROL CENTER</span><h1>Platform Owner Dashboard</h1><p data-no-translate>${esc(state.user.email||'')}</p></div></div>
       <div class="admin-quick-actions"><button class="primary" data-route="sell">List Product</button><button class="secondary" data-route="market">View Marketplace</button><button class="ghost" data-route="orders">Orders</button></div>
     </section>
     <section class="admin-kpi-grid">
       <div class="admin-kpi"><small>Total GMV</small><b>${adminMoney(gross)}</b><span>All checkout value</span></div>
-      <div class="admin-kpi"><small>Paid Revenue</small><b>${adminMoney(paid)}</b><span>Paid orders only</span></div>
-      <div class="admin-kpi"><small>Platform Fees</small><b>${adminMoney(platform)}</b><span>Buyer + protection fees</span></div>
-      <div class="admin-kpi"><small>Boost + Plans</small><b>${adminMoney(boostRev+planRev)}</b><span>Promotion income</span></div>
-      <div class="admin-kpi"><small>Today Orders</small><b>${todayOrders}</b><span>New orders today</span></div>
-      <div class="admin-kpi"><small>Pending Work</small><b>${pendingProducts.length + sellers.filter(s=>['pending','provisional'].includes(s.status)).length + reports.filter(r=>r.status==='open').length}</b><span>Needs admin review</span></div>
+      <div class="admin-kpi"><small>Paid Revenue</small><b>${adminMoney(paid)}</b><span>Paid / shipped / delivered</span></div>
+      <div class="admin-kpi"><small>Platform Fees</small><b>${adminMoney(platform)}</b><span>Buyer protection fees</span></div>
+      <div class="admin-kpi"><small>Pending Sellers</small><b>${pendingSellers.length}</b><span>Need document review</span></div>
+      <div class="admin-kpi"><small>Pending Products</small><b>${pendingProducts.length}</b><span>Need listing review</span></div>
+      <div class="admin-kpi"><small>Safety Reports</small><b>${reports.filter(r=>r.status==='open').length}</b><span>Open reports</span></div>
     </section>
     <section class="admin-columns">
-      <div class="page-card admin-panel"><div class="section-head compact"><h2>Seller approval queue</h2><span class="badge">${sellers.filter(s=>['pending','provisional'].includes(s.status)).length} pending</span></div><div id="sellerApprovalList">${adminSellerList(sellers)}</div></div>
-      <div class="page-card admin-panel"><div class="section-head compact"><h2>Product approval queue</h2><span class="badge">${pendingProducts.length} pending</span></div>${pendingProducts.map(adminProductRow).join('')||empty('No pending products')}</div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Seller approval queue</h2><span class="badge">${pendingSellers.length} pending</span></div><div id="sellerApprovalList">${adminSellerList(sellers)}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Product approval queue</h2><span class="badge">${pendingProducts.length} pending</span></div><div id="productApprovalList">${adminProductQueue(products)}</div></div>
+    </section>
+    <section class="admin-columns">
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Approved sellers</h2><span class="badge verified">${sellers.filter(s=>s.status==='approved').length} active</span></div><div id="approvedSellersList">${adminSellerManager(sellers,'approved')}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Rejected / banned sellers</h2><span class="badge danger-soft">${sellers.filter(s=>['rejected','banned'].includes(s.status)).length}</span></div><div id="sellerArchiveList">${adminSellerManager(sellers,'archive')}</div></div>
+    </section>
+    <section class="admin-columns">
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Live products</h2><span class="badge verified">${products.filter(p=>p.status==='approved').length} live</span></div><div id="approvedProductsList">${adminProductManager(products,'approved')}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Rejected / banned products</h2><span class="badge danger-soft">${products.filter(p=>['rejected','banned'].includes(p.status)).length}</span></div><div id="productArchiveList">${adminProductManager(products,'archive')}</div></div>
     </section>
     <section class="admin-columns">
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Latest orders</h2><span class="badge">${orders.length}</span></div><div id="adminOrdersList">${adminOrdersList(orders)}</div></div>
-      <div class="page-card admin-panel"><div class="section-head compact"><h2>Reports & safety</h2><span class="badge danger-soft">${reports.filter(r=>r.status==='open').length} open</span></div><div id="adminReportsList">${adminReportsList(reports)}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Reports & support</h2><span class="badge danger-soft">${reports.filter(r=>r.status==='open').length} open</span></div><div id="adminReportsList">${adminReportsList(reports)}</div><div id="adminContactsList">${adminContactsList(contacts)}</div></div>
     </section>
     <section class="page-card admin-panel"><div class="section-head compact"><h2>Revenue systems</h2><span class="badge owner">Plans • Boosts • Fees</span></div>
       <div class="revenue-mini-grid">
-        <div><b>Seller Plans</b><span>${plans.length} purchases</span><strong>${adminMoney(planRev)}</strong></div>
-        <div><b>Boosted Listings</b><span>${boostedCount} active / ${boosts.length} logs</span><strong>${adminMoney(boostRev)}</strong></div>
-        <div><b>Approved Products</b><span>${state.products.filter(p=>p.status==='approved').length} live</span><strong>${state.products.length} total</strong></div>
+        <div><b>Seller Plans</b><span>${plans.length} purchases</span><strong>${adminMoney(plans.reduce((s,p)=>s+Number(p.amount||0),0))}</strong></div>
+        <div><b>Boosted Listings</b><span>${products.filter(p=>p.is_boosted).length} active / ${boosts.length} logs</span><strong>${adminMoney(boosts.reduce((s,b)=>s+Number(b.amount||0),0))}</strong></div>
+        <div><b>Approved Products</b><span>${products.filter(p=>p.status==='approved').length} live</span><strong>${products.length} total</strong></div>
         <div><b>Seller Pipeline</b><span>${sellers.length} sellers</span><strong>${sellers.filter(s=>s.status==='approved').length} approved</strong></div>
       </div>
+    </section>
+    <section class="admin-columns">
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Ranks & badges</h2><span class="badge owner">Motivation system</span></div><div id="adminRanksList">${adminRanksList()}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Events & rewards</h2><span class="badge">Future ready</span></div><div id="adminEventsList">${adminEventsList()}</div></div>
     </section>`;
   }
-  function adminSellerList(list=[]){ const pending=(list||[]).filter(s=>['pending','provisional'].includes(s.status)); return localizeHtml(pending.map(s=>`<div class="cart-item seller-approval admin-rich-row"><div class="doc-avatar">${(s.business_name||s.users?.full_name||'S').slice(0,2).toUpperCase()}</div><div><b>${s.business_name||'Seller request'}</b><p>${s.users?.email||''} • ${s.phone||''}</p><small>${[s.city,s.district,s.state].filter(Boolean).join(', ')||'Location not added'} • ${s.status}</small></div><div class="approval-actions"><button class="secondary" onclick="HP.approveSeller('${s.id}','${s.user_id}')">Approve</button><button class="danger" onclick="HP.rejectSeller('${s.id}')">Reject</button></div></div>`).join('')||empty('No pending sellers')); }
-  function adminProductRow(p){ return `<div class="cart-item admin-rich-row"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'"><div><b>${p.title}</b><p>${money(p.price)} • ${p.category||'Product'} • ${[p.city,p.state].filter(Boolean).join(', ')}</p><small>Seller earns approx ${money(Number(p.price||0)-sellerFee(p.price))} • Platform fee ${money(sellerFee(p.price))}</small></div><div class="approval-actions"><button class="secondary" onclick="HP.approveProduct('${p.id}')">Approve</button><button class="danger" onclick="HP.rejectProduct('${p.id}')">Reject</button></div></div>`; }
-  function adminOrdersList(orders=[]){ return (orders||[]).slice(0,8).map(o=>`<div class="cart-item admin-order-row"><div><b>Order ${String(o.id).slice(0,8)}</b><p>${money(o.amount)} • ${o.status||'pending'} • ${o.buyer_phone||''}</p><small>${new Date(o.created_at||Date.now()).toLocaleString('en-IN')}</small></div><span class="badge ${o.status==='paid'?'verified':''}">${o.status||'pending'}</span></div>`).join('')||empty('No orders yet'); }
-  function adminReportsList(reports=[]){ return (reports||[]).slice(0,8).map(r=>`<div class="cart-item"><div><b>${r.target_type||'Report'} report</b><p>${r.reason||'No reason added'}</p><small>${new Date(r.created_at||Date.now()).toLocaleDateString('en-IN')} • ${r.status||'open'}</small></div><span class="badge danger-soft">${r.status||'open'}</span></div>`).join('')||empty('No reports'); }
+
+  function adminRanksList(){
+    const users=state.admin.users||[];
+    const rows=(users.length?users:[state.profile].filter(Boolean)).slice(0,25).map(u=>{
+      const isFounder=(u?.is_founder || (u?.email||'').toLowerCase()===ADMIN_EMAIL || u?.role==='admin');
+      const pts=isFounder?999999:Number(u?.points||0);
+      const rank=rankForPoints(pts);
+      return `<div class="rank-admin-row"><div>${customBadge(isFounder?'founder_1_of_1':(u?.badge_key||'buyer_member'))}</div><div><b data-no-translate>${esc(u?.email||u?.full_name||'User')}</b><span>${esc(isFounder?'Founder 1 of 1':rank.title)} • ${pts>=999999?'MAX':pts+' pts'}</span></div><span class="badge ${isFounder?'owner':'verified'}">${esc(u?.role||'user')}</span></div>`;
+    }).join('');
+    return rows || empty('No users loaded yet.');
+  }
+  function adminEventsList(){
+    const ev=state.admin.events||[];
+    const fallback=[{title:'Listing Sprint',status:'draft',description:'Reward the seller with highest approved listings.'},{title:'Dealer Week',status:'draft',description:'Give a limited custom title and banner to top dealer.'},{title:'Harvest Festival Rewards',status:'draft',description:'Event badge for seasonal winners.'}];
+    return (ev.length?ev:fallback).map(e=>`<div class="event-admin-row"><div><b>${esc(e.title)}</b><span>${esc(e.description||'Event reward challenge')}</span></div><span class="badge">${esc(e.status||'draft')}</span></div>`).join('');
+  }
+
+  function sellerDocUrl(path){ return state.admin.docUrls?.[path] || ''; }
+  function adminDocPreview(path,label){
+    if(!path) return `<div class="doc-tile missing"><b>${label}</b><span>Not uploaded</span></div>`;
+    const url=sellerDocUrl(path);
+    const file=esc(String(path).split('/').pop()||'document');
+    if(!url) return `<div class="doc-tile"><b>${label}</b><span>${file}</span><small>Open after admin data loads</small></div>`;
+    const isPdf=/\.pdf($|\?)/i.test(path);
+    return `<a class="doc-tile" href="${url}" target="_blank" rel="noopener"><b>${label}</b>${isPdf?'<span class="doc-pdf">PDF document</span>':`<img src="${url}" alt="${label}">`}<small>${file}</small></a>`;
+  }
+  function adminSellerRow(s,compact=false){
+    const name=esc(s.business_name||s.users?.full_name||'Seller request');
+    const email=esc(s.users?.email||'');
+    const loc=esc([s.city,s.district,s.state].filter(Boolean).join(', ')||'Location not added');
+    const id=esc(s.id), uid=esc(s.user_id||'');
+    return `<details class="admin-detail-card" ${compact?'':'open'}><summary><div class="doc-avatar">${name.slice(0,2).toUpperCase()}</div><div><b>${name}</b><p data-no-translate>${email} ${s.phone?'• '+esc(s.phone):''}</p><small>${loc}</small></div>${statusBadge(s.status)}</summary><div class="admin-detail-body"><div class="info-list"><div><span>Business</span><b>${name}</b></div><div><span>Phone</span><b data-no-translate>${esc(s.phone||'Not added')}</b></div><div><span>Location</span><b>${loc}</b></div><div><span>Address</span><b>${esc(s.address||'Not added')}</b></div></div><div class="doc-preview-grid">${adminDocPreview(s.aadhaar_front,'Aadhaar front')}${adminDocPreview(s.aadhaar_back,'Aadhaar back')}${adminDocPreview(s.shop_photo,'Shop / stock')}</div><div class="approval-actions"><button class="secondary" onclick="HP.approveSeller('${id}','${uid}')">Approve</button><button class="danger" onclick="HP.rejectSeller('${id}','${uid}')">Reject</button><button class="danger" onclick="HP.banSeller('${id}','${uid}')">Ban</button>${s.status==='banned'?`<button class="ghost" onclick="HP.restoreSeller('${id}','${uid}')">Restore</button>`:''}</div></div></details>`;
+  }
+  function adminSellerList(list=[]){ const pending=(list||[]).filter(s=>['pending','provisional'].includes(s.status)); return localizeHtml(pending.map(s=>adminSellerRow(s,false)).join('')||empty('No pending sellers')); }
+  function adminSellerManager(list=[],mode='approved'){ const rows=(list||[]).filter(s=> mode==='approved' ? s.status==='approved' : ['rejected','banned'].includes(s.status)); return localizeHtml(rows.map(s=>adminSellerRow(s,true)).join('')||empty(mode==='approved'?'No approved sellers yet':'No rejected or banned sellers')); }
+  function adminProductRow(p,compact=false){
+    const id=esc(p.id), title=esc(p.title||'Product'), img=productImage(p);
+    return `<details class="admin-detail-card product-admin-card" ${compact?'':'open'}><summary><img src="${img}" onerror="this.src='${placeholder(p.category)}'"><div><b>${title}</b><p>${money(p.price)} • ${esc(p.category||'Product')} • ${esc([p.city,p.state].filter(Boolean).join(', '))}</p><small>${esc(p.sell_type||'spare')} • ${esc(p.condition||'Used')} • Seller ${esc(p.users?.email||p.sellers?.business_name||'')}</small></div>${statusBadge(p.status)}</summary><div class="admin-detail-body"><p class="muted">${esc(p.description||'No description added.')}</p><div class="info-list"><div><span>Brand</span><b>${esc(p.brand||'Not added')}</b></div><div><span>Model</span><b>${esc(p.model||'Not added')}</b></div><div><span>Weight</span><b>${esc(p.weight_kg||'—')} kg</b></div><div><span>Seller earns</span><b>${money(Number(p.price||0)-sellerFee(p.price))}</b></div></div><div class="approval-actions"><button class="secondary" onclick="HP.approveProduct('${id}')">Approve</button><button class="danger" onclick="HP.rejectProduct('${id}')">Reject</button><button class="danger" onclick="HP.banProduct('${id}')">Ban</button>${p.status==='banned'||p.status==='rejected'?`<button class="ghost" onclick="HP.restoreProduct('${id}')">Restore</button>`:''}<button class="ghost" onclick="HP.route('product',{id:'${id}'})">Open</button></div></div></details>`;
+  }
+  function adminProductQueue(products=[]){ const rows=(products||[]).filter(p=>p.status==='pending'); return rows.map(p=>adminProductRow(p,false)).join('')||empty('No pending products'); }
+  function adminProductManager(products=[],mode='approved'){ const rows=(products||[]).filter(p=> mode==='approved' ? p.status==='approved' : ['rejected','banned'].includes(p.status)); return rows.slice(0,40).map(p=>adminProductRow(p,true)).join('')||empty(mode==='approved'?'No approved products yet':'No rejected or banned products'); }
+  function adminOrdersList(orders=[]){ return (orders||[]).slice(0,12).map(o=>`<details class="admin-detail-card"><summary><div><b>Order ${esc(String(o.id).slice(0,8))}</b><p>${money(o.amount)} • ${esc(o.buyer_phone||'')}</p><small>${new Date(o.created_at||Date.now()).toLocaleString('en-IN')}</small></div>${statusBadge(o.status)}</summary><div class="approval-actions"><button class="ghost" onclick="HP.setOrderStatus('${esc(o.id)}','paid')">Paid</button><button class="ghost" onclick="HP.setOrderStatus('${esc(o.id)}','confirmed')">Confirm</button><button class="ghost" onclick="HP.setOrderStatus('${esc(o.id)}','shipped')">Ship</button><button class="secondary" onclick="HP.setOrderStatus('${esc(o.id)}','delivered')">Delivered</button><button class="danger" onclick="HP.setOrderStatus('${esc(o.id)}','cancelled')">Cancel</button></div></details>`).join('')||empty('No orders yet'); }
+  function adminReportsList(reports=[]){ return (reports||[]).slice(0,8).map(r=>`<details class="admin-detail-card"><summary><div><b>${esc(r.target_type||'Report')} report</b><p>${esc(r.reason||'No reason added')}</p><small>${new Date(r.created_at||Date.now()).toLocaleDateString('en-IN')}</small></div>${statusBadge(r.status||'open')}</summary><div class="approval-actions"><button class="ghost" onclick="HP.setReportStatus('${esc(r.id)}','reviewing')">Reviewing</button><button class="secondary" onclick="HP.setReportStatus('${esc(r.id)}','closed')">Close</button></div></details>`).join('')||empty('No reports'); }
+  function adminContactsList(contacts=[]){ if(!contacts?.length) return ''; return `<h3>Support messages</h3>`+(contacts||[]).slice(0,8).map(c=>`<details class="admin-detail-card"><summary><div><b>${esc(c.name||'Support request')}</b><p>${esc(c.topic||'Support')} • ${esc(c.phone||'')}</p><small>${new Date(c.created_at||Date.now()).toLocaleDateString('en-IN')}</small></div>${statusBadge(c.status||'open')}</summary><p>${esc(c.message||'')}</p><div class="approval-actions"><button class="secondary" onclick="HP.setContactStatus('${esc(c.id)}','closed')">Close</button><button class="ghost" onclick="HP.setContactStatus('${esc(c.id)}','open')">Reopen</button></div></details>`).join(''); }
   async function loadAdminProData(){
     if(!sb)return;
     const safe=async(fn,fallback=[])=>{try{const {data,error}=await fn(); if(error) return fallback; return data||fallback;}catch(e){return fallback;}};
-    state.admin.sellers=await safe(()=>sb.from('sellers').select('*, users(email,full_name,badge_title,role)').order('created_at',{ascending:false}).limit(50));
-    state.admin.orders=await safe(()=>sb.from('orders').select('*').order('created_at',{ascending:false}).limit(60));
-    state.admin.reports=await safe(()=>sb.from('reports').select('*').order('created_at',{ascending:false}).limit(60));
-    state.admin.plans=await safe(()=>sb.from('seller_plans').select('*').order('created_at',{ascending:false}).limit(60));
-    state.admin.boosts=await safe(()=>sb.from('boost_purchases').select('*').order('created_at',{ascending:false}).limit(60));
-    const wrap=$('#sellerApprovalList'); if(wrap) wrap.innerHTML=adminSellerList(state.admin.sellers);
+    state.admin.sellers=await safe(()=>sb.from('sellers').select('*, users(*)').order('created_at',{ascending:false}).limit(120));
+    state.admin.products=await safe(()=>sb.from('products').select('*, sellers(business_name,status), users(*)').order('created_at',{ascending:false}).limit(160));
+    if(state.admin.products.length) state.products=state.admin.products;
+    state.admin.orders=await safe(()=>sb.from('orders').select('*').order('created_at',{ascending:false}).limit(80));
+    state.admin.reports=await safe(()=>sb.from('reports').select('*').order('created_at',{ascending:false}).limit(80));
+    state.admin.contacts=await safe(()=>sb.from('contact_messages').select('*').order('created_at',{ascending:false}).limit(80));
+    state.admin.plans=await safe(()=>sb.from('seller_plans').select('*').order('created_at',{ascending:false}).limit(80));
+    state.admin.boosts=await safe(()=>sb.from('boost_purchases').select('*').order('created_at',{ascending:false}).limit(80));
+    state.admin.users=await safe(()=>sb.from('users').select('*').order('created_at',{ascending:false}).limit(120));
+    state.admin.badges=await safe(()=>sb.from('badge_definitions').select('*').order('sort_order',{ascending:true}).limit(120));
+    state.admin.events=await safe(()=>sb.from('platform_events').select('*').order('created_at',{ascending:false}).limit(80));
+    await prepareAdminDocUrls(state.admin.sellers);
+    refreshAdminLists();
+  }
+  async function prepareAdminDocUrls(sellers=[]){
+    state.admin.docUrls=state.admin.docUrls||{};
+    if(!sb||!isAdminUser()) return;
+    const paths=[...new Set((sellers||[]).flatMap(s=>[s.aadhaar_front,s.aadhaar_back,s.shop_photo]).filter(Boolean))];
+    for(const path of paths){
+      if(state.admin.docUrls[path]) continue;
+      try{ const {data,error}=await sb.storage.from('verification-docs').createSignedUrl(path, 60*60); if(!error&&data?.signedUrl) state.admin.docUrls[path]=data.signedUrl; }catch(e){}
+    }
+  }
+  function refreshAdminLists(){
+    const sellers=state.admin.sellers||[], products=state.admin.products||state.products||[];
+    const wrap=$('#sellerApprovalList'); if(wrap) wrap.innerHTML=adminSellerList(sellers);
+    const aw=$('#approvedSellersList'); if(aw) aw.innerHTML=adminSellerManager(sellers,'approved');
+    const sw=$('#sellerArchiveList'); if(sw) sw.innerHTML=adminSellerManager(sellers,'archive');
+    const pw=$('#productApprovalList'); if(pw) pw.innerHTML=adminProductQueue(products);
+    const apw=$('#approvedProductsList'); if(apw) apw.innerHTML=adminProductManager(products,'approved');
+    const paw=$('#productArchiveList'); if(paw) paw.innerHTML=adminProductManager(products,'archive');
     const ow=$('#adminOrdersList'); if(ow) ow.innerHTML=adminOrdersList(state.admin.orders);
     const rw=$('#adminReportsList'); if(rw) rw.innerHTML=adminReportsList(state.admin.reports);
+    const cw=$('#adminContactsList'); if(cw) cw.innerHTML=adminContactsList(state.admin.contacts);
+    const rl=$('#adminRanksList'); if(rl) rl.innerHTML=adminRanksList();
+    const ev=$('#adminEventsList'); if(ev) ev.innerHTML=adminEventsList();
   }
   async function loadAdminSellers(){ await loadAdminProData(); }
-  async function approveSeller(id,userId){ if(!sb)return; const {error}=await sb.from('sellers').update({status:'approved',verification_status:'approved',approved_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); if(userId) await sb.from('users').update({role:'seller',badge_title:'Verified Seller',badge_color:'green'}).eq('auth_id',userId); toast('Seller approved'); await loadAdminSellers(); }
-  async function rejectSeller(id){ if(!sb)return; const {error}=await sb.from('sellers').update({status:'rejected',verification_status:'rejected'}).eq('id',id); if(error)return toast(error.message); toast('Seller rejected'); await loadAdminSellers(); }
-  async function approveProduct(id){ if(sb){ const {error}=await sb.from('products').update({status:'approved',approved_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); } const p=state.products.find(x=>String(x.id)===String(id)); if(p)p.status='approved'; toast('Product approved'); render(); }
-  async function rejectProduct(id){ if(sb){ const {error}=await sb.from('products').update({status:'rejected'}).eq('id',id); if(error)return toast(error.message); } state.products=state.products.filter(x=>String(x.id)!==String(id)); toast('Product rejected'); render(); }
+  function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'Run SUPABASE_v77_RANK_BADGE_PATCH.sql once in Supabase, then try again.'; return msg; }
+  async function updateUserRankPatch(userId,patch){
+    if(!sb||!userId)return;
+    let {error}=await sb.from('users').update(patch).eq('auth_id',userId);
+    if(error && /rank_key|badge_key|banner_key|points/i.test(String(error.message||''))){
+      const safe={...patch}; ['rank_key','rank_title','badge_key','banner_key','banner_title','points','is_founder','founder_number','title_prefix'].forEach(k=>delete safe[k]);
+      await sb.from('users').update(safe).eq('auth_id',userId);
+    }
+  }
+  async function setSellerStatus(id,userId,status){
+    if(!sb)return; const patch={status,verification_status:status};
+    if(status==='approved') patch.approved_at=new Date().toISOString();
+    if(status==='banned') patch.banned_at=new Date().toISOString();
+    const {error}=await sb.from('sellers').update(patch).eq('id',id); if(error)return toast(statusPatchHint(error));
+    if(userId){
+      if(status==='approved') await updateUserRankPatch(userId,{role:'seller',badge_title:'Verified Seller',badge_color:'green',badge_key:'verified_seller',rank_key:'rising',rank_title:'Rising Trader',banner_key:'verified_seller',banner_title:'Verified Seller Banner',points:180});
+      if(['rejected','banned'].includes(status)) await updateUserRankPatch(userId,{role:'user',badge_title:status==='banned'?'Banned Seller':'Member',badge_color:status==='banned'?'red':'green',badge_key:'buyer_member'});
+      if(status==='banned') await sb.from('products').update({status:'banned',banned_at:new Date().toISOString()}).eq('user_id',userId);
+    }
+    toast(`Seller ${status}`); await loadAdminProData();
+  }
+  async function approveSeller(id,userId){ return setSellerStatus(id,userId,'approved'); }
+  async function rejectSeller(id,userId){ if(confirm('Reject this seller request?')) return setSellerStatus(id,userId,'rejected'); }
+  async function banSeller(id,userId){ if(confirm('Ban this seller and hide their products?')) return setSellerStatus(id,userId,'banned'); }
+  async function restoreSeller(id,userId){ return setSellerStatus(id,userId,'approved'); }
+  async function setProductStatus(id,status){
+    const patch={status}; if(status==='approved') patch.approved_at=new Date().toISOString(); if(status==='banned') patch.banned_at=new Date().toISOString();
+    if(sb){ const {error}=await sb.from('products').update(patch).eq('id',id); if(error)return toast(statusPatchHint(error)); }
+    const p=state.products.find(x=>String(x.id)===String(id)); if(p) Object.assign(p,patch);
+    toast(`Product ${status}`); await loadAdminProData();
+  }
+  async function approveProduct(id){ return setProductStatus(id,'approved'); }
+  async function rejectProduct(id){ if(confirm('Reject this product?')) return setProductStatus(id,'rejected'); }
+  async function banProduct(id){ if(confirm('Ban this product from marketplace?')) return setProductStatus(id,'banned'); }
+  async function restoreProduct(id){ return setProductStatus(id,'approved'); }
+  async function setOrderStatus(id,status){ if(!sb)return; const {error}=await sb.from('orders').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); toast('Order updated'); await loadAdminProData(); }
+  async function setReportStatus(id,status){ if(!sb)return; const {error}=await sb.from('reports').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); toast('Report updated'); await loadAdminProData(); }
+  async function setContactStatus(id,status){ if(!sb)return; const {error}=await sb.from('contact_messages').update({status}).eq('id',id); if(error)return toast(error.message); toast('Support message updated'); await loadAdminProData(); }
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
   function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else html=home(); app.innerHTML=localizeHtml(html); syncMenu(); bindPage(); applyLang(); animateCounters(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
   function bindPage(){
@@ -511,6 +723,7 @@
     $('#profileForm')?.addEventListener('submit',e=>{e.preventDefault();saveProfile(e.target)});
     $('#sellerVerifyForm')?.addEventListener('submit',e=>{e.preventDefault();submitSellerVerification(e.target)});
     $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault();submitProduct(e.target)});
+    bindSellTypeChooser();
     $('#sellForm input[name="price"]')?.addEventListener('input',e=>{ const price=Number(e.target.value||0); $('#sellerFeePreview').innerHTML=localizeHtml(`Listing price: <b>${money(price)}</b> • Platform marketing fee: <b>${money(sellerFee(price))}</b> • Seller earns approx: <b>${money(price-sellerFee(price))}</b>`); });
     $('#checkoutForm')?.addEventListener('submit',e=>{e.preventDefault();placeOrder(e.target)});
     $('#checkoutForm select[name="shipping"]')?.addEventListener('change',e=>{ $('#checkoutSummary').innerHTML=localizeHtml(summaryRows(getTotals(e.target.value))); });
@@ -518,8 +731,19 @@
     $('#contactForm')?.addEventListener('submit',e=>{e.preventDefault();sendContact(e.target)});
     $('#searchInput')?.addEventListener('input',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
   }
+  function bindSellTypeChooser(){
+    const form=$('#sellForm'); if(!form) return;
+    const cards=$$('.sell-type-card'); const select=$('#sellCategorySelect');
+    const setType=(type)=>{
+      cards.forEach(card=>card.classList.toggle('active', card.dataset.sellCard===type));
+      const radio=form.querySelector(`input[name="sell_type"][value="${type}"]`); if(radio) radio.checked=true;
+      if(select) select.innerHTML=categoryOptionsFor(type);
+    };
+    cards.forEach(card=>card.addEventListener('click',()=>setType(card.dataset.sellCard||'machine')));
+    form.querySelectorAll('input[name="sell_type"]').forEach(r=>r.addEventListener('change',()=>setType(r.value)));
+  }
   function filterMarket(){ const q=($('#searchInput')?.value||'').toLowerCase(); const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat; const sort=$('#sortFilter')?.value||'new'; let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model].join(' ').toLowerCase().includes(q))&&(!cat||p.category===cat)); if(sort==='low')arr.sort((a,b)=>a.price-b.price); if(sort==='high')arr.sort((a,b)=>b.price-a.price); $('#marketGrid').innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,approveSeller,rejectSeller,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone};
   document.addEventListener('DOMContentLoaded',init);
 })();

@@ -1067,6 +1067,6 @@
   document.addEventListener('DOMContentLoaded', () => { apply(); setTimeout(apply, 200); setTimeout(apply, 900); });
   document.addEventListener('click', e => { if (e.target.closest('[data-lang],[data-route],[data-close-modal]')) setTimeout(apply, 80); });
   document.addEventListener('change', e => { if (e.target && (e.target.id === 'languageSelect' || e.target.id === 'dontShowInstall' || e.target.id === 'dontShowLang')) setTimeout(apply, 80); });
-  const mo = new MutationObserver(() => { clearTimeout(window.__hp_v75_i18n); window.__hp_v75_i18n = setTimeout(apply, 40); });
+  const mo = new MutationObserver(() => { clearTimeout(window.__hp_v76_i18n); window.__hp_v76_i18n = setTimeout(apply, 40); });
   mo.observe(document.documentElement, {subtree:true, childList:true, characterData:true});
 })();
