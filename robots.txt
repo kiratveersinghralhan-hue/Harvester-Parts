@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://kiratveersinghralhan-hue.github.io/Harvester-partss/sitemap.xml
