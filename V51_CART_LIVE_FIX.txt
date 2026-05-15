@@ -1,1 +1,0 @@
-v51 fixes cart opening, menu auto-close, live cart counter, and cache-busting. Upload all root files and hard refresh/private tab once. SQL not required.
