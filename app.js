@@ -310,8 +310,27 @@
     catch(e){ console.error(e); toast(e?.message || String(e) || 'Something went wrong'); }
     finally{ setFormLoading(form,false); }
   }
-  function closeMenu(){ $('#sideMenu')?.classList.remove('open'); $('#backdrop')?.classList.remove('show'); }
-  function openMenu(){ $('#sideMenu')?.classList.add('open'); $('#backdrop')?.classList.add('show'); }
+  function closeMenu(){
+    $('#sideMenu')?.classList.remove('open');
+    $('#backdrop')?.classList.remove('show');
+    document.body.classList.remove('menu-open');
+  }
+  function openMenu(){
+    $('#sideMenu')?.classList.add('open');
+    $('#backdrop')?.classList.add('show');
+    document.body.classList.add('menu-open');
+  }
+  function isActuallyClickable(el){
+    if(!el) return false;
+    if(el.closest('#sideMenu') && !$('#sideMenu')?.classList.contains('open')) return false;
+    for(let n=el; n && n.nodeType===1 && n!==document.documentElement; n=n.parentElement){
+      const cs = window.getComputedStyle(n);
+      if(cs.display==='none' || cs.visibility==='hidden' || cs.pointerEvents==='none') return false;
+      if(n.id==='sideMenu' && !n.classList.contains('open')) return false;
+    }
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }
   function route(name, params={}){
     name = normalizeRouteName(name);
     if(!VALID_ROUTES.has(name)) name='home';
@@ -347,11 +366,13 @@
     }, delay);
   }
   function bindShell(){
+    // v86: bubble-phase routing only. Invisible/closed menu buttons must never steal taps from forms.
     document.addEventListener('click', e=>{
-      // v82: protect forms/inputs from accidental route bubbling on mobile Safari.
-      if(e.target.closest('input, textarea, select, option, label')) return;
+      const formTarget = e.target.closest('input, textarea, select, option, label, form, [contenteditable="true"]');
       const routeEl=e.target.closest('button[data-route],a[data-route],[role="button"][data-route],.brand[data-route],.icon-btn[data-route]');
+      if(formTarget && !routeEl) return;
       if(routeEl){
+        if(!isActuallyClickable(routeEl)) return;
         e.preventDefault();
         e.stopPropagation();
         route(routeEl.dataset.route);
@@ -359,7 +380,7 @@
       }
       const close=e.target.closest('[data-close-modal]');
       if(close){ const id=close.dataset.closeModal; $('#'+id)?.classList.remove('show'); if(id==='installModal' && $('#dontShowInstall')?.checked) localStorage.hp_install_done='1'; }
-    }, true);
+    });
     $('#menuButton')?.addEventListener('click',openMenu); $('#closeMenu')?.addEventListener('click',closeMenu); $('#backdrop')?.addEventListener('click',closeMenu);
     $('#authButton')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
     $('#menuLoginBtn')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
@@ -681,7 +702,7 @@
       }catch(e){ console.warn('realtime refresh skipped', e); }
     };
     try{
-      sb.channel('hp-realtime-v85')
+      sb.channel('hp-realtime-v86')
         .on('postgres_changes',{event:'*',schema:'public',table:'products'},()=>refreshVisible('products'))
         .on('postgres_changes',{event:'*',schema:'public',table:'sellers'},()=>refreshVisible('all'))
         .on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>refreshVisible('finance'))

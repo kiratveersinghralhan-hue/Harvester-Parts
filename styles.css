@@ -296,3 +296,53 @@ main#app,#app{min-height:calc(100dvh - 92px);}
   .brand span{max-width:118px;}
   .header-actions .icon-btn{padding:8px 8px!important;}
 }
+
+
+/* v86 critical tap-routing and responsive stability fix
+   Closed menu was invisible but still sitting above the page on mobile. This made taps on login inputs hit hidden menu buttons. */
+.side-menu{
+  pointer-events:none!important;
+  visibility:hidden!important;
+  opacity:0!important;
+  transform:translateX(120%)!important;
+}
+.side-menu.open{
+  pointer-events:auto!important;
+  visibility:visible!important;
+  opacity:1!important;
+  transform:translateX(0)!important;
+}
+body:not(.menu-open) #sideMenu,
+body:not(.menu-open) #sideMenu *{
+  pointer-events:none!important;
+}
+#backdrop:not(.show){
+  pointer-events:none!important;
+  opacity:0!important;
+}
+#app,
+.auth-card,
+.form,
+.form input,
+.form select,
+.form textarea,
+.form button,
+.google-btn,
+.page-card{
+  position:relative;
+}
+#app,.auth-card,.form{z-index:1;}
+.form input,.form select,.form textarea,.form button,.google-btn{z-index:2;}
+.auth-card input,.auth-card button,.auth-card select,.auth-card textarea{
+  pointer-events:auto!important;
+  touch-action:manipulation;
+}
+@media(max-width:720px){
+  .side-menu{left:10px!important;right:10px!important;width:auto!important;transform:translateX(112%)!important;}
+  .side-menu.open{transform:translateX(0)!important;}
+  .auth-card{min-height:auto!important;}
+  .auth-card .form{gap:14px!important;}
+  .auth-card input{min-height:56px!important;}
+  .bottom-nav{pointer-events:auto!important;}
+  main#app,#app{overflow:visible!important;}
+}
