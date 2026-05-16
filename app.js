@@ -4,8 +4,8 @@
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
   const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
-  const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','categories','about','contact','how','support']);
-  function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',order:'orders',message:'messages',parts:'market',browse:'market'}[r] || r); }
+  const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
+  function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',order:'orders',message:'messages',parts:'market',browse:'market',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','disputes':'dispute-policy','grievance-redressal':'grievance'}[r] || r); }
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const app = $('#app');
@@ -206,7 +206,7 @@
 
     const routeLabels = {
       home:'Home', market:'Market', sell:'Sell a Part', membership:'Membership & Rewards', categories:'Categories', how:'How it works',
-      about:'About Us', contact:'Contact Us', support:'Support', messages:'Chat', account:'Account', cart:'Cart', checkout:'Checkout', orders:'My Orders', admin:'Admin Panel'
+      about:'About Us', contact:'Contact Us', support:'Support', legal:'Legal Centre', terms:'Terms', privacy:'Privacy', refund:'Refunds', shipping:'Shipping', razorpay:'Payments', 'payout-policy':'Payouts', grievance:'Grievance', messages:'Chat', account:'Account', cart:'Cart', checkout:'Checkout', orders:'My Orders', admin:'Admin Panel'
     };
     $$('.side-menu button[data-route], .bottom-nav button, .nav-tabs button').forEach(el=>{
       if(el.classList.contains('sell-fab') || el.textContent.trim()==='＋'){ el.dataset.rawText='＋'; el.textContent='＋'; return; }
@@ -1099,8 +1099,186 @@
   async function setOrderStatus(id,status){ if(!sb)return; const {error}=await sb.from('orders').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); toast('Order updated'); await loadAdminProData(); }
   async function setReportStatus(id,status){ if(!sb)return; const {error}=await sb.from('reports').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); toast('Report updated'); await loadAdminProData(); }
   async function setContactStatus(id,status){ if(!sb)return; const {error}=await sb.from('contact_messages').update({status}).eq('id',id); if(error)return toast(error.message); toast('Support message updated'); await loadAdminProData(); }
+
+
+  const LEGAL_LAST_UPDATED = '16 May 2026';
+  const LEGAL_OWNER = 'Harvester Parts';
+  const LEGAL_WEBSITE = 'https://harvesterparts.in';
+  const LEGAL_SUPPORT_EMAIL = 'support@harvesterparts.in';
+  const LEGAL_SUPPORT_PHONE = '+91 98148 00017';
+  const LEGAL_BUSINESS_ADDRESS = 'Business address, GSTIN and registered entity details will be displayed after final business registration details are confirmed by the owner.';
+
+  const legalDocs = {
+    terms:{
+      title:'Terms & Conditions',
+      subtitle:'Rules for using Harvester Parts as a buyer, seller, member, admin-approved seller or visitor.',
+      staticFile:'terms.html',
+      sections:[
+        ['1. Introduction',`These Terms & Conditions govern access to and use of Harvester Parts, including the website, marketplace, accounts, seller verification, product listings, plans, payments, support, messages, rewards, badges, banners and admin-reviewed services. By using the platform, creating an account, posting a listing, placing an order or buying a membership, you agree to these Terms.`],
+        ['2. Marketplace Role',`Harvester Parts operates as an online marketplace and platform service for agricultural machinery, harvester parts, tractor parts, farm implements and related inventory. Sellers are responsible for the accuracy, ownership, legality, condition, pricing and availability of their listed products. Buyers are responsible for checking product details, compatibility, delivery terms and order information before payment. Harvester Parts may review, approve, reject, hide, ban or remove listings to protect marketplace quality.`],
+        ['3. Accounts and Eligibility',`Users must provide accurate details and keep login credentials secure. Users may use email, Google login or phone OTP when enabled. A user must not create false accounts, impersonate any person, misuse another person’s documents or submit fake seller information. Harvester Parts may restrict or suspend accounts for fraud, suspicious activity, abuse, non-payment, repeated disputes, policy violation or legal risk.`],
+        ['4. Seller Verification',`Only approved sellers can publish products. Seller approval may require business details, contact details, shop or stock photos, Aadhaar or other verification documents, bank or UPI payout information and any additional information requested by admin. Approval does not create employment, partnership, franchise or agency. Admin may approve, reject, ban, restore or re-check a seller at any time for buyer safety and platform compliance.`],
+        ['5. Listings and Product Information',`Every listing must be accurate and must include correct title, category, product type, model, brand, price, condition, images and availability. Sellers must not mislead buyers with fake images, hidden defects, false compatibility, copied listings, stolen products or unrealistic offers. Harvester Parts may edit visibility, reject, ban, archive or request changes to any listing.`],
+        ['6. Orders and Payments',`When checkout is used, buyer payment is collected by the platform through the available payment method such as Razorpay or approved manual confirmation. The platform may hold the order amount for processing, fraud checks, dispute handling and seller payout calculation. Seller payout is calculated after deducting platform commission, membership-based seller fee, refunds, chargebacks, penalties, shipping adjustments or other applicable deductions.`],
+        ['7. Seller Commission and Payouts',`Seller commission depends on the active plan at the time of sale. Free sellers receive standard listing access and standard seller platform commission. Paid plans can reduce commission and increase listing limits. Seller balance shown in the account is an estimated payable amount and may change if the order is cancelled, refunded, disputed, charged back, adjusted or found to violate policy.`],
+        ['8. Membership Plans and Rewards',`Membership plans may provide listing limits, fee discounts, boost days, badges, banners, titles, reward points or visibility benefits. Plans are digital platform services and begin when activated. Plan benefits are not guaranteed sales, leads or profit. Harvester Parts may update plan names, pricing, benefits, ranking rules, reward rules and event rules with notice on the platform.`],
+        ['9. Badges, Titles, Banners and Ranks',`Badges, titles, banners, ranks and points are platform identity features. They are not financial assets and cannot be sold, transferred, redeemed for cash or used as proof of business quality outside the platform. Founder/admin identity may be unique and controlled by the platform owner. Users may lose badges, ranks or benefits if their account violates policy.`],
+        ['10. User Conduct',`Users must communicate respectfully, avoid spam, avoid bypassing platform checkout when order protection is used, avoid sharing prohibited content, avoid harassment, avoid fraudulent claims and avoid any activity that harms buyers, sellers, admin, payment processors or the platform. Harvester Parts may moderate chat and support messages for safety, fraud prevention and policy enforcement.`],
+        ['11. No Guarantee',`Harvester Parts does not guarantee uninterrupted service, guaranteed buyer leads, product quality, product availability, delivery time, seller profit, resale value or compatibility of any part with any machine. Marketplace content is provided by sellers and users. Buyers should verify critical details before purchase.`],
+        ['12. Limitation of Liability',`To the maximum extent permitted by law, Harvester Parts is not liable for indirect, incidental, special, consequential or punitive loss, loss of profit, downtime, loss of business, compatibility error, third-party courier delay, seller misrepresentation, payment gateway downtime or user misuse. Nothing in these Terms limits liability where it cannot legally be limited.`],
+        ['13. Changes to Terms',`Harvester Parts may update these Terms to improve the platform, meet legal requirements, support new features or update payment/payout rules. Continued use of the platform after updates means acceptance of the updated Terms.`],
+        ['14. Contact',`For support, disputes, seller verification, payment help or legal notices, contact ${LEGAL_SUPPORT_EMAIL} or use the Contact/Support page. Business identity details should be updated before full public launch if your final entity, GSTIN or registered office changes.`]
+      ]
+    },
+    privacy:{
+      title:'Privacy Policy',
+      subtitle:'How Harvester Parts collects, uses, protects and shares personal information.',
+      staticFile:'privacy-policy.html',
+      sections:[
+        ['1. Scope',`This Privacy Policy applies to users, visitors, buyers, sellers, admins and support contacts who use Harvester Parts. It explains how we collect and use account details, contact details, seller verification details, product listings, payment-related references, payout information, messages, support requests, device data and website activity.`],
+        ['2. Information We Collect',`We may collect name, email, phone number, login identifier, profile details, seller business details, shop address, Aadhaar or verification images uploaded by sellers, payout method, UPI ID, bank account details, product listings, order details, payment IDs, support messages, reports, device/browser data and language preferences.`],
+        ['3. Why We Use Data',`We use data to create accounts, verify sellers, approve listings, process orders, calculate seller payouts, reduce fraud, support users, manage membership plans, show rank/badge/title/banner features, maintain admin records, meet legal obligations, improve marketplace safety and communicate important service updates.`],
+        ['4. Payment Data',`Card numbers, UPI PINs, banking passwords and sensitive payment credentials are not stored by Harvester Parts. Payment processing is handled through the payment gateway selected at checkout. We may store transaction IDs, payment status, refund status, order amount and related payment references for support and accounting.`],
+        ['5. Seller Verification Documents',`Seller verification documents and shop/stock photos are collected only for verification, fraud prevention, trust and safety, dispute handling and platform compliance. Access is limited to admin and authorized operational use. Sellers must upload only their own valid documents and must not upload another person’s documents without lawful authority.`],
+        ['6. Data Sharing',`We may share limited information with payment providers, delivery partners, service providers, legal authorities, fraud-prevention services, hosting providers or professional advisors when required for platform operation, legal compliance, dispute handling, payment processing, security or user support. We do not sell personal data to advertisers.`],
+        ['7. Data Security',`We use technical and organizational measures such as authenticated access, database policies, restricted admin functions and secure payment routing. No internet service is 100% secure. Users should keep passwords, OTPs and devices safe and should report suspicious activity immediately.`],
+        ['8. User Choices',`Users can update profile details, request support, request correction of inaccurate details and request account/data review. Some records may be retained when required for orders, disputes, accounting, fraud prevention, legal compliance or security.`],
+        ['9. Children and Minors',`The marketplace is intended for lawful commercial and consumer use. Users should use the platform only if they can lawfully enter into transactions or with appropriate guardian/business authority where applicable.`],
+        ['10. Contact for Privacy',`For privacy questions or correction requests, contact ${LEGAL_SUPPORT_EMAIL} through the Support page.`]
+      ]
+    },
+    refund:{
+      title:'Refund & Cancellation Policy',
+      subtitle:'Buyer cancellation, return, refund, gateway refund and seller payout adjustment rules.',
+      staticFile:'refund-cancellation-policy.html',
+      sections:[
+        ['1. Overview',`This policy applies to orders placed through Harvester Parts checkout. Because many products are used machinery, spare parts, heavy items or seller-managed inventory, cancellation and refund decisions depend on order status, product condition, seller confirmation, shipping status and dispute review.`],
+        ['2. Buyer Cancellation',`A buyer may request cancellation before seller confirmation or dispatch. If cancellation is approved before dispatch and no service or shipping cost has been incurred, the eligible order amount may be refunded to the original payment method. If dispatch, procurement, packing, loading, transport or inspection has started, cancellation may be refused or charges may apply where legally permitted.`],
+        ['3. Eligible Refund Cases',`Refunds may be approved when the seller cannot supply the item, the order is cancelled by Harvester Parts, the buyer is charged but order creation fails, the wrong item is delivered, the product is materially different from the approved listing, or a dispute review confirms refund eligibility.`],
+        ['4. Non-Refundable or Limited Refund Cases',`Refund may be rejected or reduced for buyer change of mind after dispatch, wrong machine compatibility selected by buyer, damage after delivery, missing original packaging where relevant, used/installed parts, altered items, custom-procured parts, false claims, delayed complaint after acceptance or cases where seller listing was accurate.`],
+        ['5. Refund Timelines',`Approved refunds are usually initiated through the payment gateway to the original payment method. Normal gateway/bank timelines may take several working days after initiation. Exact timing depends on Razorpay, banks, card networks, UPI providers and payment method.`],
+        ['6. Platform Fees and Deductions',`Payment gateway charges, platform protection fee, shipping, loading, inspection, return shipping, cancellation charges, chargebacks or bank fees may be deducted where applicable and legally allowed. Seller payout and seller balance are adjusted if refund or chargeback is created.`],
+        ['7. How to Request Refund',`Open Support/Contact with order ID, product name, reason, photos/videos where relevant and contact details. Harvester Parts may request seller response, courier proof, inspection proof or extra details before final decision.`]
+      ]
+    },
+    shipping:{
+      title:'Shipping & Delivery Policy',
+      subtitle:'Delivery expectations for spare parts, machinery, heavy products and seller-managed dispatch.',
+      staticFile:'shipping-delivery-policy.html',
+      sections:[
+        ['1. Delivery Model',`Products may be shipped by seller, buyer-arranged pickup, platform-assisted courier, transport service, local delivery or heavy machinery logistics depending on item size, location and seller terms. Delivery availability and cost can vary by pincode, weight, volume and route.`],
+        ['2. Timelines',`Estimated dispatch and delivery timelines shown on the platform are estimates only. Heavy machinery, large parts, remote locations, road permits, transport availability, weather, strikes, holidays, inspection delays or seller stock confirmation may extend timelines.`],
+        ['3. Shipping Charges',`Shipping charges may include packing, loading, transport, courier, insurance, handling and heavy item logistics. Some products may need manual shipping quotation before final delivery. Buyer is responsible for providing complete address, phone number, pincode and unloading availability.`],
+        ['4. Delivery Inspection',`Buyer should inspect package/item at delivery wherever possible. For visible damage, missing parts or wrong item, contact support quickly with photos, video and delivery proof. Do not install or modify disputed items before support review unless instructed.`],
+        ['5. Risk and Ownership',`Risk transfer may depend on order terms, delivery method and seller arrangement. If Harvester Parts checkout protection is used, seller payout may remain pending until order review, delivery confirmation or dispute window is handled.`]
+      ]
+    },
+    razorpay:{
+      title:'Razorpay Payment Policy',
+      subtitle:'Payment gateway, secure checkout, refunds and payment status rules.',
+      staticFile:'razorpay-payment-policy.html',
+      sections:[
+        ['1. Payment Gateway',`Harvester Parts uses Razorpay or other enabled payment methods for online payment collection. Razorpay may support payment modes such as UPI, cards, netbanking, wallets or other methods depending on availability, bank status, gateway rules and merchant activation.`],
+        ['2. Payment Security',`Harvester Parts does not store card numbers, CVV, UPI PIN, netbanking password or other sensitive payment credentials. These are handled by the payment gateway/bank/payment app. Users should never share OTP, PIN, card password or banking password with any seller, buyer or support person.`],
+        ['3. Payment Confirmation',`An order may show pending until Razorpay/payment gateway confirms payment success. If money is deducted but order is not visible, contact support with payment ID, amount, date/time, phone/email and bank reference. Duplicate or failed payments are reviewed and refunded/adjusted where eligible.`],
+        ['4. Refunds via Razorpay',`Approved online refunds are normally sent back to the original payment method through Razorpay/payment gateway. Refund timing depends on gateway and banking networks. Harvester Parts cannot control bank-side delays after refund initiation.`],
+        ['5. Chargebacks and Fraud',`Suspicious transactions, chargebacks, payment disputes, fake orders, unauthorized use, high-risk activity or gateway alerts may result in order hold, seller payout hold, account review or cancellation.`]
+      ]
+    },
+    'seller-policy':{
+      title:'Seller Policy',
+      subtitle:'Rules for seller verification, product listing, order handling and seller conduct.',
+      staticFile:'seller-policy.html',
+      sections:[
+        ['1. Seller Approval',`Sellers must complete verification before listing products. Admin may request identity, shop, stock, business, GST, address, phone, bank/UPI and other details. Approval can be revoked if information is false, outdated, incomplete or risky.`],
+        ['2. Seller Duties',`Sellers must list only products they own or are authorized to sell, keep inventory updated, describe condition clearly, respond to buyer/admin messages, pack items safely, follow delivery commitments, cooperate with disputes and avoid any misleading claim.`],
+        ['3. Pricing and Availability',`Seller price must be genuine and current. Admin may remove unrealistic, duplicate, misleading, bait, out-of-stock or suspicious listings. If a seller fails to supply after accepting an order, penalties, ranking reduction or account action may apply.`],
+        ['4. Prohibited Seller Actions',`Sellers must not sell stolen goods, counterfeit products, unsafe items, illegal products, weapons, drugs, restricted products, fake invoices, fake documents or products violating law. Sellers must not bypass platform rules, manipulate ratings, harass buyers or misuse buyer data.`]
+      ]
+    },
+    'buyer-policy':{
+      title:'Buyer Policy',
+      subtitle:'Rules for buying, checkout, inspection and dispute support.',
+      staticFile:'buyer-policy.html',
+      sections:[
+        ['1. Buyer Responsibility',`Buyers must review product details, part compatibility, model, brand, condition, price, shipping cost and delivery terms before ordering. For machinery and spare parts, compatibility should be confirmed before payment when critical.`],
+        ['2. Safe Buying',`Use platform checkout and support channels for order protection. Do not share OTP, banking passwords or unnecessary personal documents with sellers. Report suspicious listings or payment requests outside official checkout.`],
+        ['3. Disputes',`Buyers must raise disputes quickly with evidence such as photos, videos, delivery proof, order ID and chat history. Harvester Parts may contact seller and decide next steps based on available evidence and policy.`]
+      ]
+    },
+    'payout-policy':{
+      title:'Seller Payout Policy',
+      subtitle:'How seller balances, commission, payout methods and 7 business day payout targets work.',
+      staticFile:'seller-payout-policy.html',
+      sections:[
+        ['1. Platform Collection',`For protected checkout, buyer payment is collected by Harvester Parts/payment gateway first. The platform then calculates seller payable balance after seller platform commission, membership fee rate, refunds, chargebacks, shipping adjustments, penalties and any applicable deductions.`],
+        ['2. Seller Balance Example',`If a seller lists an item for ₹30,00,000 and has no paid plan, the standard 3.00% seller platform fee is ₹90,000. Estimated seller balance becomes ₹29,10,000 before any additional adjustments. Higher membership plans may reduce seller commission if active at the time of sale.`],
+        ['3. Payout Method',`Sellers must choose payout by UPI or bank account and submit accurate details. For UPI, seller must provide valid UPI ID and account holder name. For bank transfer, seller must provide account holder name, bank name, account number and IFSC. Wrong payout details may delay or fail transfer.`],
+        ['4. Payout Timeline',`Seller payouts are targeted within 7 business days after payment/order confirmation, subject to delivery status, dispute window, fraud checks, bank holidays, payment gateway settlement, compliance review and any buyer complaint. High-value orders may require additional confirmation before payout.`],
+        ['5. Admin Controls',`Admin can view money-in, platform commission, seller balances, payout requests, seller bank/UPI details and mark payouts as pending, processing, paid or rejected. Manual payout records are operational records and should match actual bank/UPI transfers.`],
+        ['6. Holds and Deductions',`Payout may be held or reduced for refunds, cancellations, chargebacks, fake listings, seller non-cooperation, legal notice, suspicious activity, buyer dispute, wrong shipment, missing product, policy violation or account verification issue.`]
+      ]
+    },
+    'fees-policy':{
+      title:'Fees & Commission Policy',
+      subtitle:'Platform fee, seller commission, membership discounts and transaction cost information.',
+      staticFile:'fees-commission-policy.html',
+      sections:[
+        ['1. Buyer Charges',`Buyer checkout may include product subtotal, shipping/logistics charges and platform protection/service fee where shown. Final payable amount is displayed before order placement.`],
+        ['2. Seller Commission',`Seller commission is deducted from seller payout. The free plan standard rate is 3.00%. Paid plans may reduce seller commission down to the rate shown on the plan page. Rates can change for future transactions after platform notice.`],
+        ['3. Membership Fees',`Membership fees are paid for digital platform benefits such as listing limits, visibility, rank benefits, banners, badges, titles and lower seller commission. Membership purchase does not guarantee sales or profit.`]
+      ]
+    },
+    'prohibited-policy':{
+      title:'Prohibited Items Policy',
+      subtitle:'Items and activity not allowed on Harvester Parts.',
+      staticFile:'prohibited-items-policy.html',
+      sections:[
+        ['1. Strictly Prohibited',`Users must not list or trade illegal goods, stolen goods, counterfeit goods, weapons, explosives, ammunition, controlled substances, dangerous chemicals, wildlife products, fake documents, government restricted items, pornographic material, gambling products, hacking tools or any item that violates applicable law.`],
+        ['2. Restricted Agricultural Goods',`Products such as pesticides, fertilizers, chemicals, fuel, lubricants, batteries, engines, electronics or safety-critical machine parts must be listed only where legally allowed and must include accurate safety, warranty, usage and compliance information where applicable.`],
+        ['3. Enforcement',`Harvester Parts may reject, hide, ban, report or remove prohibited listings and may suspend sellers or users involved in prohibited activity.`]
+      ]
+    },
+    'dispute-policy':{
+      title:'Dispute Resolution Policy',
+      subtitle:'How order, seller, buyer, refund and payout disputes are handled.',
+      staticFile:'dispute-resolution-policy.html',
+      sections:[
+        ['1. Raising a Dispute',`Users should contact Support with order ID, product details, date, reason, photos/videos, delivery proof and chat screenshots where relevant. Disputes should be raised as soon as possible after the issue is noticed.`],
+        ['2. Review Process',`Harvester Parts may review listing data, chat, payment status, delivery proof, seller response, buyer evidence and admin notes. The platform may approve refund, reject refund, request return, hold payout, release payout, ask for extra proof or close the case.`],
+        ['3. Final Decision',`Marketplace decisions are based on available evidence and platform policy. Users may still use legal remedies available under applicable law. Harvester Parts encourages fair resolution before escalation.`]
+      ]
+    },
+    grievance:{
+      title:'Grievance Redressal',
+      subtitle:'How users can contact Harvester Parts for complaints, legal notices and support escalation.',
+      staticFile:'grievance-redressal.html',
+      sections:[
+        ['1. Contact Point',`For complaints about orders, sellers, products, refunds, privacy, payout, payment, account access or content, contact ${LEGAL_SUPPORT_EMAIL} or use the Support page. Include your name, registered email/phone, order/listing ID and clear details.`],
+        ['2. Response Target',`We aim to acknowledge serious complaints within a reasonable time and work toward resolution based on complexity, evidence, seller/buyer response, payment gateway status and logistics information.`],
+        ['3. Required Details',`Please include order ID, payment ID if any, product title, seller/buyer name if available, issue summary, photos/videos, delivery proof, bank/UPI reference where relevant and your preferred contact method.`],
+        ['4. Legal Notices',`Formal legal notices should include complete sender details, authority, facts, relief sought and supporting documents. Business address and entity details must be updated by the owner once final registration details are confirmed.`]
+      ]
+    }
+  };
+
+  function legalFooter(){
+    return `<footer class="legal-footer glass"><div><b>Harvester Parts</b><span>Verified agri machinery and spare parts marketplace.</span></div><nav><button data-route="terms">Terms</button><button data-route="privacy">Privacy</button><button data-route="refund">Refunds</button><button data-route="shipping">Shipping</button><button data-route="razorpay">Payments</button><button data-route="payout-policy">Payouts</button><button data-route="grievance">Grievance</button></nav></footer>`;
+  }
+  function legalCardLink(key,label,desc){
+    const doc=legalDocs[key]||{};
+    return `<button class="legal-link-card" data-route="${esc(key)}"><b>${esc(label||doc.title||key)}</b><span>${esc(desc||doc.subtitle||'Open policy')}</span></button>`;
+  }
+  function legalCentrePage(){
+    return `<section class="legal-hero page-card"><span class="eyebrow">Legal centre</span><h1>Clear policies for buyers, sellers, payments, refunds and payouts.</h1><p class="muted">These pages are written for a real marketplace workflow: verified sellers, Razorpay checkout, platform commission, seller balance, payout review, refunds, disputes and support escalation.</p><div class="legal-meta"><span>Last updated: ${LEGAL_LAST_UPDATED}</span><span>Website: ${LEGAL_WEBSITE}</span><span>Support: ${LEGAL_SUPPORT_EMAIL}</span></div></section><section class="legal-grid">${legalCardLink('terms','Terms & Conditions','Complete rules for accounts, listings, orders, plans and platform use.')}${legalCardLink('privacy','Privacy Policy','Personal data, seller documents, payout information and payment references.')}${legalCardLink('refund','Refund & Cancellation','Cancellation, refund eligibility, non-refundable cases and timelines.')}${legalCardLink('shipping','Shipping & Delivery','Dispatch, delivery, logistics and inspection rules.')}${legalCardLink('razorpay','Razorpay Payment Policy','Payment gateway, failed payment, refunds, chargebacks and security.')}${legalCardLink('seller-policy','Seller Policy','Seller approval, product accuracy, order handling and prohibited conduct.')}${legalCardLink('buyer-policy','Buyer Policy','Buyer responsibility, safe buying and dispute reporting.')}${legalCardLink('payout-policy','Seller Payout Policy','Seller balance, commission, UPI/bank payout and 7 business day target.')}${legalCardLink('fees-policy','Fees & Commission','Buyer charges, seller commission and membership fee discounts.')}${legalCardLink('prohibited-policy','Prohibited Items','Items and activities not allowed on the marketplace.')}${legalCardLink('dispute-policy','Dispute Resolution','Evidence, review process and resolution options.')}${legalCardLink('grievance','Grievance Redressal','Complaint and support escalation process.')}</section><section class="page-card legal-note"><h2>Launch checklist</h2><p>Before public launch, update your final legal entity name, registered address, GSTIN if applicable, business email and grievance officer/contact details. Do not add fake details.</p></section>`;
+  }
+  function legalDocPage(key){
+    const doc=legalDocs[key] || legalDocs.terms;
+    return `<section class="legal-doc page-card"><div class="legal-doc-head"><span class="eyebrow">Harvester Parts policy</span><h1>${esc(doc.title)}</h1><p class="muted">${esc(doc.subtitle)}</p><div class="legal-meta"><span>Last updated: ${LEGAL_LAST_UPDATED}</span><span>Operator: ${LEGAL_OWNER}</span><span>Support: ${LEGAL_SUPPORT_EMAIL}</span></div></div><div class="legal-toc">${doc.sections.map((s,i)=>`<span>${i+1}. ${esc(s[0].replace(/^\d+\.\s*/,''))}</span>`).join('')}</div><div class="legal-body">${doc.sections.map((s,i)=>`<article id="policy-${i+1}"><h2>${esc(s[0])}</h2><p>${esc(s[1])}</p></article>`).join('')}</div><div class="legal-contact-box"><h2>Contact and notices</h2><div class="info-list"><div><span>Email</span><b>${LEGAL_SUPPORT_EMAIL}</b></div><div><span>Phone</span><b>${LEGAL_SUPPORT_PHONE}</b></div><div><span>Website</span><b>${LEGAL_WEBSITE}</b></div><div><span>Business details</span><b>${LEGAL_BUSINESS_ADDRESS}</b></div></div><button class="primary" data-route="contact">Contact Support</button><button class="ghost" data-route="legal">Back to Legal Centre</button>${doc.staticFile?`<a class="ghost legal-static-link" href="./${esc(doc.staticFile)}" target="_blank" rel="noopener">Open standalone page</a>`:''}</div></section>`;
+  }
+
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
-  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else html=home(); app.innerHTML=localizeHtml(html); syncMenu(); bindPage(); applyLang(); animateCounters(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
+  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); animateCounters(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
   function bindPage(){
     $$('#app input, #app textarea, #app select').forEach(el=>el.addEventListener('click',e=>e.stopPropagation()));
     $('#loginForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); withLoading(e.target,()=>login(fd.get('email'),fd.get('password')),'Logging in...');});
