@@ -3,6 +3,7 @@
   const hasConfig = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('YOUR_') && cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes('YOUR_');
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
+  const PHONE_OTP_ENABLED = cfg.ENABLE_PHONE_OTP === true || String(cfg.ENABLE_PHONE_OTP || '').toLowerCase() === 'true';
   const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
   const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
   function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',order:'orders',message:'messages',parts:'market',browse:'market',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','disputes':'dispute-policy','grievance-redressal':'grievance'}[r] || r); }
@@ -168,7 +169,7 @@
     'Tap browser Share button.':'ब्राउज़र का शेयर बटन दबाएं।',
     'Choose “Add to Home Screen”.':'“Add to Home Screen” चुनें।',
     'Open Harvester Parts from your phone.':'फोन से Harvester Parts खोलें।',
-    'Continue':'जारी रखें','or':'या','Add Supabase keys first':'पहले Supabase keys जोड़ें','Account created. Please verify your email if Supabase asks.':'अकाउंट बन गया। अगर Supabase पूछे तो ईमेल verify करें।','Logged in':'लॉगिन हो गया','Enter phone with country code, e.g. +919814800017':'देश कोड के साथ फोन डालें, जैसे +919814800017','OTP sent':'OTP भेज दिया गया','Phone login successful':'फोन लॉगिन सफल','Enter your email first':'पहले ईमेल डालें','Password reset link sent to email':'पासवर्ड रीसेट लिंक ईमेल पर भेज दिया गया','Added to cart':'कार्ट में जोड़ दिया','Removed from wishlist':'वishlist से हटाया','Saved to wishlist':'वishlist में सेव किया','Cart is empty':'कार्ट खाली है','Order saved. Connect Razorpay key for online payment.':'ऑर्डर सेव हो गया। ऑनलाइन पेमेंट के लिए Razorpay key जोड़ें।','Payment successful. Order placed.':'पेमेंट सफल। ऑर्डर हो गया।','Listing submitted for admin approval':'लिस्टिंग admin approval के लिए भेजी गई','Message sent inside platform':'संदेश प्लेटफॉर्म में भेजा गया','Product approved':'प्रोडक्ट approve हुआ','Product rejected':'प्रोडक्ट reject हुआ','Profile saved':'प्रोफाइल सेव हुई',
+    'Continue':'जारी रखें','or':'या','Login service is not ready yet':'पहले Supabase keys जोड़ें','Account created. Please verify your email if Supabase asks.':'अकाउंट बन गया। अगर Supabase पूछे तो ईमेल verify करें।','Logged in':'लॉगिन हो गया','Enter phone with country code, e.g. +919814800017':'देश कोड के साथ फोन डालें, जैसे +919814800017','OTP sent':'OTP भेज दिया गया','Phone login successful':'फोन लॉगिन सफल','Enter your email first':'पहले ईमेल डालें','Password reset link sent to email':'पासवर्ड रीसेट लिंक ईमेल पर भेज दिया गया','Added to cart':'कार्ट में जोड़ दिया','Removed from wishlist':'वishlist से हटाया','Saved to wishlist':'वishlist में सेव किया','Cart is empty':'कार्ट खाली है','Order saved. Connect Razorpay key for online payment.':'ऑर्डर सेव हो गया। ऑनलाइन पेमेंट के लिए Razorpay key जोड़ें।','Payment successful. Order placed.':'पेमेंट सफल। ऑर्डर हो गया।','Listing submitted for admin approval':'लिस्टिंग admin approval के लिए भेजी गई','Message sent inside platform':'संदेश प्लेटफॉर्म में भेजा गया','Product approved':'प्रोडक्ट approve हुआ','Product rejected':'प्रोडक्ट reject हुआ','Profile saved':'प्रोफाइल सेव हुई',
     'Buyer protection':'खरीदार सुरक्षा','Platform fee':'प्लेटफॉर्म फीस','Calculated at checkout':'चेकआउट पर गणना होगी','Seller receives approx.':'Seller को लगभग मिलेगा','Product details':'प्रोडक्ट विवरण','Genuine agricultural spare part listing. Please confirm compatibility, dimensions and condition through in-app message before final purchase.':'असली कृषि spare part listing। अंतिम खरीद से पहले in-app message से compatibility, size और condition confirm करें।','Condition':'स्थिति','Weight':'वजन','Location':'स्थान','Views':'व्यूज','Verified listing':'सत्यापित लिस्टिंग','Spare part':'स्पेयर पार्ट','Harvester Parts':'Harvester Parts','Agricultural Part':'कृषि पार्ट','Stock':'स्टॉक','India':'भारत','Standard / Premium':'स्टैंडर्ड / प्रीमियम',
     'Seller/User ID or email':'Seller/User ID या ईमेल','Write message':'संदेश लिखें','Send Message':'संदेश भेजें','In-app chat protects your platform earnings. Phone numbers and emails are blocked automatically.':'In-app chat आपकी platform earnings बचाता है। फोन नंबर और ईमेल अपने आप block होते हैं।','Orders placed through checkout will show here. Admin can manage shipment and payment status from dashboard.':'Checkout से दिए गए orders यहां दिखेंगे। Admin shipment और payment status dashboard से manage कर सकता है।','Order':'ऑर्डर','pending':'pending','paid':'paid','Products':'प्रोडक्ट्स','Pending listings':'Pending listings','Boosted':'Boosted','ADMIN CONTROL':'ADMIN CONTROL','Go Home':'होम जाएं',
     'Listing price:':'लिस्टिंग कीमत:','Platform marketing fee:':'प्लेटफॉर्म मार्केटिंग फीस:','Seller earns approx:':'Seller को लगभग मिलेगा:'
@@ -176,7 +177,7 @@
   Object.assign(COMMON_TRANSLATIONS.pa, {
     'Preparing a verified agri marketplace':'ਤਸਦੀਕਸ਼ੁਦਾ ਖੇਤੀ ਮਾਰਕੀਟਪਲੇਸ ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ',
     'For faster access, install it like an app.':'ਤੇਜ਼ ਵਰਤੋਂ ਲਈ ਇਸਨੂੰ ਐਪ ਵਾਂਗ ਇੰਸਟਾਲ ਕਰੋ।',
-    'Tap browser Share button.':'ਬਰਾਊਜ਼ਰ ਦਾ Share ਬਟਨ ਦਬਾਓ।','Choose “Add to Home Screen”.':'“Add to Home Screen” ਚੁਣੋ।','Open Harvester Parts from your phone.':'ਫੋਨ ਤੋਂ Harvester Parts ਖੋਲ੍ਹੋ।','Continue':'ਜਾਰੀ ਰੱਖੋ','or':'ਜਾਂ','Add Supabase keys first':'ਪਹਿਲਾਂ Supabase keys ਜੋੜੋ','Account created. Please verify your email if Supabase asks.':'ਅਕਾਊਂਟ ਬਣ ਗਿਆ। ਜੇ Supabase ਪੁੱਛੇ ਤਾਂ email verify ਕਰੋ।','Logged in':'ਲਾਗਿਨ ਹੋ ਗਿਆ','Enter phone with country code, e.g. +919814800017':'ਦੇਸ਼ ਕੋਡ ਨਾਲ ਫੋਨ ਪਾਓ, ਜਿਵੇਂ +919814800017','OTP sent':'OTP ਭੇਜਿਆ ਗਿਆ','Phone login successful':'ਫੋਨ ਲਾਗਿਨ ਸਫਲ','Enter your email first':'ਪਹਿਲਾਂ email ਪਾਓ','Password reset link sent to email':'Password reset link email ਤੇ ਭੇਜਿਆ ਗਿਆ','Added to cart':'ਕਾਰਟ ਵਿੱਚ ਜੋੜਿਆ','Removed from wishlist':'Wishlist ਤੋਂ ਹਟਾਇਆ','Saved to wishlist':'Wishlist ਵਿੱਚ save ਕੀਤਾ','Cart is empty':'ਕਾਰਟ ਖਾਲੀ ਹੈ','Order saved. Connect Razorpay key for online payment.':'Order save ਹੋ ਗਿਆ। Online payment ਲਈ Razorpay key ਜੋੜੋ।','Payment successful. Order placed.':'Payment successful। Order placed।','Listing submitted for admin approval':'Listing admin approval ਲਈ ਭੇਜੀ ਗਈ','Message sent inside platform':'ਸੁਨੇਹਾ platform ਵਿੱਚ ਭੇਜਿਆ ਗਿਆ','Product approved':'Product approve ਹੋਇਆ','Product rejected':'Product reject ਹੋਇਆ','Profile saved':'Profile save ਹੋਈ',
+    'Tap browser Share button.':'ਬਰਾਊਜ਼ਰ ਦਾ Share ਬਟਨ ਦਬਾਓ।','Choose “Add to Home Screen”.':'“Add to Home Screen” ਚੁਣੋ।','Open Harvester Parts from your phone.':'ਫੋਨ ਤੋਂ Harvester Parts ਖੋਲ੍ਹੋ।','Continue':'ਜਾਰੀ ਰੱਖੋ','or':'ਜਾਂ','Login service is not ready yet':'ਪਹਿਲਾਂ Supabase keys ਜੋੜੋ','Account created. Please verify your email if Supabase asks.':'ਅਕਾਊਂਟ ਬਣ ਗਿਆ। ਜੇ Supabase ਪੁੱਛੇ ਤਾਂ email verify ਕਰੋ।','Logged in':'ਲਾਗਿਨ ਹੋ ਗਿਆ','Enter phone with country code, e.g. +919814800017':'ਦੇਸ਼ ਕੋਡ ਨਾਲ ਫੋਨ ਪਾਓ, ਜਿਵੇਂ +919814800017','OTP sent':'OTP ਭੇਜਿਆ ਗਿਆ','Phone login successful':'ਫੋਨ ਲਾਗਿਨ ਸਫਲ','Enter your email first':'ਪਹਿਲਾਂ email ਪਾਓ','Password reset link sent to email':'Password reset link email ਤੇ ਭੇਜਿਆ ਗਿਆ','Added to cart':'ਕਾਰਟ ਵਿੱਚ ਜੋੜਿਆ','Removed from wishlist':'Wishlist ਤੋਂ ਹਟਾਇਆ','Saved to wishlist':'Wishlist ਵਿੱਚ save ਕੀਤਾ','Cart is empty':'ਕਾਰਟ ਖਾਲੀ ਹੈ','Order saved. Connect Razorpay key for online payment.':'Order save ਹੋ ਗਿਆ। Online payment ਲਈ Razorpay key ਜੋੜੋ।','Payment successful. Order placed.':'Payment successful। Order placed।','Listing submitted for admin approval':'Listing admin approval ਲਈ ਭੇਜੀ ਗਈ','Message sent inside platform':'ਸੁਨੇਹਾ platform ਵਿੱਚ ਭੇਜਿਆ ਗਿਆ','Product approved':'Product approve ਹੋਇਆ','Product rejected':'Product reject ਹੋਇਆ','Profile saved':'Profile save ਹੋਈ',
     'Buyer protection':'ਖਰੀਦਦਾਰ ਸੁਰੱਖਿਆ','Platform fee':'ਪਲੇਟਫਾਰਮ ਫੀਸ','Calculated at checkout':'Checkout ਤੇ calculate ਹੋਵੇਗੀ','Seller receives approx.':'Seller ਨੂੰ ਲਗਭਗ ਮਿਲੇਗਾ','Product details':'Product ਵੇਰਵਾ','Genuine agricultural spare part listing. Please confirm compatibility, dimensions and condition through in-app message before final purchase.':'ਅਸਲੀ agriculture spare part listing। Final purchase ਤੋਂ ਪਹਿਲਾਂ in-app message ਨਾਲ compatibility, size ਅਤੇ condition confirm ਕਰੋ।','Condition':'ਹਾਲਤ','Weight':'ਵਜ਼ਨ','Location':'ਸਥਾਨ','Views':'Views','Verified listing':'ਤਸਦੀਕਸ਼ੁਦਾ listing','Spare part':'Spare part','Agricultural Part':'ਖੇਤੀ ਪਾਰਟ','Stock':'ਸਟਾਕ','India':'ਭਾਰਤ','Standard / Premium':'Standard / Premium',
     'Seller/User ID or email':'Seller/User ID ਜਾਂ email','Write message':'ਸੁਨੇਹਾ ਲਿਖੋ','Send Message':'ਸੁਨੇਹਾ ਭੇਜੋ','In-app chat protects your platform earnings. Phone numbers and emails are blocked automatically.':'In-app chat ਤੁਹਾਡੀ platform earnings ਬਚਾਉਂਦਾ ਹੈ। Phone numbers ਅਤੇ emails ਆਪਣੇ ਆਪ block ਹੁੰਦੇ ਹਨ।','Orders placed through checkout will show here. Admin can manage shipment and payment status from dashboard.':'Checkout ਰਾਹੀਂ ਕੀਤੇ orders ਇੱਥੇ ਦਿਖਣਗੇ। Admin shipment ਅਤੇ payment status dashboard ਤੋਂ manage ਕਰ ਸਕਦਾ ਹੈ।','Order':'ਆਰਡਰ','Products':'ਪ੍ਰੋਡਕਟਸ','Pending listings':'Pending listings','Boosted':'Boosted','ADMIN CONTROL':'ADMIN CONTROL','Go Home':'ਹੋਮ ਜਾਓ',
     'Listing price:':'Listing ਕੀਮਤ:','Platform marketing fee:':'Platform marketing fee:','Seller earns approx:':'Seller ਨੂੰ ਲਗਭਗ ਮਿਲੇਗਾ:'
@@ -259,6 +260,7 @@
   }
   function membershipPage(){
     const plan=activePlan(); const used=userListingCount(); const limit=currentListingLimit();
+    const d=formDraft('sellFormDraft');
     return `<section class="membership-hero page-card"><div><span class="eyebrow">Membership & rewards</span><h1>Plans that increase listing limits and reduce seller platform fees.</h1><p class="muted">Free users can post 5 listings. Paid plans start at ₹49 and unlock more listings, lower commission, custom titles, custom banners, reward points and boost days.</p><div class="hero-actions"><button class="primary" data-route="sell">Start Selling</button><button class="ghost" data-route="account">View My Badges</button></div></div><div class="membership-current ${plan?'active':''}"><span>${plan?'ACTIVE PLAN':'FREE PLAN'}</span><h2>${esc(plan?.name || 'Free Member')}</h2><p>${esc(feeDiscountForPlan(plan))}</p><div class="mini-limit"><b>${used}/${limitLabel(limit)}</b><span>listings used</span></div></div></section><section><div class="section-head"><h2>Choose your plan</h2><p class="muted">Free gives 5 listings. Paid options from ₹49 to ₹5,999 unlock 6 to unlimited listings and lower platform commission.</p></div><div class="membership-grid">${freePlanCard()}${MEMBERSHIP_PLANS.map(planCard).join('')}</div></section><section class="page-card reward-system-card"><div class="section-head compact"><h2>Rewards and membership benefits</h2><span class="badge owner">Ready</span></div><div class="reward-columns"><div><b>Post more</b><span>Points for approved listings and seller verification.</span></div><div><b>Pay less fee</b><span>Higher plans reduce seller platform commission before payout.</span></div><div><b>Win events</b><span>Future events can reward top sellers with limited badges, titles and banners.</span></div></div></section>`;
   }
   async function purchaseMembership(key){
@@ -383,16 +385,17 @@
     return location.origin + location.pathname;
   }
   function friendlyAuthError(error){
-    const msg = String(error?.message || error || 'Authentication error');
+    const msg = String(error?.message || error || 'Something went wrong. Please try again.');
     const lower = msg.toLowerCase();
-    if(lower.includes('email not confirmed')) return 'Email not confirmed. Open the confirmation email, then login again.';
-    if(lower.includes('invalid login credentials')) return 'Wrong email or password, or this email is not confirmed yet.';
-    if(lower.includes('60200') || lower.includes('invalid parameter')) return 'Phone OTP setup error: Twilio rejected the request. Use a real mobile number in +country format and check Supabase Phone provider is Twilio Verify with the correct Account SID, Auth Token and Verify Service SID.';
-    if(lower.includes('sms') || lower.includes('phone') || lower.includes('provider')) return msg + ' — Enable Phone provider and SMS provider in Supabase Auth, then save the correct SMS provider credentials.';
-    return msg;
+    if(lower.includes('email not confirmed')) return 'Email not confirmed. Please open the confirmation email, then login again.';
+    if(lower.includes('invalid login credentials')) return 'Wrong email or password, or this account is not confirmed yet.';
+    if(lower.includes('21608') || lower.includes('unverified')) return 'Phone OTP is currently available only for verified test numbers. Please use email or Google login until public SMS is enabled.';
+    if(lower.includes('60200') || lower.includes('invalid parameter')) return 'Phone OTP could not be sent. Please check the phone number or use email / Google login.';
+    if(lower.includes('sms') || lower.includes('phone') || lower.includes('provider')) return 'Phone OTP is temporarily unavailable. Please use email or Google login.';
+    return msg.replace(/Supabase/gi,'account system').replace(/Twilio/gi,'SMS service');
   }
   async function signup(email,password,name){
-    if(!sb) return toast('Add Supabase keys first');
+    if(!sb) return toast('Login service is not ready yet');
     const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:name}, emailRedirectTo: authRedirectUrl()}});
     if(error)return toast(friendlyAuthError(error));
     await loadSession(); await loadFinanceData(); syncMenu();
@@ -400,13 +403,13 @@
     else { route('login'); toast('Account created. Check email to confirm, then login.'); }
   }
   async function login(email,password){
-    if(!sb) return toast('Add Supabase keys first');
+    if(!sb) return toast('Login service is not ready yet');
     const {error}=await sb.auth.signInWithPassword({email,password});
     if(error)return toast(friendlyAuthError(error));
     await loadSession(); await loadProducts(); await loadFinanceData(); syncMenu(); route('home'); toast('Logged in');
   }
   async function loginGoogle(){
-    if(!sb) return toast('Add Supabase keys first');
+    if(!sb) return toast('Login service is not ready yet');
     const {error}=await sb.auth.signInWithOAuth({provider:'google', options:{redirectTo: authRedirectUrl()}});
     if(error) toast(friendlyAuthError(error));
   }
@@ -437,9 +440,10 @@
   }
   function isValidE164(phone){ return /^\+[1-9]\d{7,14}$/.test(phone); }
   async function sendPhoneOtp(phone){
-    if(!sb) return toast('Add Supabase keys first');
+    if(!sb) return toast('Login service is not ready yet');
+    if(!PHONE_OTP_ENABLED) return toast('Phone OTP is not available right now. Please use email or Google login.');
     phone = normalizePhone(phone, $('#countryCodeSelect')?.value||'+91');
-    if(!isValidE164(phone)) return toast('Enter a valid mobile number with country code. Example: +919814800017');
+    if(!isValidE164(phone)) return toast('Enter a valid mobile number with country code.');
     $('#phoneOtpInput') && ($('#phoneOtpInput').dataset.fullPhone=phone);
     const {error}=await sb.auth.signInWithOtp({phone, options:{shouldCreateUser:true}});
     if(error) return toast(friendlyAuthError(error));
@@ -447,17 +451,18 @@
     toast('OTP sent. Enter the 6 digit code.');
   }
   async function verifyPhoneOtp(phone,token){
-    if(!sb) return toast('Add Supabase keys first');
+    if(!sb) return toast('Login service is not ready yet');
+    if(!PHONE_OTP_ENABLED) return toast('Phone OTP is not available right now. Please use email or Google login.');
     phone = normalizePhone(phone || $('#phoneOtpInput')?.dataset.fullPhone || '', $('#countryCodeSelect')?.value||'+91');
     token = String(token||'').trim();
-    if(!isValidE164(phone)) return toast('Enter a valid mobile number with country code. Example: +919814800017');
+    if(!isValidE164(phone)) return toast('Enter a valid mobile number with country code.');
     if(!token) return toast('Enter OTP code');
     const {error}=await sb.auth.verifyOtp({phone,token,type:'sms'});
     if(error) return toast(friendlyAuthError(error));
     await loadSession(); await loadFinanceData(); syncMenu(); route('home'); toast('Phone login successful');
   }
   async function forgotPassword(email){
-    if(!sb) return toast('Add Supabase keys first');
+    if(!sb) return toast('Login service is not ready yet');
     if(!email) return toast('Enter your email first');
     const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo: authRedirectUrl() + '#account'});
     if(error) return toast(friendlyAuthError(error));
@@ -543,18 +548,37 @@
     return `<article class="product-card fade-up"><div class="product-img"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'" alt="${p.title||'Product'}"></div><div class="product-body"><div>${boosted} <span class="badge verified">Verified Stock</span></div><h3>${p.title||'Agricultural Part'}</h3><p class="muted">${p.category||'Spare Part'} • ${p.brand||'Harvester Parts'}</p><div class="price-row"><span class="price">${money(p.price)}</span><span class="chip">Exact price on request</span></div><div class="actions"><button class="ghost" onclick="HP.route('product',{id:'${p.id}'})">Details</button><button class="secondary" onclick="HP.addToCart('${p.id}')">Add Cart</button><button class="primary wide" onclick="HP.buyNow('${p.id}')">Buy Now</button></div></div></article>`;
   }
   const AGRI_CATEGORIES = [
-    {group:'Machines', title:'Combine Harvester', desc:'New and used combines, feeder houses, threshing units and complete harvesting machines.', icon:'CH', filters:['Combine Harvester','Harvester','Combine']},
-    {group:'Machines', title:'Tractor', desc:'2WD, 4WD and used tractors with compatible spares and workshop-ready listings.', icon:'TR', filters:['Tractor']},
-    {group:'Machines', title:'Seed Drill', desc:'Seed drills, zero till drills, precision seeding machines and their spares.', icon:'SD', filters:['Seed Drill','Seeding Drill','Drill']},
-    {group:'Machines', title:'Straw Reaper', desc:'Straw reapers, reaper binders and crop residue machinery for wheat and paddy fields.', icon:'SR', filters:['Straw Reaper','Reaper']},
-    {group:'Machines', title:'Rotavator & Tillage', desc:'Rotavators, cultivators, ploughs and soil preparation implements.', icon:'RT', filters:['Rotavator','Cultivator','Tillage','Plough']},
-    {group:'Machines', title:'Irrigation & Pumps', desc:'Pump sets, pipes, irrigation kits and field water-management equipment.', icon:'IP', filters:['Irrigation','Pump','Water']},
+    {group:'Machines', title:'Combine Harvester', desc:'New and used combine harvesters, feeder houses, threshing units and harvesting machines.', icon:'CH', filters:['Combine Harvester','Harvester','Combine']},
+    {group:'Machines', title:'Tractor', desc:'2WD, 4WD, mini and used tractors with compatible spares.', icon:'TR', filters:['Tractor']},
+    {group:'Machines', title:'Rotavator', desc:'Rotavators and rotary tillers for soil preparation.', icon:'RT', filters:['Rotavator','Rotary']},
+    {group:'Machines', title:'Cultivator', desc:'Cultivators, spring loaded cultivators and tillage tools.', icon:'CU', filters:['Cultivator']},
+    {group:'Machines', title:'Disc Harrow', desc:'Disc harrows, offset harrows and soil finishing implements.', icon:'DH', filters:['Disc Harrow','Harrow']},
+    {group:'Machines', title:'MB Plough', desc:'Mould board ploughs, reversible ploughs and plough assemblies.', icon:'MP', filters:['Plough','MB Plough']},
+    {group:'Machines', title:'Seed Drill', desc:'Seed drills, zero till drills and precision seeding machines.', icon:'SD', filters:['Seed Drill','Seeding Drill','Drill']},
+    {group:'Machines', title:'Super Seeder', desc:'Super seeders, happy seeders and residue-management seeders.', icon:'SS', filters:['Super Seeder','Happy Seeder']},
+    {group:'Machines', title:'Straw Reaper', desc:'Straw reapers, reaper binders and crop residue machinery.', icon:'SR', filters:['Straw Reaper','Reaper']},
+    {group:'Machines', title:'Baler', desc:'Hay balers, straw balers and bale handling machinery.', icon:'BA', filters:['Baler']},
+    {group:'Machines', title:'Sprayer', desc:'Boom sprayers, orchard sprayers and power sprayers.', icon:'SP', filters:['Sprayer','Spray']},
+    {group:'Machines', title:'Laser Land Leveler', desc:'Laser levelers, scrapers and land leveling equipment.', icon:'LL', filters:['Laser','Leveler']},
+    {group:'Machines', title:'Paddy Transplanter', desc:'Rice and paddy transplanters for farm operations.', icon:'PT', filters:['Paddy Transplanter','Transplanter']},
+    {group:'Machines', title:'Potato Planter / Digger', desc:'Potato planters, diggers and harvesting equipment.', icon:'PD', filters:['Potato']},
+    {group:'Machines', title:'Maize Sheller', desc:'Maize shellers, corn threshers and grain processing equipment.', icon:'MS', filters:['Maize','Corn','Sheller']},
+    {group:'Machines', title:'Thresher', desc:'Wheat, paddy, maize and multi-crop threshers.', icon:'TH', filters:['Thresher']},
+    {group:'Machines', title:'Trailer / Trolley', desc:'Farm trailers, trolleys and haulage equipment.', icon:'TL', filters:['Trailer','Trolley']},
+    {group:'Machines', title:'Irrigation & Pumps', desc:'Pump sets, pipes, motors, sprinklers and irrigation kits.', icon:'IP', filters:['Irrigation','Pump','Water','Motor']},
     {group:'Spare Parts', title:'Belts & Chains', desc:'Drive belts, elevator chains, roller chains and transmission wear parts.', icon:'BC', filters:['Belts','Belt','Chains','Chain']},
     {group:'Spare Parts', title:'Bearings', desc:'Harvester, tractor and implement bearings for shafts, rollers and pulleys.', icon:'BR', filters:['Bearings','Bearing']},
     {group:'Spare Parts', title:'Blades & Cutter Parts', desc:'Cutter bars, knives, guards, fingers, sections and crop cutting assemblies.', icon:'BL', filters:['Cutter Parts','Blade','Blades','Knife']},
+    {group:'Spare Parts', title:'Filters', desc:'Air, oil, fuel and hydraulic filters for machines and tractors.', icon:'FL', filters:['Filter','Filters']},
     {group:'Spare Parts', title:'Shafts & Gears', desc:'Drive shafts, PTO shafts, gears, pulleys and gearbox-related spares.', icon:'SG', filters:['Shafts','Shaft','Gear','Gears','Pulley']},
+    {group:'Spare Parts', title:'PTO & Universal Joints', desc:'PTO shafts, cross joints, yokes and couplings.', icon:'PJ', filters:['PTO','Universal Joint','Joint']},
+    {group:'Spare Parts', title:'Hydraulic Parts', desc:'Hydraulic pipes, pumps, cylinders, valves and oil-flow components.', icon:'HY', filters:['Hydraulic','Cylinder','Valve']},
+    {group:'Spare Parts', title:'Tyres & Tubes', desc:'Tractor, trolley and implement tyres, tubes and wheels.', icon:'TY', filters:['Tyre','Tire','Tube','Wheel']},
+    {group:'Spare Parts', title:'Electrical Parts', desc:'Batteries, wiring, lights, sensors, switches and electrical spares.', icon:'EL', filters:['Electrical','Battery','Light','Sensor','Switch']},
+    {group:'Spare Parts', title:'Engine Parts', desc:'Pistons, rings, liners, gaskets, injectors and engine spares.', icon:'EN', filters:['Engine','Piston','Injector','Liner']},
+    {group:'Spare Parts', title:'Clutch & Brake Parts', desc:'Clutch plates, brake shoes, master cylinders and related spares.', icon:'CB', filters:['Clutch','Brake']},
     {group:'Spare Parts', title:'Rubber Seals & Bushes', desc:'Oil seals, rubber bushes, gaskets, o-rings and sealing components.', icon:'RS', filters:['Rubber Seals','Seals','Bush','Gasket']},
-    {group:'Spare Parts', title:'Hydraulic Parts', desc:'Hydraulic pipes, pumps, cylinders, filters and oil-flow components.', icon:'HY', filters:['Hydraulic','Hydraulic Parts','Cylinder','Filter']}
+    {group:'Spare Parts', title:'Nuts, Bolts & Hardware', desc:'Fasteners, pins, clips and common farm machine hardware.', icon:'NB', filters:['Nut','Bolt','Hardware','Pin']}
   ];
   function categoryCard(c){
     const count = state.products.filter(p=> c.filters.some(f=>String(p.category||'').toLowerCase().includes(f.toLowerCase()) || String(p.title||'').toLowerCase().includes(f.toLowerCase()))).length;
@@ -590,7 +614,7 @@
     const categories=[...new Set([...state.products.map(p=>p.category).filter(Boolean), ...AGRI_CATEGORIES.map(c=>c.title)])];
     const selected=sessionStorage.hp_market_category||'';
     const shown=selected?state.products.filter(p=>String(p.category||'').toLowerCase().includes(selected.toLowerCase()) || String(p.title||'').toLowerCase().includes(selected.toLowerCase())):state.products;
-    return `<section class="page-card market-head-card"><div class="section-head"><h2>Browse Marketplace</h2><button class="primary" data-route="sell">List Product</button></div><div class="market-tools"><input id="searchInput" placeholder="Search parts, brand, model"><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="new">Newest</option><option value="low">Price low</option><option value="high">Price high</option></select></div></section><section class="grid" id="marketGrid">${shown.map(productCard).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
+    return `<section class="page-card market-head-card"><div class="section-head"><h2>Browse Marketplace</h2><button class="primary" data-route="sell">List Product</button></div><div class="market-tools"><input id="searchInput" placeholder="Search parts, brand, model"><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="all">All listings</option><option value="condition_new">New</option><option value="condition_used">Used</option><option value="price_low">Price low to high</option><option value="price_high">Price high to low</option></select></div></section><section class="grid" id="marketGrid">${shown.map(productCard).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
   }
   
   function productPage(id){ const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return emptyPage('Product not found'); const fee=sellerFeeForProduct(p); return `<section class="product-page"><div class="gallery page-card"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'" alt="${p.title}"></div><aside class="detail-stack sticky-buy"><div class="page-card"><span class="badge verified">Verified listing</span><h1>${p.title}</h1><p class="muted">${p.category||'Spare part'} • ${p.brand||'Harvester Parts'} ${p.model?`• ${p.model}`:''}</p><div class="price">${money(p.price)}</div><p class="muted">Estimated price. Contact seller inside website for exact final price.</p><div class="actions"><button class="primary" onclick="HP.buyNow('${p.id}')">Buy Now</button><button class="secondary" onclick="HP.addToCart('${p.id}')">Add to Cart</button><button class="ghost" onclick="HP.toggleWishlist('${p.id}')">Wishlist</button><button class="ghost" onclick="HP.route('messages',{id:'${p.id}'})">Message Seller</button></div></div><div class="summary-card"><h3>Buyer protection</h3><div class="summary-row"><span>Platform fee</span><b>Calculated at checkout</b></div><div class="summary-row"><span>Shipping</span><b>Standard / Premium</b></div><div class="summary-row"><span>Seller receives approx.</span><b>${money(Number(p.price||0)-fee)}</b></div></div></aside></section><section class="page-card"><h2>Product details</h2><p>${p.description||'Genuine agricultural spare part listing. Please confirm compatibility, dimensions and condition through in-app message before final purchase.'}</p><div class="stats"><div class="stat"><b>${p.condition||'Stock'}</b><span>Condition</span></div><div class="stat"><b>${p.weight_kg||'—'} kg</b><span>Weight</span></div><div class="stat"><b>${p.state||'India'}</b><span>Location</span></div><div class="stat"><b>${p.views||0}</b><span>Views</span></div></div></section>`; }
@@ -644,11 +668,11 @@
         if(type==='products' || type==='all') await loadProducts();
         if(type==='finance' || type==='all') await loadFinanceData();
         if(isAdminUser() && state.route==='admin') await loadAdminProData();
-        if(['home','market','account','admin','sell','orders'].includes(state.route)) render();
+        if(['home','market','account','admin','sell','orders'].includes(state.route) && !shouldHoldRender()) render();
       }catch(e){ console.warn('realtime refresh skipped', e); }
     };
     try{
-      sb.channel('hp-realtime-v82')
+      sb.channel('hp-realtime-v84')
         .on('postgres_changes',{event:'*',schema:'public',table:'products'},()=>refreshVisible('products'))
         .on('postgres_changes',{event:'*',schema:'public',table:'sellers'},()=>refreshVisible('all'))
         .on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>refreshVisible('finance'))
@@ -747,7 +771,35 @@
     return list.map(([code,label])=>`<option value="${code}" ${code==='+91'?'selected':''}>${label} ${code}</option>`).join('');
   }
 
-  function loginPage(){ return `<section class="page-card auth-card"><h1>Login / Create Account</h1><div class="notice auth-notice">Email login works after Supabase Auth is configured. Phone OTP needs Supabase Phone provider + Twilio Verify credentials saved in the dashboard.</div><form id="loginForm" class="form"><input name="email" type="email" autocomplete="email" placeholder="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" required><button class="primary">Login</button><button type="button" class="ghost" id="signupSwitch">Create new account</button><button type="button" class="link-btn" id="forgotBtn">Forgot password?</button></form><div class="auth-divider"><span>or</span></div><button class="google-btn" id="googleLoginBtn">Continue with Google</button><div class="phone-login"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Choose country code, then enter mobile number. Example: 9814800017</p><div class="phone-row"><select id="countryCodeSelect" data-no-translate aria-label="Country code">${countryOptions()}</select><input id="phoneOtpInput" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="Mobile number"></div><button class="ghost" id="sendOtpBtn">Send OTP</button><input id="otpCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="OTP code"><button class="secondary" id="verifyOtpBtn">Verify OTP</button><p class="muted tiny-note otp-help">If OTP fails with Twilio 60200, check the SMS provider credentials in Supabase. The website formats the number before sending.</p></div></section>`; }
+  const INDIA_STATES = ['Andhra Pradesh','Arunachal Pradesh','Assam','Bihar','Chhattisgarh','Goa','Gujarat','Haryana','Himachal Pradesh','Jharkhand','Karnataka','Kerala','Madhya Pradesh','Maharashtra','Manipur','Meghalaya','Mizoram','Nagaland','Odisha','Punjab','Rajasthan','Sikkim','Tamil Nadu','Telangana','Tripura','Uttar Pradesh','Uttarakhand','West Bengal','Andaman and Nicobar Islands','Chandigarh','Dadra and Nagar Haveli and Daman and Diu','Delhi','Jammu and Kashmir','Ladakh','Lakshadweep','Puducherry'];
+  function stateOptions(selected=''){
+    return `<option value="">Select State</option>` + INDIA_STATES.map(st=>`<option value="${esc(st)}" ${String(selected)===st?'selected':''}>${esc(st)}</option>`).join('');
+  }
+  function formDraft(key){ try{return JSON.parse(sessionStorage.getItem('hp_'+key)||'{}')}catch(e){return {}} }
+  function bindFormDraft(formId,key){
+    const form=document.getElementById(formId); if(!form) return;
+    const saved=formDraft(key);
+    [...form.elements].forEach(el=>{
+      if(!el.name || el.type==='file' || el.type==='password') return;
+      if(saved[el.name] !== undefined && !el.value) el.value = saved[el.name];
+      if((el.type==='radio'||el.type==='checkbox') && saved[el.name] !== undefined) el.checked = String(saved[el.name]) === String(el.value);
+    });
+    form.addEventListener('input',()=>saveFormDraft(form,key));
+    form.addEventListener('change',()=>saveFormDraft(form,key));
+  }
+  function saveFormDraft(form,key){
+    const data={};
+    [...form.elements].forEach(el=>{ if(el.name && el.type!=='file' && el.type!=='password'){ if(el.type==='radio'){ if(el.checked) data[el.name]=el.value; } else data[el.name]=el.value; }});
+    sessionStorage.setItem('hp_'+key, JSON.stringify(data));
+  }
+  function clearFormDraft(key){ sessionStorage.removeItem('hp_'+key); }
+  function isUserEditing(){ const el=document.activeElement; return !!el && ['INPUT','TEXTAREA','SELECT'].includes(el.tagName); }
+  function shouldHoldRender(){ return isUserEditing() || !!document.querySelector('#sellForm,#sellerVerifyForm,#loginForm,#profileForm'); }
+
+  function loginPage(){
+    const phoneBlock = PHONE_OTP_ENABLED ? `<div class="phone-login"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Choose country code, then enter your mobile number.</p><div class="phone-row"><select id="countryCodeSelect" data-no-translate aria-label="Country code">${countryOptions()}</select><input id="phoneOtpInput" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="Mobile number"></div><button class="ghost" id="sendOtpBtn">Send OTP</button><input id="otpCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="OTP code"><button class="secondary" id="verifyOtpBtn">Verify OTP</button></div>` : `<div class="phone-login phone-disabled"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Phone OTP is being prepared for public use. Please login with email/password or Google for now.</p></div>`;
+    return `<section class="page-card auth-card"><h1>Login / Create Account</h1><p class="muted auth-intro">Use email/password or Google to continue. Seller verification and orders stay linked to your account.</p><form id="loginForm" class="form"><input name="email" type="email" autocomplete="email" placeholder="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" required><button class="primary">Login</button><button type="button" class="ghost" id="signupSwitch">Create new account</button><button type="button" class="link-btn" id="forgotBtn">Forgot password?</button></form><div class="auth-divider"><span>or</span></div><button class="google-btn" id="googleLoginBtn">Continue with Google</button>${phoneBlock}</section>`;
+  }
   
 
   function membershipMiniCard(){
@@ -782,14 +834,16 @@
     return `<section class="page-card sell-gate"><span class="eyebrow">Seller verification required</span><h1>Get verified before selling machinery or spare parts.</h1><p class="muted">For buyer safety, only approved sellers can post products. Submit your business/contact details first.</p>${sellerVerificationForm()}</section>`;
   }
   function sellerVerificationForm(){
-    return `<form id="sellerVerifyForm" class="form seller-verify-form"><input name="business_name" placeholder="Business / seller name" required><input name="phone" placeholder="Phone number" required><input name="state" placeholder="State" required><input name="district" placeholder="District" required><input name="city" placeholder="City / village" required><textarea name="address" placeholder="Pickup/shop address"></textarea><div class="doc-upload-grid"><label class="file-label">Aadhaar front photo<input name="aadhaar_front" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Aadhaar back photo<input name="aadhaar_back" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Shop / stock photo<input name="shop_photo" type="file" accept="image/*,application/pdf"></label></div><div class="notice tiny-note">Upload clear front and back Aadhaar photos. Only admin can view verification documents.</div><button class="primary">Submit Seller Verification</button></form>`;
+    const d=formDraft('sellerVerifyDraft');
+    return `<form id="sellerVerifyForm" class="form seller-verify-form"><input name="business_name" value="${esc(d.business_name||'')}" placeholder="Business / seller name" required><input name="phone" value="${esc(d.phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number" required><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><textarea name="address" placeholder="Pickup/shop address">${esc(d.address||'')}</textarea><div class="doc-upload-grid"><label class="file-label">Aadhaar front photo<input name="aadhaar_front" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Aadhaar back photo<input name="aadhaar_back" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Shop / stock photo<input name="shop_photo" type="file" accept="image/*,application/pdf"></label></div><div class="notice tiny-note">Upload clear document photos. Only admin can view seller verification files.</div><button class="primary">Submit Seller Verification</button></form>`;
   }
   function sellPage(){
     if(!state.user)return loginPage();
     const gate=sellerStatusCard();
     if(gate) return gate;
     const used=userListingCount(); const limit=currentListingLimit();
-    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Sell machinery or spare parts.</h1><p class="muted">Choose Machinery or Spare Part first. The category list changes automatically, then your listing goes to admin approval.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card"><form id="sellForm" class="form sell-form"><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card active" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" checked><span class="sell-dot"></span><span><b>Machinery</b><small>Combine harvester, tractor, seed drill, straw reaper, implements</small></span></label><label class="sell-type-card" data-sell-card="spare"><input type="radio" name="sell_type" value="spare"><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, gears, hydraulic parts</small></span></label></div><select name="condition" required><option value="New">New</option><option value="Used" selected>Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" placeholder="Product name" required><input name="price" type="number" min="0" placeholder="Listing price" required><select name="category" id="sellCategorySelect" required>${categoryOptionsFor('machine')}</select><input name="brand" placeholder="Brand / machine"><input name="model" placeholder="Model / compatibility"><input name="weight_kg" type="number" step="0.1" placeholder="Weight kg"><input name="state" placeholder="State" required><input name="district" placeholder="District" required><input name="city" placeholder="City / village" required><textarea name="description" placeholder="Describe condition, exact location, compatibility"></textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to see seller payout.</div><button class="primary">Submit Listing for Approval</button></form></section>`;
+    const d=formDraft('sellFormDraft');
+    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Sell machinery or spare parts.</h1><p class="muted">Choose Machinery or Spare Part first. The category list changes automatically, then your listing goes to admin approval.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card"><form id="sellForm" class="form sell-form"><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card active" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" checked><span class="sell-dot"></span><span><b>Machinery</b><small>Combine harvester, tractor, seed drill, straw reaper, implements</small></span></label><label class="sell-type-card" data-sell-card="spare"><input type="radio" name="sell_type" value="spare"><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, gears, hydraulic parts</small></span></label></div><select name="condition" required><option value="New">New</option><option value="Used" selected>Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name" required><input name="price" value="${esc(d.price||'')}" type="number" min="0" placeholder="Listing price" required><select name="category" id="sellCategorySelect" required>${categoryOptionsFor('machine')}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / machine"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><textarea name="description" placeholder="Describe condition, exact location, compatibility">${esc(d.description||'')}</textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to see seller payout.</div><button class="primary">Submit Listing for Approval</button></form></section>`;
   }
   async function submitSellerVerification(form){
     if(!state.user)return route('login');
@@ -806,7 +860,7 @@
         toast('Seller request saved. Aadhaar back storage is not enabled yet.');
       } else if(error) return toast(error.message);
     }
-    state.seller=payload; toast('Seller verification submitted for admin approval'); render();
+    clearFormDraft('sellerVerifyDraft'); state.seller=payload; toast('Seller verification submitted for admin approval'); render();
   }
   async function submitProduct(form){
     if(!state.user)return route('login');
@@ -831,7 +885,7 @@
       if(error)return toast(error.message);
       await loadProducts();
     } else{ payload.id='local-'+Date.now(); payload.status='approved'; state.products.unshift(payload); localStorage.hp_products=JSON.stringify(state.products); }
-    toast('Listing submitted for admin approval'); route('market');
+    clearFormDraft('sellFormDraft'); toast('Listing submitted for admin approval'); route('market');
   }
   function messagesPage(){ return `<section class="page-card"><h1>Messages</h1><div class="notice">In-app chat protects your platform earnings. Phone numbers and emails are blocked automatically.</div><form id="messageForm" class="form"><input name="to" placeholder="Seller/User ID or email"><textarea name="message" placeholder="Write message"></textarea><button class="primary">Send Message</button></form></section>`; }
   function cleanMessage(m){ return String(m||'').replace(/\b\d{10}\b/g,'[phone blocked]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig,'[email blocked]').replace(/wa\.me|whatsapp/ig,'[contact link blocked]'); }
@@ -1288,7 +1342,9 @@
     $('#sendOtpBtn')?.addEventListener('click',()=>sendPhoneOtp(getOtpPhone()));
     $('#verifyOtpBtn')?.addEventListener('click',()=>verifyPhoneOtp(getOtpPhone(), $('#otpCodeInput')?.value.trim()));
     $('#profileForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveProfile(e.target),'Saving...')});
+    bindFormDraft('sellerVerifyForm','sellerVerifyDraft');
     $('#sellerVerifyForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitSellerVerification(e.target),'Submitting verification...')});
+    bindFormDraft('sellForm','sellFormDraft');
     $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitProduct(e.target),'Submitting listing...')});
     bindSellTypeChooser();
     $('#sellForm input[name="price"]')?.addEventListener('input',e=>{ const price=Number(e.target.value||0); $('#sellerFeePreview').innerHTML=localizeHtml(`Listing price: <b>${money(price)}</b> • Seller platform fee: <b>${money(sellerFee(price))}</b> • Seller balance after fee: <b>${money(price-sellerFee(price))}</b> • ${feeDiscountForPlan(activePlan())}`); });
@@ -1306,15 +1362,33 @@
   function bindSellTypeChooser(){
     const form=$('#sellForm'); if(!form) return;
     const cards=$$('.sell-type-card'); const select=$('#sellCategorySelect');
-    const setType=(type)=>{
+    const draft=formDraft('sellFormDraft');
+    const setType=(type, preferredCategory='')=>{
+      type = type === 'spare' ? 'spare' : 'machine';
       cards.forEach(card=>card.classList.toggle('active', card.dataset.sellCard===type));
       const radio=form.querySelector(`input[name="sell_type"][value="${type}"]`); if(radio) radio.checked=true;
-      if(select) select.innerHTML=categoryOptionsFor(type);
+      if(select){
+        const old=preferredCategory || select.value || draft.category || '';
+        select.innerHTML=categoryOptionsFor(type);
+        if([...select.options].some(o=>o.value===old)) select.value=old;
+      }
+      saveFormDraft(form,'sellFormDraft');
     };
     cards.forEach(card=>card.addEventListener('click',()=>setType(card.dataset.sellCard||'machine')));
     form.querySelectorAll('input[name="sell_type"]').forEach(r=>r.addEventListener('change',()=>setType(r.value)));
+    setType(draft.sell_type || form.querySelector('input[name="sell_type"]:checked')?.value || 'machine', draft.category || '');
   }
-  function filterMarket(){ const q=($('#searchInput')?.value||'').toLowerCase(); const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat; const sort=$('#sortFilter')?.value||'new'; let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model].join(' ').toLowerCase().includes(q))&&(!cat||p.category===cat)); if(sort==='low')arr.sort((a,b)=>a.price-b.price); if(sort==='high')arr.sort((a,b)=>b.price-a.price); $('#marketGrid').innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); }
+  function filterMarket(){
+    const q=($('#searchInput')?.value||'').toLowerCase();
+    const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat;
+    const sort=$('#sortFilter')?.value||'all';
+    let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model,p.condition].join(' ').toLowerCase().includes(q))&&(!cat||p.category===cat));
+    if(sort==='condition_new') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='new');
+    if(sort==='condition_used') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='used');
+    if(sort==='price_low') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
+    if(sort==='price_high') arr.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
+    const grid=$('#marketGrid'); if(grid) grid.innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products'));
+  }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
   window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide};
   document.addEventListener('DOMContentLoaded',init);

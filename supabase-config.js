@@ -6,7 +6,8 @@ window.HP_CONFIG = {
   RAZORPAY_KEY_ID: "rzp_live_Sq44DIwS74kUQV",
   OPENAI_ENABLED: false,
   ADMIN_EMAIL: "kiratveersinghralhan@gmail.com",
-  CURRENCY: "INR"
+  CURRENCY: "INR",
+  ENABLE_PHONE_OTP: false
 };
 
 
