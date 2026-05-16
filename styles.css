@@ -165,7 +165,7 @@ body{touch-action:manipulation;overscroll-behavior-x:none}#app,main,.topbar,.bot
 @supports (-webkit-touch-callout:none){input,select,textarea{font-size:16px!important}body{min-width:0!important}.modal,.side-menu,.bottom-nav{transform:translateZ(0)}}
 
 
-/* v80 click-target and mobile layout hardening */
+/* v81 click-target and mobile layout hardening */
 @media(max-width:900px){
   html,body{width:100%!important;max-width:100%!important;min-width:0!important;overflow-x:hidden!important;-webkit-text-size-adjust:100%!important;text-size-adjust:100%!important;}
   main{width:100%!important;max-width:100%!important;margin:0!important;padding-left:10px!important;padding-right:10px!important;padding-bottom:96px!important;}
@@ -181,3 +181,12 @@ body{touch-action:manipulation;overscroll-behavior-x:none}#app,main,.topbar,.bot
 @supports (-webkit-touch-callout:none){
   @media(max-width:900px){.bottom-nav{transform:none!important}.side-menu.open{transform:translate3d(0,0,0)!important}}
 }
+
+/* v81 loading, listing limits, payouts, and money counters */
+.form.is-loading{position:relative;opacity:.92;pointer-events:none}
+.form.is-loading input,.form.is-loading textarea,.form.is-loading select{filter:saturate(.85)}
+.form-status{display:flex;align-items:center;gap:9px;padding:12px 14px;margin-top:10px;border-radius:16px;background:rgba(18,86,52,.10);border:1px solid rgba(18,86,52,.22);font-weight:800;color:var(--green-dark,#113b26)}
+.btn-spinner,.mini-spinner{width:16px;height:16px;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;display:inline-block;vertical-align:-3px;margin-right:8px;animation:hpSpin .75s linear infinite}.mini-spinner{width:14px;height:14px;margin-right:0}@keyframes hpSpin{to{transform:rotate(360deg)}}
+button[disabled]{opacity:.72;cursor:wait;transform:none!important}.live-badge{background:linear-gradient(135deg,#eafff1,#d4ffdf);color:#07582b;border:1px solid rgba(10,110,50,.22)}
+.money-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0}.money-grid>div{padding:14px;border-radius:18px;background:linear-gradient(135deg,rgba(255,255,255,.9),rgba(235,249,240,.85));border:1px solid rgba(16,84,50,.12);box-shadow:0 8px 24px rgba(15,61,34,.06)}.money-grid small{display:block;color:var(--muted,#62715f);font-weight:750;margin-bottom:6px}.live-money{font-size:1.25rem;color:#0b5b2f}.money-card,.payout-card,.money-admin-panel{overflow:hidden}.payout-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px dashed rgba(15,61,34,.16)}.payout-row span{display:block;color:var(--muted,#667);font-size:.9rem}.payout-form{grid-template-columns:1fr 1fr}.payout-form select,.payout-form button{grid-column:1/-1}.admin-money-totals .live-money{font-size:1.45rem}.payout-admin-row summary{align-items:center}.plan-fee-strip{padding:12px;border-radius:16px;background:linear-gradient(135deg,#fff7df,#eef9e8);border:1px solid rgba(185,126,22,.22);margin:10px 0}.plan-fee-strip b{display:block;color:#7c4b06}.plan-fee-strip span{font-size:.88rem;color:#586451}.free-plan-card{border:2px dashed rgba(24,105,55,.35)}.mini-limit{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:10px 12px;border-radius:999px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28)}.mini-limit b{font-size:1.1rem}.mini-limit span{opacity:.9}.sell-limit-note{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-radius:18px;background:rgba(255,249,230,.75);border:1px solid rgba(210,160,30,.25);font-weight:800}.sell-limit-note small{font-weight:700;color:var(--muted,#667)}
+@media(max-width:720px){.money-grid{grid-template-columns:1fr}.payout-form{grid-template-columns:1fr}.live-money{font-size:1.1rem}.plan-fee-strip{font-size:.92rem}.sell-limit-note{align-items:flex-start;flex-direction:column}}

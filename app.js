@@ -3,7 +3,7 @@
   const hasConfig = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('YOUR_') && cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes('YOUR_');
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
-  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{}} };
+  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
   const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','categories','about','contact','how','support']);
   function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',order:'orders',message:'messages',parts:'market',browse:'market'}[r] || r); }
   const $ = s => document.querySelector(s);
@@ -36,15 +36,17 @@
     buyer_member:{name:'Buyer Member', title:'Market Member', tier:'base', line:'Joined Harvester Parts marketplace.', rarity:'MEMBER'}
   };
 
+  const FREE_LISTING_LIMIT = 5;
+  const DEFAULT_SELLER_COMMISSION_RATE = 0.03;
   const MEMBERSHIP_PLANS = [
-    {key:'starter_49', name:'Starter Boost', price:49, days:7, title:'Starter Supporter', banner:'Starter Boost Banner', badge:'Starter Boost', tag:'Entry', listings:1, boost:0, reward:60, benefits:['Supporter title for 7 days','Basic member badge','Good for first-time testing']},
-    {key:'basic_99', name:'Basic Member', price:99, days:15, title:'Basic Member', banner:'Basic Member Banner', badge:'Basic Member', tag:'Popular start', listings:2, boost:1, reward:130, benefits:['Member title for 15 days','1 listing visibility boost','Profile reward points']},
-    {key:'seller_199', name:'Seller Plus', price:199, days:30, title:'Seller Plus', banner:'Seller Plus Banner', badge:'Seller Plus', tag:'Seller', listings:5, boost:2, reward:280, benefits:['Seller Plus title','2 boosted listing days','Higher trust display on profile']},
-    {key:'growth_499', name:'Growth Seller', price:499, days:30, title:'Growth Seller Pro', banner:'Growth Seller Banner', badge:'Growth Plan', tag:'Growth', listings:12, boost:5, reward:700, benefits:['Growth Seller title','5 boosted listing days','Priority review request']},
-    {key:'pro_999', name:'Pro Dealer', price:999, days:45, title:'Pro Dealer', banner:'Pro Dealer Banner', badge:'Pro Dealer', tag:'Best value', listings:25, boost:12, reward:1500, benefits:['Pro Dealer title','12 boost days','Priority seller support']},
-    {key:'elite_1999', name:'Elite Dealer', price:1999, days:60, title:'Elite Dealer', banner:'Elite Dealer Banner', badge:'Elite Dealer', tag:'Premium', listings:50, boost:25, reward:3300, benefits:['Elite Dealer title','25 boost days','Premium profile presence']},
-    {key:'partner_2999', name:'Market Partner', price:2999, days:75, title:'Market Partner', banner:'Market Partner Banner', badge:'Market Partner', tag:'Partner', listings:80, boost:40, reward:5200, benefits:['Partner title and banner','40 boost days','Top trust styling on account']},
-    {key:'leader_5999', name:'Market Leader', price:5999, days:120, title:'Market Leader', banner:'Market Leader Banner', badge:'Market Leader', tag:'Maximum', listings:200, boost:100, reward:12000, benefits:['Highest paid member title','100 boost days','Maximum earning visibility pack']}
+    {key:'starter_49', name:'Starter Boost', price:49, days:7, title:'Starter Supporter', banner:'Starter Boost Banner', badge:'Starter Boost', tag:'Entry', listings:6, boost:1, reward:80, feeRate:0.029, discount:'3% lower fee', benefits:['6 total listings after free 5','2.90% seller platform fee','1 listing visibility boost','Starter custom title and banner']},
+    {key:'basic_99', name:'Basic Member', price:99, days:15, title:'Basic Member', banner:'Basic Member Banner', badge:'Basic Member', tag:'Popular start', listings:12, boost:2, reward:180, feeRate:0.0275, discount:'8% lower fee', benefits:['12 total listing limit','2.75% seller platform fee','2 boosted listing days','Basic member badge and title']},
+    {key:'seller_199', name:'Seller Plus', price:199, days:30, title:'Seller Plus', banner:'Seller Plus Banner', badge:'Seller Plus', tag:'Seller', listings:25, boost:5, reward:420, feeRate:0.025, discount:'17% lower fee', benefits:['25 total listing limit','2.50% seller platform fee','5 boosted listing days','Priority review request']},
+    {key:'growth_499', name:'Growth Seller', price:499, days:30, title:'Growth Seller Pro', banner:'Growth Seller Banner', badge:'Growth Plan', tag:'Growth', listings:60, boost:12, reward:1100, feeRate:0.0225, discount:'25% lower fee', benefits:['60 total listing limit','2.25% seller platform fee','12 boosted listing days','Growth seller profile banner']},
+    {key:'pro_999', name:'Pro Dealer', price:999, days:45, title:'Pro Dealer', banner:'Pro Dealer Banner', badge:'Pro Dealer', tag:'Best value', listings:150, boost:30, reward:2500, feeRate:0.02, discount:'33% lower fee', benefits:['150 total listing limit','2.00% seller platform fee','30 boost days','Priority seller support']},
+    {key:'elite_1999', name:'Elite Dealer', price:1999, days:60, title:'Elite Dealer', banner:'Elite Dealer Banner', badge:'Elite Dealer', tag:'Premium', listings:400, boost:70, reward:6200, feeRate:0.0175, discount:'42% lower fee', benefits:['400 total listing limit','1.75% seller platform fee','70 boost days','Premium profile presence']},
+    {key:'partner_2999', name:'Market Partner', price:2999, days:75, title:'Market Partner', banner:'Market Partner Banner', badge:'Market Partner', tag:'Partner', listings:1000, boost:120, reward:9800, feeRate:0.015, discount:'50% lower fee', benefits:['1,000 total listing limit','1.50% seller platform fee','120 boost days','Partner title and banner']},
+    {key:'leader_5999', name:'Market Leader', price:5999, days:120, title:'Market Leader', banner:'Market Leader Banner', badge:'Market Leader', tag:'Maximum', listings:999999, boost:250, reward:24000, feeRate:0.0125, discount:'58% lower fee', benefits:['Unlimited fair-usage listings','1.25% seller platform fee','250 boost days','Maximum earning visibility pack']}
   ];
   function userPoints(user=state.profile, seller=state.seller, products=state.products){
     const uid=state.user?.id || user?.auth_id || user?.user_id;
@@ -225,13 +227,32 @@
     if(!exp) return '';
     try{return new Date(exp).toLocaleDateString('en-IN')}catch(e){return ''}
   }
+  function planByKey(key){ return MEMBERSHIP_PLANS.find(p=>p.key===key) || null; }
+  function sellerPlanKeyFromProduct(p={}){ return p?.users?.active_membership || p?.users?.membership_key || p?.seller_membership_key || p?.membership_key || ''; }
+  function commissionRateForKey(key){ return (planByKey(key)?.feeRate) || DEFAULT_SELLER_COMMISSION_RATE; }
+  function currentCommissionRate(){ return activePlan()?.feeRate || DEFAULT_SELLER_COMMISSION_RATE; }
+  function listingLimitForKey(key){ return planByKey(key)?.listings || FREE_LISTING_LIMIT; }
+  function currentListingLimit(){ return activePlan()?.listings || FREE_LISTING_LIMIT; }
+  function limitLabel(n=currentListingLimit()){ return Number(n)>=999999 ? 'Unlimited' : String(n); }
+  function userListingCount(uid=state.user?.id){ return state.products.filter(p=>String(p.user_id||'')===String(uid) && !['rejected','banned','cancelled'].includes(String(p.status||'').toLowerCase())).length; }
+  function feeDiscountForPlan(plan=activePlan()){ if(!plan) return 'Free plan: 5 listings • 3.00% seller platform fee'; return `${plan.discount} • ${(plan.feeRate*100).toFixed(2)}% seller platform fee`; }
+  function sevenBusinessDaysFrom(date=new Date()){
+    const d=new Date(date); let added=0;
+    while(added<7){ d.setDate(d.getDate()+1); const day=d.getDay(); if(day!==0 && day!==6) added++; }
+    return d;
+  }
+  function payoutDateText(date){ try{return new Date(date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}catch(e){return ''} }
+  function isSellerApproved(){ return isAdminUser() || ['approved'].includes(String(state.seller?.status||state.seller?.verification_status||'').toLowerCase()); }
   function planCard(p){
     const active=(state.profile?.active_membership===p.key || state.profile?.membership_key===p.key);
-    return `<article class="membership-card ${active?'active':''}"><div class="plan-ribbon">${esc(p.tag)}</div><div class="plan-head"><span>${esc(p.banner)}</span><h3>${esc(p.name)}</h3><div class="plan-price">₹${Number(p.price).toLocaleString('en-IN')}<small>/${p.days} days</small></div></div><div class="plan-title-preview"><b>${esc(p.title)}</b><small>${esc(p.badge)} custom badge • no icons</small></div><div class="plan-stats"><div><b>${p.listings}</b><span>listing limit</span></div><div><b>${p.boost}</b><span>boost days</span></div><div><b>${p.reward}</b><span>points</span></div></div><ul>${p.benefits.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="${active?'secondary':'primary'}" data-plan-key="${esc(p.key)}">${active?'Current Plan':'Choose Plan'}</button></article>`;
+    return `<article class="membership-card ${active?'active':''}"><div class="plan-ribbon">${esc(p.tag)}</div><div class="plan-head"><span>${esc(p.banner)}</span><h3>${esc(p.name)}</h3><div class="plan-price">₹${Number(p.price).toLocaleString('en-IN')}<small>/${p.days} days</small></div></div><div class="plan-title-preview"><b>${esc(p.title)}</b><small>${esc(p.badge)} custom badge • no icons</small></div><div class="plan-stats"><div><b>${limitLabel(p.listings)}</b><span>listing limit</span></div><div><b>${(p.feeRate*100).toFixed(2)}%</b><span>seller fee</span></div><div><b>${p.boost}</b><span>boost days</span></div><div><b>${p.reward}</b><span>points</span></div></div><div class="plan-fee-strip"><b>${esc(p.discount)}</b><span>Lower platform commission on seller payout</span></div><ul>${p.benefits.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="${active?'secondary':'primary'}" data-plan-key="${esc(p.key)}">${active?'Current Plan':'Choose Plan'}</button></article>`;
+  }
+  function freePlanCard(){
+    return `<article class="membership-card free-plan-card"><div class="plan-ribbon">Free</div><div class="plan-head"><span>Free Seller Start</span><h3>Free Member</h3><div class="plan-price">₹0<small>/always</small></div></div><div class="plan-title-preview"><b>Marketplace Starter</b><small>Default member title</small></div><div class="plan-stats"><div><b>5</b><span>free listings</span></div><div><b>3.00%</b><span>seller fee</span></div><div><b>0</b><span>boost days</span></div></div><div class="plan-fee-strip"><b>Standard commission</b><span>Example: ₹30,00,000 sale → ₹90,000 platform fee → seller balance ₹29,10,000.</span></div><button class="ghost" data-route="sell">Use Free Plan</button></article>`;
   }
   function membershipPage(){
-    const plan=activePlan();
-    return `<section class="membership-hero page-card"><div><span class="eyebrow">Membership & rewards</span><h1>Plans that make sellers post more, rank higher and earn more visibility.</h1><p class="muted">Start from ₹49. Paid plans unlock custom titles, custom banners, reward points and listing boost days. This is built so later you can run events like highest listings, top dealer week and festival rewards.</p><div class="hero-actions"><button class="primary" data-route="sell">Start Selling</button><button class="ghost" data-route="account">View My Badges</button></div></div><div class="membership-current ${plan?'active':''}"><span>${plan?'ACTIVE PLAN':'NO ACTIVE PLAN'}</span><h2>${esc(plan?.name || 'Free Member')}</h2><p>${plan?`${esc(plan.title)} • expires ${membershipExpiryText()||'after plan duration'}`:'Choose a plan to unlock member title, badge and banner.'}</p></div></section><section><div class="section-head"><h2>Choose your plan</h2><p class="muted">8 options from ₹49 to ₹5,999.</p></div><div class="membership-grid">${MEMBERSHIP_PLANS.map(planCard).join('')}</div></section><section class="page-card reward-system-card"><div class="section-head compact"><h2>X Rewards system</h2><span class="badge owner">Future ready</span></div><div class="reward-columns"><div><b>Post more</b><span>Points for approved listings and seller verification.</span></div><div><b>Rank higher</b><span>Ranks and titles unlock as activity grows.</span></div><div><b>Win events</b><span>Later you can reward top sellers with limited badges and banners.</span></div></div></section>`;
+    const plan=activePlan(); const used=userListingCount(); const limit=currentListingLimit();
+    return `<section class="membership-hero page-card"><div><span class="eyebrow">Membership & rewards</span><h1>Plans that increase listing limits and reduce seller platform fees.</h1><p class="muted">Free users can post 5 listings. Paid plans start at ₹49 and unlock more listings, lower commission, custom titles, custom banners, reward points and boost days.</p><div class="hero-actions"><button class="primary" data-route="sell">Start Selling</button><button class="ghost" data-route="account">View My Badges</button></div></div><div class="membership-current ${plan?'active':''}"><span>${plan?'ACTIVE PLAN':'FREE PLAN'}</span><h2>${esc(plan?.name || 'Free Member')}</h2><p>${esc(feeDiscountForPlan(plan))}</p><div class="mini-limit"><b>${used}/${limitLabel(limit)}</b><span>listings used</span></div></div></section><section><div class="section-head"><h2>Choose your plan</h2><p class="muted">Free gives 5 listings. Paid options from ₹49 to ₹5,999 unlock 6 to unlimited listings and lower platform commission.</p></div><div class="membership-grid">${freePlanCard()}${MEMBERSHIP_PLANS.map(planCard).join('')}</div></section><section class="page-card reward-system-card"><div class="section-head compact"><h2>X Rewards system</h2><span class="badge owner">Future ready</span></div><div class="reward-columns"><div><b>Post more</b><span>Points for approved listings and seller verification.</span></div><div><b>Pay less fee</b><span>Higher plans reduce seller platform commission before payout.</span></div><div><b>Win events</b><span>Later you can reward top sellers with limited badges and banners.</span></div></div></section>`;
   }
   async function purchaseMembership(key){
     if(!state.user) return route('login');
@@ -244,13 +265,13 @@
       try{
         const {data,error}=await sb.from('membership_purchases').insert(purchase).select('id').single();
         if(error) throw error; purchaseId=data?.id||null;
-      }catch(e){ return toast('Run SUPABASE_v78_MEMBERSHIP_PATCH.sql once, then try plan purchase.'); }
+      }catch(e){ return toast('Run SUPABASE_v78_MEMBERSHIP_PATCH.sql and SUPABASE_v81_PAYOUT_PATCH.sql once, then try plan purchase.'); }
     }
     const activate=async(paymentId='manual_pending')=>{
       if(sb){
         await sb.from('membership_purchases').update({status:paymentId==='manual_pending'?'pending':'paid',payment_id:paymentId,updated_at:new Date().toISOString()}).eq('id',purchaseId);
         await sb.from('users').update({active_membership:plan.key,membership_key:plan.key,membership_title:plan.title,membership_badge:plan.badge,membership_banner:plan.banner,membership_expires_at:exp.toISOString(),badge_key:'premium_member',badge_title:plan.title,banner_key:plan.key,banner_title:plan.banner,points:Math.max(Number(state.profile?.points||0), userPoints()+plan.reward)}).eq('auth_id',state.user.id);
-        await loadSession();
+        await loadSession(); await loadFinanceData();
       }
       toast(paymentId==='manual_pending'?'Membership request saved. Connect Razorpay/admin confirmation for live payments.':'Membership activated');
       route('account');
@@ -263,6 +284,23 @@
     }
   }
   function toast(msg){ const el=$('#toast'); el.textContent=localText(msg); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
+  function setFormLoading(form,on=true,msg='Working...'){
+    if(!form) return;
+    form.classList.toggle('is-loading', !!on);
+    const btn=form.querySelector('button[type="submit"],button.primary,button.secondary,button:not([type])');
+    if(btn){
+      if(on){ btn.dataset.oldText=btn.textContent; btn.disabled=true; btn.innerHTML=`<span class="btn-spinner"></span>${esc(msg)}`; }
+      else { btn.disabled=false; if(btn.dataset.oldText) btn.textContent=btn.dataset.oldText; }
+    }
+    let status=form.querySelector('.form-status');
+    if(on){ if(!status){ status=document.createElement('div'); status.className='form-status'; form.appendChild(status); } status.innerHTML=`<span class="mini-spinner"></span>${esc(msg)} Please wait...`; }
+    else if(status){ status.remove(); }
+  }
+  async function withLoading(form,fn,msg='Working...'){
+    try{ setFormLoading(form,true,msg); return await fn(); }
+    catch(e){ console.error(e); toast(e?.message || String(e) || 'Something went wrong'); }
+    finally{ setFormLoading(form,false); }
+  }
   function closeMenu(){ $('#sideMenu')?.classList.remove('open'); $('#backdrop')?.classList.remove('show'); }
   function openMenu(){ $('#sideMenu')?.classList.add('open'); $('#backdrop')?.classList.add('show'); }
   function route(name, params={}){
@@ -280,18 +318,19 @@
   function placeholder(cat='parts'){ const c=(cat||'parts').toLowerCase(); if(c.includes('bearing'))return 'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=900&q=75'; if(c.includes('tractor'))return 'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=900&q=75'; if(c.includes('harvester'))return 'https://images.unsplash.com/photo-1598514982195-f36b96d1e8d4?auto=format&fit=crop&w=900&q=75'; if(c.includes('rubber'))return 'https://images.unsplash.com/photo-1581091215367-59ab6b292ddb?auto=format&fit=crop&w=900&q=75'; return 'https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=900&q=75'; }
   function productImage(p){ return (Array.isArray(p.image_urls)&&p.image_urls[0]) || p.image || placeholder(p.category); }
   function platformFee(subtotal){ subtotal=Number(subtotal||0); if(!subtotal) return 0; if(subtotal<=2000) return Math.max(20, Math.round(subtotal*.025)); if(subtotal<=3000) return 100; if(subtotal<=5000) return 200; if(subtotal<=10000) return 350; if(subtotal<=25000) return 750; if(subtotal<=50000) return 1400; if(subtotal<=100000) return 2500; if(subtotal<=500000) return 12000; return Math.min(30000, Math.round(subtotal*.03)); }
-  function sellerFee(price){ price=Number(price||0); if(!price)return 0; if(price<=2000)return 50; if(price<=5000)return 200; if(price<=10000)return 500; if(price<=50000)return Math.round(price*.045); if(price<=100000)return Math.round(price*.04); return Math.round(price*.03); }
+  function sellerFee(price, planKey){ price=Number(price||0); if(!price)return 0; const rate=commissionRateForKey(planKey || state.profile?.active_membership || state.profile?.membership_key || ''); return Math.max(price>=1000?20:0, Math.round(price*rate)); }
+  function sellerFeeForProduct(p){ return sellerFee(p?.price, sellerPlanKeyFromProduct(p)); }
   function shippingFee(subtotal, method='standard'){ subtotal=Number(subtotal||0); if(!subtotal)return 0; const base = subtotal<=2000?120:subtotal<=10000?250:subtotal<=50000?850:1800; return method==='premium'?Math.round(base*1.8):base; }
 
   async function init(){
     setTimeout(()=>$('#intro')?.classList.add('hide'),1200);
     if(localStorage.hp_lang_done==='1') $('#languageModal')?.classList.remove('show');
     setTimeout(()=>{ if(localStorage.hp_install_done!=='1') $('#installModal')?.classList.add('show'); },1800);
-    bindShell(); applyLang(); await loadSession(); await loadProducts(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll();
+    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadFinanceData(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime();
   }
   function bindShell(){
     document.addEventListener('click', e=>{
-      // v80: protect forms/inputs from accidental route bubbling on mobile Safari.
+      // v81: protect forms/inputs from accidental route bubbling on mobile Safari.
       if(e.target.closest('input, textarea, select, option, label')) return;
       const routeEl=e.target.closest('button[data-route],a[data-route],[role="button"][data-route],.brand[data-route],.icon-btn[data-route]');
       if(routeEl){
@@ -349,7 +388,7 @@
     if(!sb) return toast('Add Supabase keys first');
     const {data,error}=await sb.auth.signUp({email,password,options:{data:{full_name:name}, emailRedirectTo: authRedirectUrl()}});
     if(error)return toast(friendlyAuthError(error));
-    await loadSession(); syncMenu();
+    await loadSession(); await loadFinanceData(); syncMenu();
     if(data?.session || state.user){ route('account'); toast('Account created and logged in'); }
     else { route('login'); toast('Account created. Check email to confirm, then login.'); }
   }
@@ -357,7 +396,7 @@
     if(!sb) return toast('Add Supabase keys first');
     const {error}=await sb.auth.signInWithPassword({email,password});
     if(error)return toast(friendlyAuthError(error));
-    await loadSession(); await loadProducts(); syncMenu(); route('home'); toast('Logged in');
+    await loadSession(); await loadProducts(); await loadFinanceData(); syncMenu(); route('home'); toast('Logged in');
   }
   async function loginGoogle(){
     if(!sb) return toast('Add Supabase keys first');
@@ -408,7 +447,7 @@
     if(!token) return toast('Enter OTP code');
     const {error}=await sb.auth.verifyOtp({phone,token,type:'sms'});
     if(error) return toast(friendlyAuthError(error));
-    await loadSession(); syncMenu(); route('home'); toast('Phone login successful');
+    await loadSession(); await loadFinanceData(); syncMenu(); route('home'); toast('Phone login successful');
   }
   async function forgotPassword(email){
     if(!sb) return toast('Add Supabase keys first');
@@ -417,7 +456,7 @@
     if(error) return toast(friendlyAuthError(error));
     toast('Password reset link sent to email');
   }
-  async function logout(){ if(sb) await sb.auth.signOut(); state.user=null; state.profile=null; state.seller=null; state.cart=[]; localStorage.hp_cart='[]'; syncMenu(); route('home'); }
+  async function logout(){ if(sb) await sb.auth.signOut(); state.user=null; state.profile=null; state.seller=null; state.finance={balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}; state.cart=[]; localStorage.hp_cart='[]'; syncMenu(); route('home'); }
   function syncMenu(updateLang=true){
     const isAdmin=(state.profile?.role==='admin') || ((state.user?.email||'').toLowerCase()===ADMIN_EMAIL);
     $('#authButton') && ($('#authButton').textContent=state.user?tx('My Account'):tx('Login'));
@@ -444,7 +483,7 @@
   
   async function loadProducts(){
     if(sb){
-      const cols='*, sellers(business_name,status), users(email,full_name,badge_title)';
+      const cols='*, sellers(business_name,status), users(email,full_name,badge_title,active_membership,membership_key,membership_title)';
       let query=sb.from('products').select(cols);
       if(isAdminUser()){
         query=query.order('status',{ascending:true}).order('is_boosted',{ascending:false}).order('created_at',{ascending:false});
@@ -474,7 +513,7 @@
   function updateCartCount(){ const c=state.cart.reduce((s,i)=>s+Number(i.qty||1),0); $$('#cartCount,.cart-count').forEach(el=>el.textContent=c); }
   function loadWishlist(){ state.wishlist=JSON.parse(localStorage.hp_wishlist||'[]'); }
   function saveWishlist(){ localStorage.hp_wishlist=JSON.stringify(state.wishlist); }
-  function addToCart(id, qty=1){ const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return toast('Product not found'); const existing=state.cart.find(i=>String(i.id)===String(id)); if(existing) existing.qty+=qty; else state.cart.push({id:p.id,title:p.title,price:p.price,image:productImage(p),category:p.category,qty}); saveCart(); toast('Added to cart'); }
+  function addToCart(id, qty=1){ const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return toast('Product not found'); const existing=state.cart.find(i=>String(i.id)===String(id)); if(existing) existing.qty+=qty; else state.cart.push({id:p.id,title:p.title,price:p.price,image:productImage(p),category:p.category,user_id:p.user_id,seller_id:p.seller_id,seller_membership_key:sellerPlanKeyFromProduct(p),qty}); saveCart(); toast('Added to cart'); }
   function buyNow(id){ addToCart(id,1); route('checkout'); }
   function toggleWishlist(id){ const ix=state.wishlist.indexOf(String(id)); if(ix>=0){state.wishlist.splice(ix,1);toast('Removed from wishlist')}else{state.wishlist.push(String(id));toast('Saved to wishlist')} saveWishlist(); render(); }
 
@@ -519,7 +558,7 @@
     return `<section class="page-card market-head-card"><div class="section-head"><h2>Browse Marketplace</h2><button class="primary" data-route="sell">List Product</button></div><div class="market-tools"><input id="searchInput" placeholder="Search parts, brand, model"><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="new">Newest</option><option value="low">Price low</option><option value="high">Price high</option></select></div></section><section class="grid" id="marketGrid">${shown.map(productCard).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
   }
   
-  function productPage(id){ const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return emptyPage('Product not found'); const fee=sellerFee(p.price); return `<section class="product-page"><div class="gallery page-card"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'" alt="${p.title}"></div><aside class="detail-stack sticky-buy"><div class="page-card"><span class="badge verified">Verified listing</span><h1>${p.title}</h1><p class="muted">${p.category||'Spare part'} • ${p.brand||'Harvester Parts'} ${p.model?`• ${p.model}`:''}</p><div class="price">${money(p.price)}</div><p class="muted">Estimated price. Contact seller inside website for exact final price.</p><div class="actions"><button class="primary" onclick="HP.buyNow('${p.id}')">Buy Now</button><button class="secondary" onclick="HP.addToCart('${p.id}')">Add to Cart</button><button class="ghost" onclick="HP.toggleWishlist('${p.id}')">Wishlist</button><button class="ghost" onclick="HP.route('messages',{id:'${p.id}'})">Message Seller</button></div></div><div class="summary-card"><h3>Buyer protection</h3><div class="summary-row"><span>Platform fee</span><b>Calculated at checkout</b></div><div class="summary-row"><span>Shipping</span><b>Standard / Premium</b></div><div class="summary-row"><span>Seller receives approx.</span><b>${money(Number(p.price||0)-fee)}</b></div></div></aside></section><section class="page-card"><h2>Product details</h2><p>${p.description||'Genuine agricultural spare part listing. Please confirm compatibility, dimensions and condition through in-app message before final purchase.'}</p><div class="stats"><div class="stat"><b>${p.condition||'Stock'}</b><span>Condition</span></div><div class="stat"><b>${p.weight_kg||'—'} kg</b><span>Weight</span></div><div class="stat"><b>${p.state||'India'}</b><span>Location</span></div><div class="stat"><b>${p.views||0}</b><span>Views</span></div></div></section>`; }
+  function productPage(id){ const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return emptyPage('Product not found'); const fee=sellerFeeForProduct(p); return `<section class="product-page"><div class="gallery page-card"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'" alt="${p.title}"></div><aside class="detail-stack sticky-buy"><div class="page-card"><span class="badge verified">Verified listing</span><h1>${p.title}</h1><p class="muted">${p.category||'Spare part'} • ${p.brand||'Harvester Parts'} ${p.model?`• ${p.model}`:''}</p><div class="price">${money(p.price)}</div><p class="muted">Estimated price. Contact seller inside website for exact final price.</p><div class="actions"><button class="primary" onclick="HP.buyNow('${p.id}')">Buy Now</button><button class="secondary" onclick="HP.addToCart('${p.id}')">Add to Cart</button><button class="ghost" onclick="HP.toggleWishlist('${p.id}')">Wishlist</button><button class="ghost" onclick="HP.route('messages',{id:'${p.id}'})">Message Seller</button></div></div><div class="summary-card"><h3>Buyer protection</h3><div class="summary-row"><span>Platform fee</span><b>Calculated at checkout</b></div><div class="summary-row"><span>Shipping</span><b>Standard / Premium</b></div><div class="summary-row"><span>Seller receives approx.</span><b>${money(Number(p.price||0)-fee)}</b></div></div></aside></section><section class="page-card"><h2>Product details</h2><p>${p.description||'Genuine agricultural spare part listing. Please confirm compatibility, dimensions and condition through in-app message before final purchase.'}</p><div class="stats"><div class="stat"><b>${p.condition||'Stock'}</b><span>Condition</span></div><div class="stat"><b>${p.weight_kg||'—'} kg</b><span>Weight</span></div><div class="stat"><b>${p.state||'India'}</b><span>Location</span></div><div class="stat"><b>${p.views||0}</b><span>Views</span></div></div></section>`; }
   function categoriesPage(){
     const machines=AGRI_CATEGORIES.filter(c=>c.group==='Machines').map(categoryCard).join('');
     const spares=AGRI_CATEGORIES.filter(c=>c.group==='Spare Parts').map(categoryCard).join('');
@@ -540,12 +579,115 @@
   }
   async function sendContact(form){ const fd=new FormData(form); const text=`Support request from ${fd.get('name')} (${fd.get('phone')}): ${fd.get('topic')} - ${fd.get('message')}`; localStorage.hp_last_contact=text; if(sb){ await sb.from('contact_messages').insert({name:fd.get('name'),phone:fd.get('phone'),topic:fd.get('topic'),message:fd.get('message')}); } toast('Support request saved. You can also call or WhatsApp us.'); form.reset(); }
 
+  async function refreshSellerBalancesFromLedger(rows=[]){
+    if(!sb) return;
+    const sellers=[...new Set(rows.map(r=>r.seller_id).filter(Boolean))];
+    for(const sellerId of sellers){
+      try{
+        const {data}=await sb.from('seller_ledger').select('seller_amount,platform_fee,status').eq('seller_id',sellerId);
+        const ledger=data||[];
+        const pending=ledger.filter(x=>['pending_clearance','available','payout_requested'].includes(x.status)).reduce((s,x)=>s+Number(x.seller_amount||0),0);
+        const paid=ledger.filter(x=>x.status==='paid').reduce((s,x)=>s+Number(x.seller_amount||0),0);
+        const fees=ledger.reduce((s,x)=>s+Number(x.platform_fee||0),0);
+        await sb.from('seller_balances').upsert({user_id:sellerId,available_balance:pending,pending_balance:pending,paid_balance:paid,platform_fee_total:fees,last_order_at:new Date().toISOString(),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+      }catch(e){ console.warn('balance refresh skipped', e); }
+    }
+  }
+  async function loadFinanceData(){
+    if(!sb||!state.user) return;
+    const safe=async(fn,fallback=null)=>{try{const {data,error}=await fn(); return error?fallback:(data??fallback);}catch(e){return fallback;}};
+    state.finance.payoutAccount=await safe(()=>sb.from('seller_payout_accounts').select('*').eq('user_id',state.user.id).maybeSingle(), null);
+    state.finance.balance=await safe(()=>sb.from('seller_balances').select('*').eq('user_id',state.user.id).maybeSingle(), null);
+    state.finance.payoutRequests=await safe(()=>sb.from('seller_payout_requests').select('*').eq('user_id',state.user.id).order('created_at',{ascending:false}).limit(20), []);
+    state.finance.ledger=await safe(()=>sb.from('seller_ledger').select('*').eq('seller_id',state.user.id).order('created_at',{ascending:false}).limit(30), []);
+  }
+  function setupFinanceRealtime(){
+    if(!sb || state.realtimeReady) return; state.realtimeReady=true;
+    try{
+      sb.channel('hp-money-v81').on('postgres_changes',{event:'*',schema:'public',table:'orders'}, async()=>{ if(isAdminUser()) await loadAdminProData(); })
+        .on('postgres_changes',{event:'*',schema:'public',table:'seller_ledger'}, async()=>{ await loadFinanceData(); if(state.route==='account') render(); if(isAdminUser()&&state.route==='admin') await loadAdminProData(); })
+        .on('postgres_changes',{event:'*',schema:'public',table:'seller_payout_requests'}, async()=>{ await loadFinanceData(); if(state.route==='account') render(); if(isAdminUser()&&state.route==='admin') await loadAdminProData(); })
+        .subscribe();
+    }catch(e){}
+    setInterval(async()=>{ if(state.user){ await loadFinanceData(); if(state.route==='account') render(); } if(isAdminUser()&&state.route==='admin') await loadAdminProData(); }, 30000);
+  }
+  function moneyCounter(n){ return `<b class="live-money" data-money="${Number(n||0)}">${money(n)}</b>`; }
+  function payoutMethodLabel(a=state.finance.payoutAccount){ if(!a) return 'Not added'; return a.payout_method==='bank'?'Bank transfer':'UPI'; }
+  function accountBalanceCard(){
+    const b=state.finance.balance||{}; const reqs=state.finance.payoutRequests||[]; const next=(state.finance.ledger||[]).find(x=>x.available_on)?.available_on;
+    return `<div class="page-card money-card"><div class="section-head compact"><h2>Seller balance</h2><span class="badge live-badge">Live</span></div><div class="money-grid"><div><small>Available / pending payout</small>${moneyCounter(b.available_balance||b.pending_balance||0)}</div><div><small>Paid till now</small>${moneyCounter(b.paid_balance||0)}</div><div><small>Platform fee deducted</small>${moneyCounter(b.platform_fee_total||0)}</div></div><p class="muted">Money comes to platform account first. Your seller amount is payout amount after platform commission. Standard payout target: within 7 business days${next?' around '+payoutDateText(next):''}.</p><div class="quick-grid"><button class="secondary" id="requestPayoutBtn">Request payout</button><button class="ghost" data-route="membership">Reduce fees with plan</button></div>${reqs.slice(0,3).map(r=>`<div class="payout-row"><b>${money(r.amount)}</b><span>${esc(r.status)} • ${payoutDateText(r.created_at)}</span></div>`).join('')}</div>`;
+  }
+  function payoutAccountCard(){
+    const a=state.finance.payoutAccount||{}; const method=a.payout_method||'upi';
+    return `<div class="page-card payout-card"><div class="section-head compact"><h2>Payout method</h2><span class="badge">${esc(payoutMethodLabel(a))}</span></div><p class="muted">Choose where admin should send your seller payout: UPI or bank account.</p><form id="payoutAccountForm" class="form payout-form"><select name="payout_method"><option value="upi" ${method==='upi'?'selected':''}>UPI</option><option value="bank" ${method==='bank'?'selected':''}>Bank account</option></select><input name="account_holder_name" placeholder="Account holder name" value="${esc(a.account_holder_name||state.profile?.full_name||'')}"><input name="upi_id" placeholder="UPI ID, e.g. name@upi" value="${esc(a.upi_id||'')}"><input name="bank_name" placeholder="Bank name" value="${esc(a.bank_name||'')}"><input name="account_number" placeholder="Account number" value="${esc(a.account_number||'')}"><input name="ifsc" placeholder="IFSC code" value="${esc(a.ifsc||'')}"><button class="primary">Save payout details</button></form></div>`;
+  }
+  async function savePayoutAccount(form){
+    if(!state.user||!sb) return toast('Login and connect Supabase first');
+    const fd=new FormData(form); const method=fd.get('payout_method');
+    const payload={user_id:state.user.id,payout_method:method,account_holder_name:fd.get('account_holder_name'),upi_id:fd.get('upi_id'),bank_name:fd.get('bank_name'),account_number:fd.get('account_number'),ifsc:String(fd.get('ifsc')||'').toUpperCase(),updated_at:new Date().toISOString()};
+    if(method==='upi' && !payload.upi_id) return toast('Enter UPI ID');
+    if(method==='bank' && (!payload.account_number || !payload.ifsc || !payload.account_holder_name)) return toast('Enter bank account holder, account number and IFSC');
+    const {error}=await sb.from('seller_payout_accounts').upsert(payload,{onConflict:'user_id'});
+    if(error) return toast('Run SUPABASE_v81_PAYOUT_PATCH.sql once, then save payout details.');
+    await loadFinanceData(); toast('Payout details saved'); render();
+  }
+  async function requestPayout(){
+    if(!state.user||!sb) return toast('Login first');
+    const b=state.finance.balance||{}; const amount=Number(b.available_balance||b.pending_balance||0);
+    if(amount<=0) return toast('No payout balance yet');
+    const a=state.finance.payoutAccount; if(!a) return toast('Save UPI or bank payout details first');
+    const payload={user_id:state.user.id,amount,status:'requested',payout_method:a.payout_method,upi_id:a.upi_id,account_holder_name:a.account_holder_name,bank_name:a.bank_name,account_number:a.account_number,ifsc:a.ifsc};
+    const {error}=await sb.from('seller_payout_requests').insert(payload);
+    if(error) return toast('Run SUPABASE_v81_PAYOUT_PATCH.sql once, then request payout.');
+    await sb.from('seller_ledger').update({status:'payout_requested',updated_at:new Date().toISOString()}).eq('seller_id',state.user.id).in('status',['pending_clearance','available']);
+    await loadFinanceData(); toast('Payout request sent to admin'); render();
+  }
+
   function cartPage(){ const totals=getTotals(); return `<section class="checkout-grid"><div class="page-card"><h1>Your Cart</h1>${state.cart.map(item=>`<div class="cart-item"><img src="${item.image}" onerror="this.src='${placeholder(item.category)}'"><div><b>${item.title}</b><p class="muted">${money(item.price)} × ${item.qty}</p></div><div class="qty"><button onclick="HP.changeQty('${item.id}',-1)">−</button><b>${item.qty}</b><button onclick="HP.changeQty('${item.id}',1)">+</button><button class="danger" onclick="HP.removeCart('${item.id}')">Remove</button></div></div>`).join('')||empty('Cart is empty. Add products to continue.')}</div><aside class="summary-card"><h2>Order summary</h2>${summaryRows(totals)}<button class="primary" style="width:100%" data-route="checkout">Proceed to Checkout</button></aside></section>`; }
   function getTotals(method='standard'){ const subtotal=state.cart.reduce((s,i)=>s+Number(i.price||0)*Number(i.qty||1),0); const shipping=shippingFee(subtotal,method); const pf=platformFee(subtotal); const total=subtotal+shipping+pf; return {subtotal,shipping,pf,total}; }
   function summaryRows(t){ return `<div class="summary-row"><span>Subtotal</span><b>${money(t.subtotal)}</b></div><div class="summary-row"><span>Shipping</span><b>${money(t.shipping)}</b></div><div class="summary-row"><span>Platform protection fee</span><b>${money(t.pf)}</b></div><div class="summary-row"><span>Total</span><b>${money(t.total)}</b></div>`; }
-  function checkoutPage(){ const totals=getTotals(); return `<section class="checkout-grid"><div class="page-card"><h1>Secure Checkout</h1><div class="notice">Orders are saved in Supabase. Razorpay verification should be connected through Supabase Edge Function before full production launch.</div><form id="checkoutForm" class="form"><input name="name" placeholder="Full name" required><input name="phone" placeholder="Phone number" required><input name="address" placeholder="Complete delivery address" required><input name="pincode" placeholder="Pincode" required><select name="shipping"><option value="standard">Standard delivery</option><option value="premium">Premium / heavy courier</option></select><input name="coupon" placeholder="Coupon code optional"><button class="primary">Place Secure Order</button></form></div><aside class="summary-card"><h2>Payment Summary</h2><div id="checkoutSummary">${summaryRows(totals)}</div><p class="muted">Payment: Razorpay / manual confirmation depending on your active key setup.</p></aside></section>`; }
-  async function placeOrder(form){ if(!state.user)return route('login'); if(!state.cart.length)return toast('Cart is empty'); const fd=new FormData(form); const totals=getTotals(fd.get('shipping')); const order={buyer_id:state.user.id,user_id:state.user.id,amount:totals.total,shipping_amount:totals.shipping,platform_fee:totals.pf,status:'pending',buyer_name:fd.get('name'),buyer_phone:fd.get('phone'),address:fd.get('address'),pincode:fd.get('pincode')}; let orderId='local-'+Date.now(); if(sb){ const {data,error}=await sb.from('orders').insert(order).select().single(); if(error)return toast(error.message); orderId=data.id; const items=state.cart.map(i=>({order_id:orderId,product_id:i.id,quantity:i.qty,price:i.price})); await sb.from('order_items').insert(items); }
-    if(cfg.RAZORPAY_KEY_ID && !cfg.RAZORPAY_KEY_ID.includes('YOUR_') && window.Razorpay){ const rz=new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:Math.round(totals.total*100),currency:'INR',name:'Harvester Parts',description:'Order '+orderId,handler:async(resp)=>{ if(sb) await sb.from('orders').update({status:'paid',payment_id:resp.razorpay_payment_id}).eq('id',orderId); state.cart=[]; saveCart(); toast('Payment successful. Order placed.'); route('orders'); }}); rz.open(); } else { state.cart=[]; saveCart(); toast('Order saved. Connect Razorpay key for online payment.'); route('orders'); } }
+  function checkoutPage(){ const totals=getTotals(); return `<section class="checkout-grid"><div class="page-card"><h1>Secure Checkout</h1><div class="notice">Buyer pays Harvester Parts first. Seller balance is created after platform commission and is marked for payout within 7 business days after order/payment confirmation.</div><form id="checkoutForm" class="form"><input name="name" placeholder="Full name" required><input name="phone" placeholder="Phone number" required><input name="address" placeholder="Complete delivery address" required><input name="pincode" placeholder="Pincode" required><select name="shipping"><option value="standard">Standard delivery</option><option value="premium">Premium / heavy courier</option></select><input name="coupon" placeholder="Coupon code optional"><button class="primary">Place Secure Order</button></form></div><aside class="summary-card"><h2>Payment Summary</h2><div id="checkoutSummary">${summaryRows(totals)}</div><p class="muted">Payment: Razorpay / manual confirmation depending on your active key setup.</p></aside></section>`; }
+  async function placeOrder(form){
+    if(!state.user)return route('login');
+    if(!state.cart.length)return toast('Cart is empty');
+    const fd=new FormData(form); const totals=getTotals(fd.get('shipping'));
+    const payoutDue=sevenBusinessDaysFrom();
+    const order={buyer_id:state.user.id,user_id:state.user.id,amount:totals.total,shipping_amount:totals.shipping,platform_fee:totals.pf,status:'pending',buyer_name:fd.get('name'),buyer_phone:fd.get('phone'),address:fd.get('address'),pincode:fd.get('pincode'),seller_payout_total:0,platform_commission_total:0,payout_status:'pending',expected_payout_at:payoutDue.toISOString()};
+    const itemRows=[]; const ledgerRows=[];
+    let sellerPayoutTotal=0, commissionTotal=0;
+    state.cart.forEach(i=>{
+      const product=state.products.find(p=>String(p.id)===String(i.id)) || i;
+      const qty=Number(i.qty||1); const gross=Number(i.price||0)*qty; const fee=sellerFee(gross, i.seller_membership_key || sellerPlanKeyFromProduct(product)); const sellerAmount=Math.max(0,gross-fee);
+      sellerPayoutTotal+=sellerAmount; commissionTotal+=fee;
+      itemRows.push({product_id:i.id,quantity:qty,price:i.price,seller_user_id:i.user_id||product.user_id||null,platform_commission:fee,seller_amount:sellerAmount,payout_status:'pending_clearance'});
+      if(i.user_id||product.user_id){ ledgerRows.push({seller_id:i.user_id||product.user_id,product_id:i.id,gross_amount:gross,platform_fee:fee,seller_amount:sellerAmount,status:'pending_clearance',available_on:payoutDue.toISOString().slice(0,10),notes:'Buyer payment collected by platform. Seller payout due within 7 business days after confirmation.'}); }
+    });
+    order.seller_payout_total=sellerPayoutTotal; order.platform_commission_total=commissionTotal;
+    let orderId='local-'+Date.now();
+    if(sb){
+      let inserted=null;
+      let res=await sb.from('orders').insert(order).select().single();
+      if(res.error && /seller_payout_total|platform_commission_total|payout_status|expected_payout_at/i.test(String(res.error.message||''))){
+        const fallback={...order}; ['seller_payout_total','platform_commission_total','payout_status','expected_payout_at'].forEach(k=>delete fallback[k]);
+        res=await sb.from('orders').insert(fallback).select().single();
+      }
+      if(res.error) return toast(res.error.message);
+      inserted=res.data; orderId=inserted.id;
+      const items=itemRows.map(i=>({...i,order_id:orderId}));
+      let itemRes=await sb.from('order_items').insert(items);
+      if(itemRes.error && /seller_user_id|platform_commission|seller_amount|payout_status/i.test(String(itemRes.error.message||''))){
+        const fallbackItems=items.map(i=>({order_id:i.order_id,product_id:i.product_id,quantity:i.quantity,price:i.price}));
+        await sb.from('order_items').insert(fallbackItems);
+        toast('Order saved. Run SUPABASE_v81_PAYOUT_PATCH.sql to enable payout ledger.');
+      } else if(itemRes.error){ return toast(itemRes.error.message); }
+      if(ledgerRows.length){
+        const ledgers=ledgerRows.map(l=>({...l,order_id:orderId}));
+        const lg=await sb.from('seller_ledger').insert(ledgers);
+        if(!lg.error){ await refreshSellerBalancesFromLedger(ledgers); }
+      }
+    }
+    localStorage.hp_last_order=orderId; state.cart=[]; saveCart(); toast('Order placed. Seller payout balance will show after platform commission.'); route('orders');
+  }
   function changeQty(id,delta){ const it=state.cart.find(i=>String(i.id)===String(id)); if(!it)return; it.qty+=delta; if(it.qty<=0)state.cart=state.cart.filter(i=>String(i.id)!==String(id)); saveCart(); render(); }
   function removeCart(id){ state.cart=state.cart.filter(i=>String(i.id)!==String(id)); saveCart(); render(); }
   function countryOptions(){
@@ -560,7 +702,7 @@
 
   function membershipMiniCard(){
     const plan=activePlan();
-    return `<div class="page-card membership-mini-card"><div class="section-head compact"><h2>Membership</h2><span class="badge ${plan?'owner':''}">${plan?'Active':'Free'}</span></div>${plan?`<div class="mini-plan-banner"><b>${esc(plan.title)}</b><span>${esc(plan.banner)} • expires ${membershipExpiryText()||'soon'}</span></div><div class="rank-ways"><div><b>${plan.boost}</b><span>boost days</span></div><div><b>${plan.listings}</b><span>listing limit</span></div><div><b>${plan.reward}</b><span>reward pts</span></div><div><b>${money(plan.price)}</b><span>value</span></div></div>`:`<p class="muted">Unlock custom title, profile banner, extra reward points and boost days from ₹49.</p>`}<button class="primary" data-route="membership">${plan?'Upgrade Plan':'View Plans'}</button></div>`;
+    return `<div class="page-card membership-mini-card"><div class="section-head compact"><h2>Membership</h2><span class="badge ${plan?'owner':''}">${plan?'Active':'Free'}</span></div>${plan?`<div class="mini-plan-banner"><b>${esc(plan.title)}</b><span>${esc(plan.banner)} • expires ${membershipExpiryText()||'soon'}</span></div><div class="rank-ways"><div><b>${plan.boost}</b><span>boost days</span></div><div><b>${limitLabel(plan.listings)}</b><span>listing limit</span></div><div><b>${plan.reward}</b><span>reward pts</span></div><div><b>${money(plan.price)}</b><span>value</span></div></div>`:`<p class="muted">Free plan gives 5 listings. Upgrade from ₹49 for more listings and lower seller platform fee.</p>`}<button class="primary" data-route="membership">${plan?'Upgrade Plan':'View Plans'}</button></div>`;
   }
   function accountPage(){
     if(!state.user)return loginPage();
@@ -578,7 +720,7 @@
     const pendingListings=myProducts.filter(p=>p.status!=='approved').length;
     const sellerStatus=state.seller?.status || (isAdmin?'approved':'not verified');
     const avatarText=(fullName||email||'HP').split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'HP';
-    return `<section class="profile-page">${userBanner()}<div class="profile-cover page-card ${isAdmin?'founder-profile-cover':''}"><div class="profile-avatar"><img src="./logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${esc(fullName)}</h1><p>${esc(email)}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${esc(role)}</span></div><div class="profile-id"><span data-no-translate>${esc(uid)}</span> • <span>${esc(rank.title)}</span> • <span>${esc(sellerStatus)}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${pts>=999999?'MAX':pts}</b><span>Points</span></div><div><b>${earnedBadges().length}</b><span>Badges</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${esc(profileName)}" placeholder="Full name"><input name="phone" type="tel" value="${esc(phone)}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${esc(uid)}</b></div><div><span>Email</span><b data-no-translate>${esc(email)}</b></div><div><span>Phone</span><b>${esc(phone || 'Not added')}</b></div><div><span>Seller status</span><b>${esc(sellerStatus)}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div>${rankProgressCard()}${membershipMiniCard()}${badgeCollectionCard()}<div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Browse Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div>${eventPreviewCard()}<div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
+    return `<section class="profile-page">${userBanner()}<div class="profile-cover page-card ${isAdmin?'founder-profile-cover':''}"><div class="profile-avatar"><img src="./logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${esc(fullName)}</h1><p>${esc(email)}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${esc(role)}</span></div><div class="profile-id"><span data-no-translate>${esc(uid)}</span> • <span>${esc(rank.title)}</span> • <span>${esc(sellerStatus)}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${pts>=999999?'MAX':pts}</b><span>Points</span></div><div><b>${earnedBadges().length}</b><span>Badges</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${esc(profileName)}" placeholder="Full name"><input name="phone" type="tel" value="${esc(phone)}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${esc(uid)}</b></div><div><span>Email</span><b data-no-translate>${esc(email)}</b></div><div><span>Phone</span><b>${esc(phone || 'Not added')}</b></div><div><span>Seller status</span><b>${esc(sellerStatus)}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div>${rankProgressCard()}${membershipMiniCard()}${accountBalanceCard()}${payoutAccountCard()}${badgeCollectionCard()}<div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Browse Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div>${eventPreviewCard()}<div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
   }
 
   async function saveProfile(form){ if(!sb||!state.user)return; const fd=new FormData(form); const {error}=await sb.from('users').update({full_name:fd.get('full_name'),phone:fd.get('phone')||state.user.phone||'',gender:fd.get('gender'),profile_completed:true}).eq('auth_id',state.user.id); if(error)toast(error.message); else{toast('Profile saved'); await loadSession(); syncMenu(); render();} }
@@ -596,7 +738,8 @@
     if(!state.user)return loginPage();
     const gate=sellerStatusCard();
     if(gate) return gate;
-    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Sell machinery or spare parts.</h1><p class="muted">Choose Machinery or Spare Part first. The category list changes automatically, then your listing goes to admin approval.</p></section><section class="page-card"><form id="sellForm" class="form sell-form"><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card active" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" checked><span class="sell-dot"></span><span><b>Machinery</b><small>Combine harvester, tractor, seed drill, straw reaper, implements</small></span></label><label class="sell-type-card" data-sell-card="spare"><input type="radio" name="sell_type" value="spare"><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, gears, hydraulic parts</small></span></label></div><select name="condition" required><option value="New">New</option><option value="Used" selected>Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" placeholder="Product name" required><input name="price" type="number" min="0" placeholder="Listing price" required><select name="category" id="sellCategorySelect" required>${categoryOptionsFor('machine')}</select><input name="brand" placeholder="Brand / machine"><input name="model" placeholder="Model / compatibility"><input name="weight_kg" type="number" step="0.1" placeholder="Weight kg"><input name="state" placeholder="State" required><input name="district" placeholder="District" required><input name="city" placeholder="City / village" required><textarea name="description" placeholder="Describe condition, exact location, compatibility"></textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to see seller payout.</div><button class="primary">Submit Listing for Approval</button></form></section>`;
+    const used=userListingCount(); const limit=currentListingLimit();
+    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Sell machinery or spare parts.</h1><p class="muted">Choose Machinery or Spare Part first. The category list changes automatically, then your listing goes to admin approval.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card"><form id="sellForm" class="form sell-form"><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card active" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" checked><span class="sell-dot"></span><span><b>Machinery</b><small>Combine harvester, tractor, seed drill, straw reaper, implements</small></span></label><label class="sell-type-card" data-sell-card="spare"><input type="radio" name="sell_type" value="spare"><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, gears, hydraulic parts</small></span></label></div><select name="condition" required><option value="New">New</option><option value="Used" selected>Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" placeholder="Product name" required><input name="price" type="number" min="0" placeholder="Listing price" required><select name="category" id="sellCategorySelect" required>${categoryOptionsFor('machine')}</select><input name="brand" placeholder="Brand / machine"><input name="model" placeholder="Model / compatibility"><input name="weight_kg" type="number" step="0.1" placeholder="Weight kg"><input name="state" placeholder="State" required><input name="district" placeholder="District" required><input name="city" placeholder="City / village" required><textarea name="description" placeholder="Describe condition, exact location, compatibility"></textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to see seller payout.</div><button class="primary">Submit Listing for Approval</button></form></section>`;
   }
   async function submitSellerVerification(form){
     if(!state.user)return route('login');
@@ -615,11 +758,31 @@
     }
     state.seller=payload; toast('Seller verification submitted for admin approval'); render();
   }
-  async function submitProduct(form){ if(!state.user)return route('login'); const fd=new FormData(form); const price=Number(fd.get('price')||0); let image_urls=[]; const files=[...(fd.getAll('images')||[])].filter(f=>f&&f.name); if(sb&&files.length){ for(const f of files){ const path=`${state.user.id}/${Date.now()}-${f.name.replace(/[^a-z0-9.]/gi,'-')}`; const {error}=await sb.storage.from('product-images').upload(path,f,{upsert:true}); if(!error){ const {data}=sb.storage.from('product-images').getPublicUrl(path); image_urls.push(data.publicUrl); } } }
-    const payload={user_id:state.user.id,sell_type:fd.get('sell_type')||'spare',condition:fd.get('condition')||'Used',title:fd.get('title'),price,category:fd.get('category'),brand:fd.get('brand'),model:fd.get('model'),weight_kg:Number(fd.get('weight_kg')||0),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),description:fd.get('description'),image_urls,status:'pending'};
-    if(sb){ const {error}=await sb.from('products').insert(payload); if(error)return toast(error.message); }
-    else{ payload.id='local-'+Date.now(); payload.status='approved'; state.products.unshift(payload); localStorage.hp_products=JSON.stringify(state.products); }
-    toast('Listing submitted for admin approval'); route('market'); }
+  async function submitProduct(form){
+    if(!state.user)return route('login');
+    if(!isSellerApproved()) return toast('Seller verification must be approved before listing.');
+    const limit=currentListingLimit(); const used=userListingCount();
+    if(used>=limit){ toast(`Your ${activePlan()?.name||'Free'} plan allows ${limitLabel(limit)} listings. Upgrade to list more.`); setTimeout(()=>route('membership'),700); return; }
+    const fd=new FormData(form); const price=Number(fd.get('price')||0);
+    if(!price || price<1) return toast('Enter a valid listing price');
+    let image_urls=[]; const files=[...(fd.getAll('images')||[])].filter(f=>f&&f.name);
+    if(sb&&files.length){
+      for(const f of files){
+        const path=`${state.user.id}/${Date.now()}-${f.name.replace(/[^a-z0-9.]/gi,'-')}`;
+        const {error}=await sb.storage.from('product-images').upload(path,f,{upsert:true});
+        if(error) return toast('Image upload failed: '+error.message);
+        const {data}=sb.storage.from('product-images').getPublicUrl(path); if(data?.publicUrl) image_urls.push(data.publicUrl);
+      }
+    }
+    const payload={user_id:state.user.id,seller_id:state.seller?.id||null,sell_type:fd.get('sell_type')||'spare',condition:fd.get('condition')||'Used',title:fd.get('title'),price,category:fd.get('category'),brand:fd.get('brand'),model:fd.get('model'),weight_kg:Number(fd.get('weight_kg')||0),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),description:fd.get('description'),image_urls,status:'pending'};
+    if(sb){
+      let {error}=await sb.from('products').insert(payload);
+      if(error && /seller_id/i.test(String(error.message||''))){ const fallback={...payload}; delete fallback.seller_id; const res=await sb.from('products').insert(fallback); error=res.error; }
+      if(error)return toast(error.message);
+      await loadProducts();
+    } else{ payload.id='local-'+Date.now(); payload.status='approved'; state.products.unshift(payload); localStorage.hp_products=JSON.stringify(state.products); }
+    toast('Listing submitted for admin approval'); route('market');
+  }
   function messagesPage(){ return `<section class="page-card"><h1>Messages</h1><div class="notice">In-app chat protects your platform earnings. Phone numbers and emails are blocked automatically.</div><form id="messageForm" class="form"><input name="to" placeholder="Seller/User ID or email"><textarea name="message" placeholder="Write message"></textarea><button class="primary">Send Message</button></form></section>`; }
   function cleanMessage(m){ return String(m||'').replace(/\b\d{10}\b/g,'[phone blocked]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig,'[email blocked]').replace(/wa\.me|whatsapp/ig,'[contact link blocked]'); }
   async function sendMsg(form){ if(!state.user)return route('login'); const fd=new FormData(form); const msg=cleanMessage(fd.get('message')); if(sb){ await sb.from('messages').insert({sender_id:state.user.id,receiver_id:null,message:msg}); } toast('Message sent inside platform'); form.reset(); }
@@ -680,6 +843,7 @@
         <div><b>Seller Pipeline</b><span>${sellers.length} sellers</span><strong>${sellers.filter(s=>s.status==='approved').length} approved</strong></div>
       </div>
     </section>
+    <section class="page-card admin-panel money-admin-panel"><div class="section-head compact"><h2>Money in / seller payouts</h2><span class="badge live-badge">Live counters</span></div><div id="adminMoneyList">${adminMoneyList()}</div></section>
     <section class="admin-columns">
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Ranks & badges</h2><span class="badge owner">Motivation system</span></div><div id="adminRanksList">${adminRanksList()}</div></div>
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Events & rewards</h2><span class="badge">Future ready</span></div><div id="adminEventsList">${adminEventsList()}</div></div>
@@ -702,6 +866,31 @@
     return (ev.length?ev:fallback).map(e=>`<div class="event-admin-row"><div><b>${esc(e.title)}</b><span>${esc(e.description||'Event reward challenge')}</span></div><span class="badge">${esc(e.status||'draft')}</span></div>`).join('');
   }
 
+
+  function adminMoneyList(){
+    const balances=state.admin.balances||[], accounts=state.admin.payoutAccounts||[], requests=state.admin.payoutRequests||[], ledger=state.admin.ledger||[];
+    const totalSellerDue=balances.reduce((s,b)=>s+Number(b.available_balance||b.pending_balance||0),0);
+    const totalPaid=balances.reduce((s,b)=>s+Number(b.paid_balance||0),0);
+    const totalFees=balances.reduce((s,b)=>s+Number(b.platform_fee_total||0),0) || ledger.reduce((s,l)=>s+Number(l.platform_fee||0),0);
+    const reqRows=requests.slice(0,25).map(r=>{
+      const acc=accounts.find(a=>String(a.user_id)===String(r.user_id)) || r;
+      const payTo=acc.payout_method==='bank' ? `${esc(acc.account_holder_name||'')} • ${esc(acc.bank_name||'')} • ${esc(acc.account_number||'')} • ${esc(acc.ifsc||'')}` : `${esc(acc.upi_id||r.upi_id||'No UPI')}`;
+      return `<details class="admin-detail-card payout-admin-row"><summary><div><b>${money(r.amount)}</b><p>${esc(r.users?.email||r.user_id||'Seller')} • ${esc(r.status||'requested')}</p><small>${esc(r.payout_method||acc.payout_method||'upi')} payout</small></div>${statusBadge(r.status||'requested')}</summary><div class="info-list"><div><span>Pay to</span><b data-no-translate>${payTo}</b></div><div><span>Seller</span><b data-no-translate>${esc(r.users?.full_name||r.users?.email||r.user_id||'')}</b></div><div><span>Requested</span><b>${payoutDateText(r.created_at)}</b></div></div><div class="approval-actions"><button class="secondary" onclick="HP.setPayoutStatus('${esc(r.id)}','paid','${esc(r.user_id)}',${Number(r.amount||0)})">Mark Paid</button><button class="ghost" onclick="HP.setPayoutStatus('${esc(r.id)}','processing','${esc(r.user_id)}',${Number(r.amount||0)})">Processing</button><button class="danger" onclick="HP.setPayoutStatus('${esc(r.id)}','rejected','${esc(r.user_id)}',${Number(r.amount||0)})">Reject</button></div></details>`;
+    }).join('') || empty('No payout requests yet');
+    const balanceRows=balances.slice(0,15).map(b=>`<div class="payout-row"><div><b data-no-translate>${esc(b.users?.email||b.user_id||'Seller')}</b><span>UPI/Bank: ${esc((accounts.find(a=>String(a.user_id)===String(b.user_id))?.payout_method)||'not added')}</span></div><strong>${money(b.available_balance||b.pending_balance||0)}</strong></div>`).join('') || empty('No seller balances yet');
+    return `<div class="money-grid admin-money-totals"><div><small>Seller payout due</small>${moneyCounter(totalSellerDue)}</div><div><small>Platform commission earned</small>${moneyCounter(totalFees)}</div><div><small>Already paid sellers</small>${moneyCounter(totalPaid)}</div></div><h3>Payout requests</h3>${reqRows}<h3>Seller balances & payout accounts</h3>${balanceRows}`;
+  }
+  async function setPayoutStatus(id,status,userId,amount=0){
+    if(!sb||!isAdminUser()) return toast('Admin only');
+    const patch={status,updated_at:new Date().toISOString()}; if(status==='paid') patch.paid_at=new Date().toISOString();
+    const {error}=await sb.from('seller_payout_requests').update(patch).eq('id',id); if(error) return toast(error.message);
+    if(status==='paid'){
+      await sb.from('seller_ledger').update({status:'paid',updated_at:new Date().toISOString()}).eq('seller_id',userId).in('status',['pending_clearance','available','payout_requested']);
+      const {data}=await sb.from('seller_balances').select('*').eq('user_id',userId).maybeSingle();
+      const old=data||{}; await sb.from('seller_balances').upsert({user_id:userId,available_balance:0,pending_balance:0,paid_balance:Number(old.paid_balance||0)+Number(amount||0),platform_fee_total:Number(old.platform_fee_total||0),updated_at:new Date().toISOString()},{onConflict:'user_id'});
+    }
+    toast(`Payout ${status}`); await loadAdminProData();
+  }
 
   function adminMembershipList(rows=[]){
     return (rows||[]).slice(0,30).map(m=>`<details class="admin-detail-card"><summary><div><b>${esc(m.plan_name||m.plan_key||'Membership')}</b><p>${money(m.amount)} • ${esc(m.status||'pending')}</p><small data-no-translate>${esc(m.users?.email||m.user_id||'')}</small></div>${statusBadge(m.status||'pending')}</summary><div class="info-list"><div><span>Plan key</span><b>${esc(m.plan_key||'')}</b></div><div><span>Payment</span><b>${esc(m.payment_id||'Not paid online')}</b></div><div><span>Expires</span><b>${m.expires_at?new Date(m.expires_at).toLocaleDateString('en-IN'):'—'}</b></div><div><span>Created</span><b>${m.created_at?new Date(m.created_at).toLocaleDateString('en-IN'):'—'}</b></div></div></details>`).join('')||empty('No membership purchases yet');
@@ -726,7 +915,7 @@
   function adminSellerManager(list=[],mode='approved'){ const rows=(list||[]).filter(s=> mode==='approved' ? s.status==='approved' : ['rejected','banned'].includes(s.status)); return localizeHtml(rows.map(s=>adminSellerRow(s,true)).join('')||empty(mode==='approved'?'No approved sellers yet':'No rejected or banned sellers')); }
   function adminProductRow(p,compact=false){
     const id=esc(p.id), title=esc(p.title||'Product'), img=productImage(p);
-    return `<details class="admin-detail-card product-admin-card" ${compact?'':'open'}><summary><img src="${img}" onerror="this.src='${placeholder(p.category)}'"><div><b>${title}</b><p>${money(p.price)} • ${esc(p.category||'Product')} • ${esc([p.city,p.state].filter(Boolean).join(', '))}</p><small>${esc(p.sell_type||'spare')} • ${esc(p.condition||'Used')} • Seller ${esc(p.users?.email||p.sellers?.business_name||'')}</small></div>${statusBadge(p.status)}</summary><div class="admin-detail-body"><p class="muted">${esc(p.description||'No description added.')}</p><div class="info-list"><div><span>Brand</span><b>${esc(p.brand||'Not added')}</b></div><div><span>Model</span><b>${esc(p.model||'Not added')}</b></div><div><span>Weight</span><b>${esc(p.weight_kg||'—')} kg</b></div><div><span>Seller earns</span><b>${money(Number(p.price||0)-sellerFee(p.price))}</b></div></div><div class="approval-actions"><button class="secondary" onclick="HP.approveProduct('${id}')">Approve</button><button class="danger" onclick="HP.rejectProduct('${id}')">Reject</button><button class="danger" onclick="HP.banProduct('${id}')">Ban</button>${p.status==='banned'||p.status==='rejected'?`<button class="ghost" onclick="HP.restoreProduct('${id}')">Restore</button>`:''}<button class="ghost" onclick="HP.route('product',{id:'${id}'})">Open</button></div></div></details>`;
+    return `<details class="admin-detail-card product-admin-card" ${compact?'':'open'}><summary><img src="${img}" onerror="this.src='${placeholder(p.category)}'"><div><b>${title}</b><p>${money(p.price)} • ${esc(p.category||'Product')} • ${esc([p.city,p.state].filter(Boolean).join(', '))}</p><small>${esc(p.sell_type||'spare')} • ${esc(p.condition||'Used')} • Seller ${esc(p.users?.email||p.sellers?.business_name||'')}</small></div>${statusBadge(p.status)}</summary><div class="admin-detail-body"><p class="muted">${esc(p.description||'No description added.')}</p><div class="info-list"><div><span>Brand</span><b>${esc(p.brand||'Not added')}</b></div><div><span>Model</span><b>${esc(p.model||'Not added')}</b></div><div><span>Weight</span><b>${esc(p.weight_kg||'—')} kg</b></div><div><span>Seller earns</span><b>${money(Number(p.price||0)-sellerFeeForProduct(p))}</b></div></div><div class="approval-actions"><button class="secondary" onclick="HP.approveProduct('${id}')">Approve</button><button class="danger" onclick="HP.rejectProduct('${id}')">Reject</button><button class="danger" onclick="HP.banProduct('${id}')">Ban</button>${p.status==='banned'||p.status==='rejected'?`<button class="ghost" onclick="HP.restoreProduct('${id}')">Restore</button>`:''}<button class="ghost" onclick="HP.route('product',{id:'${id}'})">Open</button></div></div></details>`;
   }
   function adminProductQueue(products=[]){ const rows=(products||[]).filter(p=>p.status==='pending'); return rows.map(p=>adminProductRow(p,false)).join('')||empty('No pending products'); }
   function adminProductManager(products=[],mode='approved'){ const rows=(products||[]).filter(p=> mode==='approved' ? p.status==='approved' : ['rejected','banned'].includes(p.status)); return rows.slice(0,40).map(p=>adminProductRow(p,true)).join('')||empty(mode==='approved'?'No approved products yet':'No rejected or banned products'); }
@@ -748,6 +937,10 @@
     state.admin.badges=await safe(()=>sb.from('badge_definitions').select('*').order('sort_order',{ascending:true}).limit(120));
     state.admin.events=await safe(()=>sb.from('platform_events').select('*').order('created_at',{ascending:false}).limit(80));
     state.admin.memberships=await safe(()=>sb.from('membership_purchases').select('*, users(email,full_name)').order('created_at',{ascending:false}).limit(100));
+    state.admin.balances=await safe(()=>sb.from('seller_balances').select('*, users(email,full_name,phone)').order('available_balance',{ascending:false}).limit(120));
+    state.admin.payoutAccounts=await safe(()=>sb.from('seller_payout_accounts').select('*, users(email,full_name,phone)').order('updated_at',{ascending:false}).limit(120));
+    state.admin.payoutRequests=await safe(()=>sb.from('seller_payout_requests').select('*, users(email,full_name,phone)').order('created_at',{ascending:false}).limit(120));
+    state.admin.ledger=await safe(()=>sb.from('seller_ledger').select('*, users(email,full_name,phone)').order('created_at',{ascending:false}).limit(160));
     await prepareAdminDocUrls(state.admin.sellers);
     refreshAdminLists();
   }
@@ -774,9 +967,10 @@
     const rl=$('#adminRanksList'); if(rl) rl.innerHTML=adminRanksList();
     const ev=$('#adminEventsList'); if(ev) ev.innerHTML=adminEventsList();
     const ml=$('#adminMembershipList'); if(ml) ml.innerHTML=adminMembershipList(state.admin.memberships);
+    const money=$('#adminMoneyList'); if(money) money.innerHTML=adminMoneyList();
   }
   async function loadAdminSellers(){ await loadAdminProData(); }
-  function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'Run SUPABASE_v78_MEMBERSHIP_PATCH.sql once in Supabase, then try again.'; return msg; }
+  function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'Run the latest SQL patch shown for this feature in Supabase, then try again.'; return msg; }
   async function updateUserRankPatch(userId,patch){
     if(!sb||!userId)return;
     let {error}=await sb.from('users').update(patch).eq('auth_id',userId);
@@ -818,22 +1012,24 @@
   function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else html=home(); app.innerHTML=localizeHtml(html); syncMenu(); bindPage(); applyLang(); animateCounters(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
   function bindPage(){
     $$('#app input, #app textarea, #app select').forEach(el=>el.addEventListener('click',e=>e.stopPropagation()));
-    $('#loginForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); login(fd.get('email'),fd.get('password'));});
+    $('#loginForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); withLoading(e.target,()=>login(fd.get('email'),fd.get('password')),'Logging in...');});
     $('#signupSwitch')?.addEventListener('click',()=>{ const f=$('#loginForm'); const fd=new FormData(f); const email=fd.get('email'), pass=fd.get('password'); if(!email||!pass)return toast('Enter email and password first'); signup(email,pass,''); });
     $('#forgotBtn')?.addEventListener('click',()=>{ const fd=new FormData($('#loginForm')); forgotPassword(fd.get('email')); });
     $('#googleLoginBtn')?.addEventListener('click',loginGoogle);
     $('#sendOtpBtn')?.addEventListener('click',()=>sendPhoneOtp(getOtpPhone()));
     $('#verifyOtpBtn')?.addEventListener('click',()=>verifyPhoneOtp(getOtpPhone(), $('#otpCodeInput')?.value.trim()));
-    $('#profileForm')?.addEventListener('submit',e=>{e.preventDefault();saveProfile(e.target)});
-    $('#sellerVerifyForm')?.addEventListener('submit',e=>{e.preventDefault();submitSellerVerification(e.target)});
-    $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault();submitProduct(e.target)});
+    $('#profileForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveProfile(e.target),'Saving...')});
+    $('#sellerVerifyForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitSellerVerification(e.target),'Submitting verification...')});
+    $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitProduct(e.target),'Submitting listing...')});
     bindSellTypeChooser();
-    $('#sellForm input[name="price"]')?.addEventListener('input',e=>{ const price=Number(e.target.value||0); $('#sellerFeePreview').innerHTML=localizeHtml(`Listing price: <b>${money(price)}</b> • Platform marketing fee: <b>${money(sellerFee(price))}</b> • Seller earns approx: <b>${money(price-sellerFee(price))}</b>`); });
-    $('#checkoutForm')?.addEventListener('submit',e=>{e.preventDefault();placeOrder(e.target)});
+    $('#sellForm input[name="price"]')?.addEventListener('input',e=>{ const price=Number(e.target.value||0); $('#sellerFeePreview').innerHTML=localizeHtml(`Listing price: <b>${money(price)}</b> • Seller platform fee: <b>${money(sellerFee(price))}</b> • Seller balance after fee: <b>${money(price-sellerFee(price))}</b> • ${feeDiscountForPlan(activePlan())}`); });
+    $('#checkoutForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>placeOrder(e.target),'Placing order...')});
     $('#checkoutForm select[name="shipping"]')?.addEventListener('change',e=>{ $('#checkoutSummary').innerHTML=localizeHtml(summaryRows(getTotals(e.target.value))); });
-    $('#messageForm')?.addEventListener('submit',e=>{e.preventDefault();sendMsg(e.target)});
-    $('#contactForm')?.addEventListener('submit',e=>{e.preventDefault();sendContact(e.target)});
-    $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); purchaseMembership(btn.dataset.planKey); }));
+    $('#messageForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>sendMsg(e.target),'Sending...')});
+    $('#contactForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>sendContact(e.target),'Saving request...')});
+    $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); withLoading(btn.closest('.membership-card')||btn,()=>purchaseMembership(btn.dataset.planKey),'Opening plan...'); }));
+    $('#payoutAccountForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>savePayoutAccount(e.target),'Saving payout...')});
+    $('#requestPayoutBtn')?.addEventListener('click',e=>{e.preventDefault();requestPayout();});
     $('#searchInput')?.addEventListener('input',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
   }
   function bindSellTypeChooser(){
@@ -849,6 +1045,6 @@
   }
   function filterMarket(){ const q=($('#searchInput')?.value||'').toLowerCase(); const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat; const sort=$('#sortFilter')?.value||'new'; let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model].join(' ').toLowerCase().includes(q))&&(!cat||p.category===cat)); if(sort==='low')arr.sort((a,b)=>a.price-b.price); if(sort==='high')arr.sort((a,b)=>b.price-a.price); $('#marketGrid').innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus};
   document.addEventListener('DOMContentLoaded',init);
 })();
