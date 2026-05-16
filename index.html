@@ -12,12 +12,12 @@
   <link rel="icon" href="./favicon.png" />
   <link rel="apple-touch-icon" href="./logo-192.png" />
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./styles.css?v=81" />
+  <link rel="stylesheet" href="./styles.css?v=82" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script defer src="./supabase-config.js?v=81"></script>
-  <script defer src="./app.js?v=81"></script>
-  <script defer src="./language-ux-patch.js?v=81"></script>
+  <script defer src="./supabase-config.js?v=82"></script>
+  <script defer src="./app.js?v=82"></script>
+  <script defer src="./language-ux-patch.js?v=82"></script>
 </head>
 <body>
   <div id="intro" class="intro"><div class="intro-card"><img src="./harvester-logo-full.jpg" alt="Harvester Parts"><div class="intro-line"></div><p>Preparing a verified agri marketplace</p></div></div>
@@ -48,14 +48,14 @@
   <header class="topbar glass">
     <a class="brand" data-route="home"><img src="./logo-192.png" alt=""><span>Harvester Parts</span></a>
     <nav class="nav-tabs desktop">
-      <button data-route="market" data-i18n="parts">Parts</button><button data-route="sell" data-i18n="sell">Sell</button><button data-route="membership">Plans</button><button data-route="categories">Categories</button><button data-route="how">How it works</button><button data-route="about">About</button><button data-route="contact">Contact</button><button data-route="admin" data-admin-only>Admin</button>
+      <button data-route="home">Home</button><button data-route="market">Market</button><button data-route="categories">Categories</button><button data-route="sell">Sell</button><button data-route="membership">Plans</button><button data-route="how">How it works</button><button data-route="support">Support</button><button data-route="admin" data-admin-only>Admin</button>
     </nav>
     <div class="header-actions"><button class="icon-btn" data-route="cart">Cart <b id="cartCount">0</b></button><button id="authButton" class="primary small">Login</button><button id="menuButton" class="hamb">☰</button></div>
   </header>
 
   <aside id="sideMenu" class="side-menu glass">
     <div class="menu-head"><img src="./logo-192.png" alt=""><div><b id="menuName">Guest</b><small id="menuRole">Buyer</small></div><button id="closeMenu">×</button></div>
-    <div class="menu-group-label">Main</div><button data-route="home">Home</button><button data-route="market">Browse Marketplace</button><button data-route="sell">Sell Machine / Spare Part</button><button data-route="membership">Membership & Rewards</button><button data-route="categories">Categories</button><button data-route="how">How it works</button><div class="menu-group-label">Company</div><button data-route="about">About Us</button><button data-route="contact">Contact Us</button><button data-route="support">Support</button><div class="menu-group-label">Account</div><button data-route="orders">My Orders</button><button data-route="messages">Messages</button><button data-route="cart">Cart</button><button data-route="checkout">Checkout</button><button data-route="account">My Account</button><button data-route="admin" data-admin-only>Admin Panel</button><button id="menuLoginBtn">Login / Signup</button><button id="logoutBtn" class="danger hidden">Logout</button>
+    <div class="menu-group-label">Main</div><button data-route="home">Home</button><button data-route="market">Market</button><button data-route="categories">Categories</button><button data-route="sell">Sell Machine / Spare Part</button><button data-route="membership">Plans & Rewards</button><div class="menu-group-label">Account</div><button data-route="account">My Account</button><button data-route="orders">My Orders</button><button data-route="messages">Messages</button><button data-route="cart">Cart</button><button data-route="checkout">Checkout</button><button data-route="admin" data-admin-only>Admin Panel</button><div class="menu-group-label">Company</div><button data-route="how">How it works</button><button data-route="support">Support</button><button data-route="about">About Us</button><button data-route="contact">Contact Us</button><button id="menuLoginBtn">Login / Signup</button><button id="logoutBtn" class="danger hidden">Logout</button>
     <div class="menu-lang"><label>Language</label><select id="languageSelect"><option value="en">English</option><option value="hi">हिन्दी</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="bn">বাংলা</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option></select></div>
   </aside>
   <div id="backdrop" class="backdrop"></div>

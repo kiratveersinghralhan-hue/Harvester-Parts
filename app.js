@@ -3,7 +3,7 @@
   const hasConfig = cfg.SUPABASE_URL && !cfg.SUPABASE_URL.includes('YOUR_') && cfg.SUPABASE_ANON_KEY && !cfg.SUPABASE_ANON_KEY.includes('YOUR_');
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
-  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
+  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
   const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','categories','about','contact','how','support']);
   function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',order:'orders',message:'messages',parts:'market',browse:'market'}[r] || r); }
   const $ = s => document.querySelector(s);
@@ -48,6 +48,12 @@
     {key:'partner_2999', name:'Market Partner', price:2999, days:75, title:'Market Partner', banner:'Market Partner Banner', badge:'Market Partner', tag:'Partner', listings:1000, boost:120, reward:9800, feeRate:0.015, discount:'50% lower fee', benefits:['1,000 total listing limit','1.50% seller platform fee','120 boost days','Partner title and banner']},
     {key:'leader_5999', name:'Market Leader', price:5999, days:120, title:'Market Leader', banner:'Market Leader Banner', badge:'Market Leader', tag:'Maximum', listings:999999, boost:250, reward:24000, feeRate:0.0125, discount:'58% lower fee', benefits:['Unlimited fair-usage listings','1.25% seller platform fee','250 boost days','Maximum earning visibility pack']}
   ];
+
+  const ADMIN_UNLOCKED_PLAN = {key:'admin_unlimited', name:'Admin Unlimited Access', price:0, days:9999, title:'Platform Founder', banner:'Original Founder • One of One', badge:'Founder 1 of 1', tag:'Admin', listings:999999, boost:999999, reward:999999, feeRate:0, discount:'Admin unlocked access', benefits:['Unlimited listings','0% seller platform fee for admin test listings','All titles, badges and banners selectable','Full admin controls unlocked']};
+  const ADMIN_TITLE_OPTIONS = ['Platform Founder','Founder 1 of 1','Original Builder','Admin Authority','Market Guardian','Market Leader','Elite Dealer','Pro Dealer','Trusted Dealer','Verified Seller','Marketplace Starter'];
+  const ADMIN_BANNER_OPTIONS = ['Original Founder • One of One','Founder Gold Banner','Admin Command Banner','Market Guardian Banner','Elite Dealer Banner','Market Leader Banner','Growth Seller Banner','Verified Seller Banner','Starter Banner'];
+  const ADMIN_BADGE_OPTIONS = Object.keys(CUSTOM_BADGE_DEFS);
+
   function userPoints(user=state.profile, seller=state.seller, products=state.products){
     const uid=state.user?.id || user?.auth_id || user?.user_id;
     const mine=(products||[]).filter(p=>String(p.user_id||'')===String(uid));
@@ -87,10 +93,10 @@
   }
   function customBadge(key, locked=false){
     const b=CUSTOM_BADGE_DEFS[key] || CUSTOM_BADGE_DEFS.buyer_member;
-    return `<div class="custom-badge tier-${esc(b.tier)} ${locked?'locked':''}"><span>${esc(b.rarity)}</span><b>${esc(b.name)}</b><small>${esc(b.title)}</small><p>${esc(b.line||'Custom badge')}</p></div>`;
+    return `<div class="custom-badge tier-${esc(b.tier)} ${locked?'locked':''}"><span>${esc(b.rarity)}</span><b>${esc(b.name)}</b><small>${esc(b.title)}</small><p>${esc(b.line||'Achievement badge')}</p></div>`;
   }
   function userBanner(){
-    if(isAdminUser()) return `<div class="unique-founder-banner"><div><span>ONE OF ONE • NEVER DUPLICATED</span><h2>Original Founder</h2><p><strong>Platform Founder</strong> title, Founder 1 of 1 custom badge and unique owner banner reserved only for ${esc(ADMIN_EMAIL)}.</p><div class="title-row"><em>Title: Platform Founder</em><em>Badge: Founder 1 of 1</em><em>Banner: Original Founder</em></div></div><b>1 / 1</b></div>`;
+    if(isAdminUser()) return `<div class="unique-founder-banner"><div><span>ONE OF ONE • NEVER DUPLICATED</span><h2>Original Founder</h2><p><strong>${esc(state.profile?.title_prefix || 'Platform Founder')}</strong> title with selectable founder badge and one-of-one owner banner for ${esc(ADMIN_EMAIL)}.</p><div class="title-row"><em>Title: Platform Founder</em><em>Badge: Founder 1 of 1</em><em>Banner: Original Founder</em></div></div><b>1 / 1</b></div>`;
     const pts=userPoints(); const info=nextRankInfo(pts);
     const plan=activePlan();
     const title=plan?.title || state.profile?.membership_title || info.current.title;
@@ -219,6 +225,7 @@
   }
   function money(n){return '₹' + Math.round(Number(n||0)).toLocaleString('en-IN')}
   function activePlan(){
+    if(isAdminUser()) return ADMIN_UNLOCKED_PLAN;
     const key=state.profile?.active_membership || state.profile?.membership_key || '';
     return MEMBERSHIP_PLANS.find(p=>p.key===key) || null;
   }
@@ -227,15 +234,15 @@
     if(!exp) return '';
     try{return new Date(exp).toLocaleDateString('en-IN')}catch(e){return ''}
   }
-  function planByKey(key){ return MEMBERSHIP_PLANS.find(p=>p.key===key) || null; }
+  function planByKey(key){ if(key==='admin_unlimited') return ADMIN_UNLOCKED_PLAN; return MEMBERSHIP_PLANS.find(p=>p.key===key) || null; }
   function sellerPlanKeyFromProduct(p={}){ return p?.users?.active_membership || p?.users?.membership_key || p?.seller_membership_key || p?.membership_key || ''; }
   function commissionRateForKey(key){ return (planByKey(key)?.feeRate) || DEFAULT_SELLER_COMMISSION_RATE; }
-  function currentCommissionRate(){ return activePlan()?.feeRate || DEFAULT_SELLER_COMMISSION_RATE; }
+  function currentCommissionRate(){ return isAdminUser()?0:(activePlan()?.feeRate || DEFAULT_SELLER_COMMISSION_RATE); }
   function listingLimitForKey(key){ return planByKey(key)?.listings || FREE_LISTING_LIMIT; }
-  function currentListingLimit(){ return activePlan()?.listings || FREE_LISTING_LIMIT; }
+  function currentListingLimit(){ return isAdminUser()?999999:(activePlan()?.listings || FREE_LISTING_LIMIT); }
   function limitLabel(n=currentListingLimit()){ return Number(n)>=999999 ? 'Unlimited' : String(n); }
   function userListingCount(uid=state.user?.id){ return state.products.filter(p=>String(p.user_id||'')===String(uid) && !['rejected','banned','cancelled'].includes(String(p.status||'').toLowerCase())).length; }
-  function feeDiscountForPlan(plan=activePlan()){ if(!plan) return 'Free plan: 5 listings • 3.00% seller platform fee'; return `${plan.discount} • ${(plan.feeRate*100).toFixed(2)}% seller platform fee`; }
+  function feeDiscountForPlan(plan=activePlan()){ if(isAdminUser()) return 'Admin account: all plans, titles, banners and listing controls unlocked'; if(!plan) return 'Free plan: 5 listings • 3.00% seller platform fee'; return `${plan.discount} • ${(plan.feeRate*100).toFixed(2)}% seller platform fee`; }
   function sevenBusinessDaysFrom(date=new Date()){
     const d=new Date(date); let added=0;
     while(added<7){ d.setDate(d.getDate()+1); const day=d.getDay(); if(day!==0 && day!==6) added++; }
@@ -252,7 +259,7 @@
   }
   function membershipPage(){
     const plan=activePlan(); const used=userListingCount(); const limit=currentListingLimit();
-    return `<section class="membership-hero page-card"><div><span class="eyebrow">Membership & rewards</span><h1>Plans that increase listing limits and reduce seller platform fees.</h1><p class="muted">Free users can post 5 listings. Paid plans start at ₹49 and unlock more listings, lower commission, custom titles, custom banners, reward points and boost days.</p><div class="hero-actions"><button class="primary" data-route="sell">Start Selling</button><button class="ghost" data-route="account">View My Badges</button></div></div><div class="membership-current ${plan?'active':''}"><span>${plan?'ACTIVE PLAN':'FREE PLAN'}</span><h2>${esc(plan?.name || 'Free Member')}</h2><p>${esc(feeDiscountForPlan(plan))}</p><div class="mini-limit"><b>${used}/${limitLabel(limit)}</b><span>listings used</span></div></div></section><section><div class="section-head"><h2>Choose your plan</h2><p class="muted">Free gives 5 listings. Paid options from ₹49 to ₹5,999 unlock 6 to unlimited listings and lower platform commission.</p></div><div class="membership-grid">${freePlanCard()}${MEMBERSHIP_PLANS.map(planCard).join('')}</div></section><section class="page-card reward-system-card"><div class="section-head compact"><h2>X Rewards system</h2><span class="badge owner">Future ready</span></div><div class="reward-columns"><div><b>Post more</b><span>Points for approved listings and seller verification.</span></div><div><b>Pay less fee</b><span>Higher plans reduce seller platform commission before payout.</span></div><div><b>Win events</b><span>Later you can reward top sellers with limited badges and banners.</span></div></div></section>`;
+    return `<section class="membership-hero page-card"><div><span class="eyebrow">Membership & rewards</span><h1>Plans that increase listing limits and reduce seller platform fees.</h1><p class="muted">Free users can post 5 listings. Paid plans start at ₹49 and unlock more listings, lower commission, custom titles, custom banners, reward points and boost days.</p><div class="hero-actions"><button class="primary" data-route="sell">Start Selling</button><button class="ghost" data-route="account">View My Badges</button></div></div><div class="membership-current ${plan?'active':''}"><span>${plan?'ACTIVE PLAN':'FREE PLAN'}</span><h2>${esc(plan?.name || 'Free Member')}</h2><p>${esc(feeDiscountForPlan(plan))}</p><div class="mini-limit"><b>${used}/${limitLabel(limit)}</b><span>listings used</span></div></div></section><section><div class="section-head"><h2>Choose your plan</h2><p class="muted">Free gives 5 listings. Paid options from ₹49 to ₹5,999 unlock 6 to unlimited listings and lower platform commission.</p></div><div class="membership-grid">${freePlanCard()}${MEMBERSHIP_PLANS.map(planCard).join('')}</div></section><section class="page-card reward-system-card"><div class="section-head compact"><h2>Rewards and membership benefits</h2><span class="badge owner">Ready</span></div><div class="reward-columns"><div><b>Post more</b><span>Points for approved listings and seller verification.</span></div><div><b>Pay less fee</b><span>Higher plans reduce seller platform commission before payout.</span></div><div><b>Win events</b><span>Future events can reward top sellers with limited badges, titles and banners.</span></div></div></section>`;
   }
   async function purchaseMembership(key){
     if(!state.user) return route('login');
@@ -265,7 +272,7 @@
       try{
         const {data,error}=await sb.from('membership_purchases').insert(purchase).select('id').single();
         if(error) throw error; purchaseId=data?.id||null;
-      }catch(e){ return toast('Run SUPABASE_v78_MEMBERSHIP_PATCH.sql and SUPABASE_v81_PAYOUT_PATCH.sql once, then try plan purchase.'); }
+      }catch(e){ return toast('Run SUPABASE_v78_MEMBERSHIP_PATCH.sql and SUPABASE_v82_PAYOUT_PATCH.sql once, then try plan purchase.'); }
     }
     const activate=async(paymentId='manual_pending')=>{
       if(sb){
@@ -326,11 +333,11 @@
     setTimeout(()=>$('#intro')?.classList.add('hide'),1200);
     if(localStorage.hp_lang_done==='1') $('#languageModal')?.classList.remove('show');
     setTimeout(()=>{ if(localStorage.hp_install_done!=='1') $('#installModal')?.classList.add('show'); },1800);
-    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadFinanceData(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime();
+    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadSiteContent(); await loadFinanceData(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime();
   }
   function bindShell(){
     document.addEventListener('click', e=>{
-      // v81: protect forms/inputs from accidental route bubbling on mobile Safari.
+      // v82: protect forms/inputs from accidental route bubbling on mobile Safari.
       if(e.target.closest('input, textarea, select, option, label')) return;
       const routeEl=e.target.closest('button[data-route],a[data-route],[role="button"][data-route],.brand[data-route],.icon-btn[data-route]');
       if(routeEl){
@@ -481,6 +488,20 @@
     }
   }
   
+
+  async function loadSiteContent(){
+    state.siteSlides=fallbackSlides();
+    if(!sb) return;
+    try{
+      const {data,error}=await sb.from('site_carousel_slides').select('*').eq('active',true).order('sort_order',{ascending:true}).order('created_at',{ascending:false}).limit(8);
+      if(!error && data && data.length) state.siteSlides=data;
+      if(isAdminUser()){
+        const {data:all}=await sb.from('site_carousel_slides').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:false}).limit(50);
+        state.admin.siteSlides=all||[];
+      }
+    }catch(e){}
+  }
+
   async function loadProducts(){
     if(sb){
       const cols='*, sellers(business_name,status), users(email,full_name,badge_title,active_membership,membership_key,membership_title)';
@@ -543,11 +564,25 @@
   function categoryOptionsFor(type){ return categoriesBySellType(type).map(c=>`<option value="${esc(c.title)}">${esc(c.title)}</option>`).join(''); }
 
 
+
+  function fallbackSlides(){
+    return [
+      {title:'Verified machinery and spare parts',subtitle:'Buy harvesters, tractors, implements and genuine agricultural spares from approved sellers.',cta_text:'Browse Marketplace',cta_route:'market',image_url:'https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=1200&q=80'},
+      {title:'Sell with admin approval',subtitle:'Post your stock, build trust, earn ranks and receive seller payouts after platform commission.',cta_text:'Start Selling',cta_route:'sell',image_url:'https://images.unsplash.com/photo-1598514982195-f36b96d1e8d4?auto=format&fit=crop&w=1200&q=80'},
+      {title:'Plans that reduce platform fees',subtitle:'Free sellers get 5 listings. Paid plans unlock more listings, rewards, boosts and lower seller commission.',cta_text:'View Plans',cta_route:'membership',image_url:'https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1200&q=80'}
+    ];
+  }
+  function carouselSlides(){ return (state.siteSlides&&state.siteSlides.length?state.siteSlides:fallbackSlides()).filter(s=>s!==null).slice(0,6); }
+  function homeCarousel(){
+    const slides=carouselSlides();
+    return `<section class="home-carousel-section"><div class="section-head"><h2>Featured marketplace updates</h2><p class="muted">Live banners for listings, plans and platform updates.</p></div><div class="home-carousel">${slides.map((sl,i)=>`<article class="carousel-slide ${i===0?'active':''}"><img src="${esc(sl.image_url||placeholder('tractor'))}" onerror="this.src='${placeholder('tractor')}'"><div><span class="eyebrow">${i+1<10?'0'+(i+1):i+1}</span><h3>${esc(sl.title||'Marketplace update')}</h3><p>${esc(sl.subtitle||'Browse verified agriculture listings.')}</p><button class="primary" data-route="${esc(sl.cta_route||'market')}">${esc(sl.cta_text||'Open')}</button></div></article>`).join('')}</div></section>`;
+  }
+
   function home(){
     const cats=AGRI_CATEGORIES;
     const categoryCount = state.stats.categories || cats.length;
     const sellerCount = state.stats.sellers || 0;
-    return `<section class="hero"><div><span class="eyebrow">Verified agricultural marketplace</span><h1>Buy & sell farm machinery, implements and spare parts.</h1><p>Harvester Parts is built for farmers, dealers, workshops and machine owners to trade new and used agricultural machinery, combine harvester parts, tractor spares, seed drill parts, straw reaper spares, bearings, belts and more.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="ghost" data-route="sell">Start Selling</button><button class="ghost" data-route="how">How it Works</button><button class="ghost" data-route="support">Support</button></div></div><div class="hero-card glass"><img src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=1200&q=80" alt="Agriculture"><div class="stats"><div class="stat"><b data-count="${state.stats.products||state.products.length}">0</b><span>Live products</span></div><div class="stat"><b data-count="${categoryCount}">0</b><span>Categories</span></div><div class="stat"><b data-count="${sellerCount}">0</b><span>Verified sellers</span></div><div class="stat"><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section><section><div class="section-head"><h2>Shop by farming need</h2><p class="muted">Professional categories for machines and spare parts.</p></div><div class="agri-category-grid compact">${cats.slice(0,8).map(categoryCard).join('')}</div></section><section class="page-card explain-strip"><div><span class="eyebrow">Why Harvester Parts?</span><h2>Verified sellers first. Better discovery. Safer agriculture trading.</h2><p class="muted">Buy machinery, compare spare parts, send in-app messages, and sell only after admin verification.</p></div><div class="mini-steps"><div><b>01</b><span>Find machinery or part</span></div><div><b>02</b><span>Message or checkout</span></div><div><b>03</b><span>Seller ships after confirmation</span></div></div></section><section><div class="section-head"><h2>Recently listed</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${state.products.slice(0,6).map(productCard).join('')||empty('No live catalog. Ask sellers to list products.')}</div></section>`;
+    return `<section class="hero video-hero"><video class="hero-bg-video" autoplay muted loop playsinline preload="metadata" poster="./harvester-logo-full.jpg"><source src="./hero-bg.mp4" type="video/mp4"></video><div class="hero-copy"><span class="eyebrow">Verified agricultural marketplace</span><h1>Buy and sell farm machinery, implements and spare parts.</h1><p>Harvester Parts connects farmers, dealers, workshops and machine owners with approved sellers, secure orders, seller payouts and trusted product listings.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="ghost" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">View Plans</button></div></div><div class="hero-card glass"><img src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=1200&q=80" alt="Agriculture"><div class="stats"><div class="stat"><b data-count="${state.stats.products||state.products.length}">0</b><span>Live products</span></div><div class="stat"><b data-count="${categoryCount}">0</b><span>Categories</span></div><div class="stat"><b data-count="${sellerCount}">0</b><span>Verified sellers</span></div><div class="stat"><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section>${homeCarousel()}<section><div class="section-head"><h2>Shop by farming need</h2><p class="muted">Browse professional categories for machines and spare parts.</p></div><div class="agri-category-grid compact">${cats.slice(0,8).map(categoryCard).join('')}</div></section><section class="page-card explain-strip"><div><span class="eyebrow">Why Harvester Parts?</span><h2>Verified sellers, clear listings and organized payouts.</h2><p class="muted">Buy machinery, compare spare parts, send in-app messages and sell through an admin-approved marketplace.</p></div><div class="mini-steps"><div><b>01</b><span>Find machinery or part</span></div><div><b>02</b><span>Message or checkout</span></div><div><b>03</b><span>Platform manages seller payout</span></div></div></section><section><div class="section-head"><h2>Recently listed</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${state.products.slice(0,6).map(productCard).join('')||empty('No live products yet.')}</div></section>`;
   }
 
   
@@ -603,13 +638,28 @@
   }
   function setupFinanceRealtime(){
     if(!sb || state.realtimeReady) return; state.realtimeReady=true;
+    const refreshVisible=async(type='all')=>{
+      try{
+        if(type==='site' || type==='all') await loadSiteContent();
+        if(type==='products' || type==='all') await loadProducts();
+        if(type==='finance' || type==='all') await loadFinanceData();
+        if(isAdminUser() && state.route==='admin') await loadAdminProData();
+        if(['home','market','account','admin','sell','orders'].includes(state.route)) render();
+      }catch(e){ console.warn('realtime refresh skipped', e); }
+    };
     try{
-      sb.channel('hp-money-v81').on('postgres_changes',{event:'*',schema:'public',table:'orders'}, async()=>{ if(isAdminUser()) await loadAdminProData(); })
-        .on('postgres_changes',{event:'*',schema:'public',table:'seller_ledger'}, async()=>{ await loadFinanceData(); if(state.route==='account') render(); if(isAdminUser()&&state.route==='admin') await loadAdminProData(); })
-        .on('postgres_changes',{event:'*',schema:'public',table:'seller_payout_requests'}, async()=>{ await loadFinanceData(); if(state.route==='account') render(); if(isAdminUser()&&state.route==='admin') await loadAdminProData(); })
+      sb.channel('hp-realtime-v82')
+        .on('postgres_changes',{event:'*',schema:'public',table:'products'},()=>refreshVisible('products'))
+        .on('postgres_changes',{event:'*',schema:'public',table:'sellers'},()=>refreshVisible('all'))
+        .on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>refreshVisible('finance'))
+        .on('postgres_changes',{event:'*',schema:'public',table:'membership_purchases'},()=>refreshVisible('all'))
+        .on('postgres_changes',{event:'*',schema:'public',table:'seller_ledger'},()=>refreshVisible('finance'))
+        .on('postgres_changes',{event:'*',schema:'public',table:'seller_balances'},()=>refreshVisible('finance'))
+        .on('postgres_changes',{event:'*',schema:'public',table:'seller_payout_requests'},()=>refreshVisible('finance'))
+        .on('postgres_changes',{event:'*',schema:'public',table:'site_carousel_slides'},()=>refreshVisible('site'))
         .subscribe();
     }catch(e){}
-    setInterval(async()=>{ if(state.user){ await loadFinanceData(); if(state.route==='account') render(); } if(isAdminUser()&&state.route==='admin') await loadAdminProData(); }, 30000);
+    setInterval(async()=>{ await refreshVisible(isAdminUser()?'all':'finance'); }, 25000);
   }
   function moneyCounter(n){ return `<b class="live-money" data-money="${Number(n||0)}">${money(n)}</b>`; }
   function payoutMethodLabel(a=state.finance.payoutAccount){ if(!a) return 'Not added'; return a.payout_method==='bank'?'Bank transfer':'UPI'; }
@@ -628,7 +678,7 @@
     if(method==='upi' && !payload.upi_id) return toast('Enter UPI ID');
     if(method==='bank' && (!payload.account_number || !payload.ifsc || !payload.account_holder_name)) return toast('Enter bank account holder, account number and IFSC');
     const {error}=await sb.from('seller_payout_accounts').upsert(payload,{onConflict:'user_id'});
-    if(error) return toast('Run SUPABASE_v81_PAYOUT_PATCH.sql once, then save payout details.');
+    if(error) return toast('Run SUPABASE_v82_PAYOUT_PATCH.sql once, then save payout details.');
     await loadFinanceData(); toast('Payout details saved'); render();
   }
   async function requestPayout(){
@@ -638,7 +688,7 @@
     const a=state.finance.payoutAccount; if(!a) return toast('Save UPI or bank payout details first');
     const payload={user_id:state.user.id,amount,status:'requested',payout_method:a.payout_method,upi_id:a.upi_id,account_holder_name:a.account_holder_name,bank_name:a.bank_name,account_number:a.account_number,ifsc:a.ifsc};
     const {error}=await sb.from('seller_payout_requests').insert(payload);
-    if(error) return toast('Run SUPABASE_v81_PAYOUT_PATCH.sql once, then request payout.');
+    if(error) return toast('Run SUPABASE_v82_PAYOUT_PATCH.sql once, then request payout.');
     await sb.from('seller_ledger').update({status:'payout_requested',updated_at:new Date().toISOString()}).eq('seller_id',state.user.id).in('status',['pending_clearance','available']);
     await loadFinanceData(); toast('Payout request sent to admin'); render();
   }
@@ -678,7 +728,7 @@
       if(itemRes.error && /seller_user_id|platform_commission|seller_amount|payout_status/i.test(String(itemRes.error.message||''))){
         const fallbackItems=items.map(i=>({order_id:i.order_id,product_id:i.product_id,quantity:i.quantity,price:i.price}));
         await sb.from('order_items').insert(fallbackItems);
-        toast('Order saved. Run SUPABASE_v81_PAYOUT_PATCH.sql to enable payout ledger.');
+        toast('Order saved. Run SUPABASE_v82_PAYOUT_PATCH.sql to enable payout ledger.');
       } else if(itemRes.error){ return toast(itemRes.error.message); }
       if(ledgerRows.length){
         const ledgers=ledgerRows.map(l=>({...l,order_id:orderId}));
@@ -753,7 +803,7 @@
         const fallback={...payload}; delete fallback.aadhaar_back;
         const res=await sb.from('sellers').upsert(fallback,{onConflict:'user_id'}); error=res.error;
         if(error) return toast(error.message);
-        toast('Seller request saved. Run the v77 SQL patch to store Aadhaar back photo too.');
+        toast('Seller request saved. Aadhaar back storage is not enabled yet.');
       } else if(error) return toast(error.message);
     }
     state.seller=payload; toast('Seller verification submitted for admin approval'); render();
@@ -791,6 +841,44 @@
   function sum(arr,key){ return (arr||[]).reduce((s,x)=>s+Number(x?.[key]||0),0); }
   function adminMoney(n){ return money(Number(n||0)); }
   function statusBadge(status){ const st=String(status||'pending'); return `<span class="badge ${st==='approved'||st==='paid'||st==='delivered'?'verified':(st==='rejected'||st==='banned'||st==='cancelled'?'danger-soft':'')}">${esc(st)}</span>`; }
+
+  function adminIdentityPanel(){
+    if(!isAdminUser()) return '';
+    const currentBadge=state.profile?.badge_key || 'founder_1_of_1';
+    const currentTitle=state.profile?.title_prefix || state.profile?.rank_title || 'Platform Founder';
+    const currentBanner=state.profile?.banner_title || 'Original Founder • One of One';
+    const planKey=state.profile?.active_membership || 'admin_unlimited';
+    const badgeOpts=ADMIN_BADGE_OPTIONS.map(k=>`<option value="${esc(k)}" ${k===currentBadge?'selected':''}>${esc(CUSTOM_BADGE_DEFS[k]?.name||k)}</option>`).join('');
+    const titleOpts=ADMIN_TITLE_OPTIONS.map(x=>`<option value="${esc(x)}" ${x===currentTitle?'selected':''}>${esc(x)}</option>`).join('');
+    const bannerOpts=ADMIN_BANNER_OPTIONS.map(x=>`<option value="${esc(x)}" ${x===currentBanner?'selected':''}>${esc(x)}</option>`).join('');
+    const planOpts=[ADMIN_UNLOCKED_PLAN,...MEMBERSHIP_PLANS].map(p=>`<option value="${esc(p.key)}" ${p.key===planKey?'selected':''}>${esc(p.name)} • ${limitLabel(p.listings)} listings</option>`).join('');
+    return `<section class="page-card admin-panel admin-identity-control"><div class="section-head compact"><h2>Admin access and identity</h2><span class="badge owner">Unlocked</span></div><p class="muted">Founder/admin account has every feature unlocked. Choose the title, banner, badge and plan style you want to display.</p><form id="adminIdentityForm" class="form admin-identity-form"><select name="title_prefix">${titleOpts}</select><select name="banner_title">${bannerOpts}</select><select name="badge_key">${badgeOpts}</select><select name="active_membership">${planOpts}</select><button class="primary">Save Admin Identity</button></form>${userBanner()}</section>`;
+  }
+  async function saveAdminIdentity(form){
+    if(!sb||!isAdminUser()) return toast('Admin access required');
+    const fd=new FormData(form); const badgeKey=fd.get('badge_key')||'founder_1_of_1'; const badge=CUSTOM_BADGE_DEFS[badgeKey]||CUSTOM_BADGE_DEFS.founder_1_of_1; const plan=planByKey(fd.get('active_membership'))||ADMIN_UNLOCKED_PLAN;
+    const patch={role:'admin',is_founder:true,founder_number:1,points:999999,rank_key:'founder',rank_title:'Founder 1 of 1',title_prefix:fd.get('title_prefix')||'Platform Founder',banner_key:fd.get('banner_title')||'founder_1_of_1',banner_title:fd.get('banner_title')||'Original Founder • One of One',badge_key:badgeKey,badge_title:badge.name,active_membership:plan.key,membership_key:plan.key,membership_title:plan.title,membership_badge:plan.badge,membership_banner:plan.banner,membership_expires_at:new Date(Date.now()+3650*86400000).toISOString(),updated_at:new Date().toISOString()};
+    const {error}=await sb.from('users').update(patch).eq('auth_id',state.user.id);
+    if(error) return toast(error.message);
+    state.profile={...(state.profile||{}),...patch}; toast('Admin identity updated'); syncMenu(); render();
+  }
+  function adminCarouselRows(){
+    return (state.admin.siteSlides&&state.admin.siteSlides.length?state.admin.siteSlides:state.siteSlides).map(sl=>`<details class="admin-detail-card"><summary><div><b>${esc(sl.title||'Slide')}</b><p>${esc(sl.cta_text||'Open')} → ${esc(sl.cta_route||'market')}</p><small>${sl.active===false?'Hidden':'Live'} • order ${Number(sl.sort_order||0)}</small></div><span class="badge ${sl.active===false?'danger-soft':'verified'}">${sl.active===false?'Hidden':'Live'}</span></summary><div class="info-list"><div><span>Subtitle</span><b>${esc(sl.subtitle||'')}</b></div><div><span>Image</span><b data-no-translate>${esc(sl.image_url||'Default image')}</b></div></div>${sl.id?`<div class="approval-actions"><button class="secondary" onclick="HP.toggleCarouselSlide('${esc(sl.id)}',${sl.active===false?'true':'false'})">${sl.active===false?'Show':'Hide'}</button><button class="danger" onclick="HP.deleteCarouselSlide('${esc(sl.id)}')">Delete</button></div>`:''}</details>`).join('') || empty('No carousel slides yet.');
+  }
+  function adminCarouselPanel(){
+    if(!isAdminUser()) return '';
+    return `<section class="page-card admin-panel"><div class="section-head compact"><h2>Home carousel</h2><span class="badge live-badge">Realtime</span></div><p class="muted">Add or change home page banners without editing code.</p><form id="carouselSlideForm" class="form carousel-admin-form"><input name="title" placeholder="Slide title" required><textarea name="subtitle" placeholder="Short slide text" required></textarea><input name="image_url" placeholder="Image URL optional"><input name="cta_text" placeholder="Button text" value="Open"><select name="cta_route"><option value="market">Marketplace</option><option value="sell">Sell</option><option value="membership">Plans</option><option value="support">Support</option></select><input name="sort_order" type="number" placeholder="Sort order" value="10"><button class="primary">Save Carousel Slide</button></form><div id="adminCarouselList">${adminCarouselRows()}</div></section>`;
+  }
+  async function saveCarouselSlide(form){
+    if(!sb||!isAdminUser()) return toast('Admin access required');
+    const fd=new FormData(form); const payload={title:fd.get('title'),subtitle:fd.get('subtitle'),image_url:fd.get('image_url')||'',cta_text:fd.get('cta_text')||'Open',cta_route:normalizeRouteName(fd.get('cta_route')||'market'),sort_order:Number(fd.get('sort_order')||10),active:true,updated_at:new Date().toISOString()};
+    const {error}=await sb.from('site_carousel_slides').insert(payload);
+    if(error) return toast('Run the v82 SQL patch once to enable dynamic carousel.');
+    form.reset(); await loadSiteContent(); toast('Carousel slide saved'); render();
+  }
+  async function toggleCarouselSlide(id,active){ if(!sb||!isAdminUser()) return; const {error}=await sb.from('site_carousel_slides').update({active,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); await loadSiteContent(); render(); }
+  async function deleteCarouselSlide(id){ if(!sb||!isAdminUser()) return; if(!confirm('Delete this carousel slide?')) return; const {error}=await sb.from('site_carousel_slides').delete().eq('id',id); if(error)return toast(error.message); await loadSiteContent(); render(); }
+
   function adminPage(){
     if(!isAdminUser()) return emptyPage('Admin access only');
     const products=(state.admin.products&&state.admin.products.length?state.admin.products:state.products)||[];
@@ -811,6 +899,7 @@
       <div class="admin-owner-row"><img src="./logo-192.png" alt=""><div><span class="badge owner">ADMIN CONTROL CENTER</span><h1>Platform Owner Dashboard</h1><p data-no-translate>${esc(state.user.email||'')}</p></div></div>
       <div class="admin-quick-actions"><button class="primary" data-route="sell">List Product</button><button class="secondary" data-route="market">View Marketplace</button><button class="ghost" data-route="orders">Orders</button></div>
     </section>
+    ${adminIdentityPanel()}${adminCarouselPanel()}
     <section class="admin-kpi-grid">
       <div class="admin-kpi"><small>Total GMV</small><b>${adminMoney(gross)}</b><span>All checkout value</span></div>
       <div class="admin-kpi"><small>Paid Revenue</small><b>${adminMoney(paid)}</b><span>Paid / shipped / delivered</span></div>
@@ -835,7 +924,7 @@
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Latest orders</h2><span class="badge">${orders.length}</span></div><div id="adminOrdersList">${adminOrdersList(orders)}</div></div>
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Reports & support</h2><span class="badge danger-soft">${reports.filter(r=>r.status==='open').length} open</span></div><div id="adminReportsList">${adminReportsList(reports)}</div><div id="adminContactsList">${adminContactsList(contacts)}</div></div>
     </section>
-    <section class="page-card admin-panel"><div class="section-head compact"><h2>Revenue systems</h2><span class="badge owner">Plans • Boosts • Fees</span></div>
+    <section class="page-card admin-panel"><div class="section-head compact"><h2>Revenue systems</h2><span class="badge owner">Plans, boosts and fees</span></div>
       <div class="revenue-mini-grid">
         <div><b>Memberships</b><span>${memberships.length} purchases</span><strong>${adminMoney(memberships.reduce((s,p)=>s+Number(p.amount||0),0))}</strong></div><div><b>Seller Plans</b><span>${plans.length} purchases</span><strong>${adminMoney(plans.reduce((s,p)=>s+Number(p.amount||0),0))}</strong></div>
         <div><b>Boosted Listings</b><span>${products.filter(p=>p.is_boosted).length} active / ${boosts.length} logs</span><strong>${adminMoney(boosts.reduce((s,b)=>s+Number(b.amount||0),0))}</strong></div>
@@ -843,10 +932,10 @@
         <div><b>Seller Pipeline</b><span>${sellers.length} sellers</span><strong>${sellers.filter(s=>s.status==='approved').length} approved</strong></div>
       </div>
     </section>
-    <section class="page-card admin-panel money-admin-panel"><div class="section-head compact"><h2>Money in / seller payouts</h2><span class="badge live-badge">Live counters</span></div><div id="adminMoneyList">${adminMoneyList()}</div></section>
+    <section class="page-card admin-panel money-admin-panel"><div class="section-head compact"><h2>Money in and seller payouts</h2><span class="badge live-badge">Live counters</span></div><div id="adminMoneyList">${adminMoneyList()}</div></section>
     <section class="admin-columns">
-      <div class="page-card admin-panel"><div class="section-head compact"><h2>Ranks & badges</h2><span class="badge owner">Motivation system</span></div><div id="adminRanksList">${adminRanksList()}</div></div>
-      <div class="page-card admin-panel"><div class="section-head compact"><h2>Events & rewards</h2><span class="badge">Future ready</span></div><div id="adminEventsList">${adminEventsList()}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Ranks & badges</h2><span class="badge owner">Ranks and rewards</span></div><div id="adminRanksList">${adminRanksList()}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Events & rewards</h2><span class="badge">Ready</span></div><div id="adminEventsList">${adminEventsList()}</div></div>
     </section><section class="page-card admin-panel"><div class="section-head compact"><h2>Membership purchases</h2><span class="badge owner">₹49 to ₹5999</span></div><div id="adminMembershipList">${adminMembershipList(memberships)}</div></section>`;
   }
 
@@ -941,6 +1030,7 @@
     state.admin.payoutAccounts=await safe(()=>sb.from('seller_payout_accounts').select('*, users(email,full_name,phone)').order('updated_at',{ascending:false}).limit(120));
     state.admin.payoutRequests=await safe(()=>sb.from('seller_payout_requests').select('*, users(email,full_name,phone)').order('created_at',{ascending:false}).limit(120));
     state.admin.ledger=await safe(()=>sb.from('seller_ledger').select('*, users(email,full_name,phone)').order('created_at',{ascending:false}).limit(160));
+    state.admin.siteSlides=await safe(()=>sb.from('site_carousel_slides').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:false}).limit(50));
     await prepareAdminDocUrls(state.admin.sellers);
     refreshAdminLists();
   }
@@ -968,9 +1058,10 @@
     const ev=$('#adminEventsList'); if(ev) ev.innerHTML=adminEventsList();
     const ml=$('#adminMembershipList'); if(ml) ml.innerHTML=adminMembershipList(state.admin.memberships);
     const money=$('#adminMoneyList'); if(money) money.innerHTML=adminMoneyList();
+    const car=$('#adminCarouselList'); if(car) car.innerHTML=adminCarouselRows();
   }
   async function loadAdminSellers(){ await loadAdminProData(); }
-  function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'Run the latest SQL patch shown for this feature in Supabase, then try again.'; return msg; }
+  function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'This admin action needs the latest database setup. Please update the database and try again.'; return msg; }
   async function updateUserRankPatch(userId,patch){
     if(!sb||!userId)return;
     let {error}=await sb.from('users').update(patch).eq('auth_id',userId);
@@ -1029,6 +1120,8 @@
     $('#contactForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>sendContact(e.target),'Saving request...')});
     $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); withLoading(btn.closest('.membership-card')||btn,()=>purchaseMembership(btn.dataset.planKey),'Opening plan...'); }));
     $('#payoutAccountForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>savePayoutAccount(e.target),'Saving payout...')});
+    $('#adminIdentityForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveAdminIdentity(e.target),'Saving admin identity...')});
+    $('#carouselSlideForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveCarouselSlide(e.target),'Saving carousel...')});
     $('#requestPayoutBtn')?.addEventListener('click',e=>{e.preventDefault();requestPayout();});
     $('#searchInput')?.addEventListener('input',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
   }
@@ -1045,6 +1138,6 @@
   }
   function filterMarket(){ const q=($('#searchInput')?.value||'').toLowerCase(); const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat; const sort=$('#sortFilter')?.value||'new'; let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model].join(' ').toLowerCase().includes(q))&&(!cat||p.category===cat)); if(sort==='low')arr.sort((a,b)=>a.price-b.price); if(sort==='high')arr.sort((a,b)=>b.price-a.price); $('#marketGrid').innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide};
   document.addEventListener('DOMContentLoaded',init);
 })();
