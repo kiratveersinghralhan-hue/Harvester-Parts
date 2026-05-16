@@ -332,10 +332,19 @@
   function shippingFee(subtotal, method='standard'){ subtotal=Number(subtotal||0); if(!subtotal)return 0; const base = subtotal<=2000?120:subtotal<=10000?250:subtotal<=50000?850:1800; return method==='premium'?Math.round(base*1.8):base; }
 
   async function init(){
-    setTimeout(()=>$('#intro')?.classList.add('hide'),1200);
-    if(localStorage.hp_lang_done==='1') $('#languageModal')?.classList.remove('show');
-    setTimeout(()=>{ if(localStorage.hp_install_done!=='1') $('#installModal')?.classList.add('show'); },1800);
+    setTimeout(()=>$('#intro')?.classList.add('hide'),900);
+    const langModal = $('#languageModal');
+    if(localStorage.hp_lang_done==='1') langModal?.classList.remove('show');
     bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadSiteContent(); await loadFinanceData(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime();
+    if(localStorage.hp_lang_done==='1' || !langModal?.classList.contains('show')) scheduleInstallPrompt(1200);
+  }
+  function scheduleInstallPrompt(delay=700){
+    if(localStorage.hp_install_done==='1') return;
+    clearTimeout(window.__hpInstallTimer);
+    window.__hpInstallTimer=setTimeout(()=>{
+      const langOpen = $('#languageModal')?.classList.contains('show');
+      if(!langOpen && localStorage.hp_install_done!=='1') $('#installModal')?.classList.add('show');
+    }, delay);
   }
   function bindShell(){
     document.addEventListener('click', e=>{
@@ -355,7 +364,7 @@
     $('#authButton')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
     $('#menuLoginBtn')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
     $('#logoutBtn')?.addEventListener('click',logout);
-    $$('#languageModal [data-lang]').forEach(b=>b.addEventListener('click',()=>{ state.lang=b.dataset.lang; localStorage.hp_lang=state.lang; if($('#dontShowLang')?.checked) localStorage.hp_lang_done='1'; $('#languageModal')?.classList.remove('show'); applyLang(); render(); }));
+    $$('#languageModal [data-lang]').forEach(b=>b.addEventListener('click',()=>{ state.lang=b.dataset.lang; localStorage.hp_lang=state.lang; localStorage.hp_lang_seen='1'; if($('#dontShowLang')?.checked) localStorage.hp_lang_done='1'; $('#languageModal')?.classList.remove('show'); applyLang(); render(); scheduleInstallPrompt(700); }));
     $('#languageSelect')?.addEventListener('change',e=>{state.lang=e.target.value;localStorage.hp_lang=state.lang;applyLang(); render();});
     window.addEventListener('hashchange',()=>{ const [r,id]=parseRoute(); state.route=r||'home'; state.currentProduct=id||null; closeMenu(); render(); });
     $('#scrollTop')?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
@@ -672,7 +681,7 @@
       }catch(e){ console.warn('realtime refresh skipped', e); }
     };
     try{
-      sb.channel('hp-realtime-v84')
+      sb.channel('hp-realtime-v85')
         .on('postgres_changes',{event:'*',schema:'public',table:'products'},()=>refreshVisible('products'))
         .on('postgres_changes',{event:'*',schema:'public',table:'sellers'},()=>refreshVisible('all'))
         .on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>refreshVisible('finance'))
@@ -797,7 +806,7 @@
   function shouldHoldRender(){ return isUserEditing() || !!document.querySelector('#sellForm,#sellerVerifyForm,#loginForm,#profileForm'); }
 
   function loginPage(){
-    const phoneBlock = PHONE_OTP_ENABLED ? `<div class="phone-login"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Choose country code, then enter your mobile number.</p><div class="phone-row"><select id="countryCodeSelect" data-no-translate aria-label="Country code">${countryOptions()}</select><input id="phoneOtpInput" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="Mobile number"></div><button class="ghost" id="sendOtpBtn">Send OTP</button><input id="otpCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="OTP code"><button class="secondary" id="verifyOtpBtn">Verify OTP</button></div>` : `<div class="phone-login phone-disabled"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Phone OTP is being prepared for public use. Please login with email/password or Google for now.</p></div>`;
+    const phoneBlock = PHONE_OTP_ENABLED ? `<div class="phone-login"><h3>Mobile OTP Login</h3><p class="muted tiny-note">Choose country code, then enter your mobile number.</p><div class="phone-row"><select id="countryCodeSelect" data-no-translate aria-label="Country code">${countryOptions()}</select><input id="phoneOtpInput" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="Mobile number"></div><button class="ghost" id="sendOtpBtn">Send OTP</button><input id="otpCodeInput" inputmode="numeric" autocomplete="one-time-code" maxlength="8" placeholder="OTP code"><button class="secondary" id="verifyOtpBtn">Verify OTP</button></div>` : ``;
     return `<section class="page-card auth-card"><h1>Login / Create Account</h1><p class="muted auth-intro">Use email/password or Google to continue. Seller verification and orders stay linked to your account.</p><form id="loginForm" class="form"><input name="email" type="email" autocomplete="email" placeholder="Email" required><input name="password" type="password" autocomplete="current-password" placeholder="Password" required><button class="primary">Login</button><button type="button" class="ghost" id="signupSwitch">Create new account</button><button type="button" class="link-btn" id="forgotBtn">Forgot password?</button></form><div class="auth-divider"><span>or</span></div><button class="google-btn" id="googleLoginBtn">Continue with Google</button>${phoneBlock}</section>`;
   }
   
@@ -835,7 +844,7 @@
   }
   function sellerVerificationForm(){
     const d=formDraft('sellerVerifyDraft');
-    return `<form id="sellerVerifyForm" class="form seller-verify-form"><input name="business_name" value="${esc(d.business_name||'')}" placeholder="Business / seller name" required><input name="phone" value="${esc(d.phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number" required><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><textarea name="address" placeholder="Pickup/shop address">${esc(d.address||'')}</textarea><div class="doc-upload-grid"><label class="file-label">Aadhaar front photo<input name="aadhaar_front" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Aadhaar back photo<input name="aadhaar_back" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Shop / stock photo<input name="shop_photo" type="file" accept="image/*,application/pdf"></label></div><div class="notice tiny-note">Upload clear document photos. Only admin can view seller verification files.</div><button class="primary">Submit Seller Verification</button></form>`;
+    return `<form id="sellerVerifyForm" class="form seller-verify-form"><input name="business_name" value="${esc(d.business_name||'')}" placeholder="Business / seller name" required><input name="phone" value="${esc(d.phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number" inputmode="tel" autocomplete="tel" required><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><textarea name="address" placeholder="Pickup / shop address">${esc(d.address||'')}</textarea><div class="doc-upload-grid"><label class="file-label">Aadhaar front photo<input name="aadhaar_front" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Aadhaar back photo<input name="aadhaar_back" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Shop / stock photo<input name="shop_photo" type="file" accept="image/*,application/pdf"></label></div><div class="notice tiny-note">Upload clear document photos. Only admin can view seller verification files.</div><button class="primary">Submit Seller Verification</button></form>`;
   }
   function sellPage(){
     if(!state.user)return loginPage();
@@ -1382,7 +1391,7 @@
     const q=($('#searchInput')?.value||'').toLowerCase();
     const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat;
     const sort=$('#sortFilter')?.value||'all';
-    let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model,p.condition].join(' ').toLowerCase().includes(q))&&(!cat||p.category===cat));
+    let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model,p.condition].join(' ').toLowerCase().includes(q))&&(!cat||String(p.category||'').toLowerCase().includes(String(cat).toLowerCase()) || String(p.title||'').toLowerCase().includes(String(cat).toLowerCase())));
     if(sort==='condition_new') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='new');
     if(sort==='condition_used') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='used');
     if(sort==='price_low') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
