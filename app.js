@@ -4,7 +4,7 @@
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
   const PHONE_OTP_ENABLED = cfg.ENABLE_PHONE_OTP === true || String(cfg.ENABLE_PHONE_OTP || '').toLowerCase() === 'true';
-  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[],notifications:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
+  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], messages:[], unreadMessages:0, factIndex:0, route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[],notifications:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
   const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
   function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',order:'orders',message:'messages',parts:'market',browse:'market',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','disputes':'dispute-policy','grievance-redressal':'grievance'}[r] || r); }
   const $ = s => document.querySelector(s);
@@ -242,7 +242,13 @@
   function listingLimitForKey(key){ return planByKey(key)?.listings || FREE_LISTING_LIMIT; }
   function currentListingLimit(){ return isAdminUser()?999999:(activePlan()?.listings || FREE_LISTING_LIMIT); }
   function limitLabel(n=currentListingLimit()){ return Number(n)>=999999 ? 'Unlimited' : String(n); }
-  function userListingCount(uid=state.user?.id){ return state.products.filter(p=>String(p.user_id||'')===String(uid) && !['rejected','banned','cancelled'].includes(String(p.status||'').toLowerCase())).length; }
+  function userListingCount(uid=state.user?.id){ return state.products.filter(p=>String(p.user_id||'')===String(uid) && !['rejected','removed','banned','cancelled'].includes(String(p.status||'').toLowerCase())).length; }
+  function productStatus(p){ return String(p?.status || 'approved').toLowerCase(); }
+  function isVisibleProduct(p){ return ['approved','live','active'].includes(productStatus(p)); }
+  function visibleProducts(){ return (state.products||[]).filter(isVisibleProduct); }
+  function myProducts(uid=state.user?.id){ return (state.products||[]).filter(p=>String(p.user_id||'')===String(uid)); }
+  function myLiveProducts(uid=state.user?.id){ return myProducts(uid).filter(isVisibleProduct); }
+
   function feeDiscountForPlan(plan=activePlan()){ if(isAdminUser()) return 'Admin account: all plans, titles, banners and listing controls unlocked'; if(!plan) return 'Free plan: 5 listings • 3.00% seller platform fee'; return `${plan.discount} • ${(plan.feeRate*100).toFixed(2)}% seller platform fee`; }
   function sevenBusinessDaysFrom(date=new Date()){
     const d=new Date(date); let added=0;
@@ -365,7 +371,7 @@
     setTimeout(()=>$('#intro')?.classList.add('hide'),900);
     const langModal = $('#languageModal');
     if(localStorage.hp_lang_done==='1') langModal?.classList.remove('show');
-    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadSiteContent(); await loadFinanceData(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime();
+    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadSiteContent(); await loadFinanceData(); await loadMessages(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime();
     if(localStorage.hp_lang_done==='1' || !langModal?.classList.contains('show')) scheduleInstallPrompt(1200);
   }
   function scheduleInstallPrompt(delay=700){
@@ -525,6 +531,7 @@
     $('#sideMenu')?.classList.toggle('member-menu', !!state.profile?.active_membership && !isAdmin);
     $$('[data-admin-only]').forEach(el=>el.style.display=isAdmin?'':'none');
     updateCartCount();
+    const msgBtn = document.querySelector('[data-route="messages"]'); if(msgBtn && state.unreadMessages){ msgBtn.classList.add('has-unread'); msgBtn.setAttribute('data-unread', String(state.unreadMessages)); }
     if(updateLang) {
       const cartButton = $('.header-actions .icon-btn[data-route="cart"]');
       if(cartButton){
@@ -637,9 +644,40 @@
       {title:'Sponsored visibility',subtitle:'Boosted listings appear higher across the marketplace.',cta_text:'View Plans',cta_route:'membership',image_url:'./harvester-logo-full.jpg'}
     ];
   }
+
+  const AGRI_FACTS = [
+    'A sharp cutter bar and clean guards reduce crop loss during harvesting.',
+    'Correct tyre pressure improves traction and can reduce fuel use in field work.',
+    'Greasing bearings on time protects shafts, pulleys and chains from early wear.',
+    'Clean air, fuel and hydraulic filters help tractors and harvesters run reliably.',
+    'Balanced blades and chains reduce vibration and protect machine life.',
+    'Keeping spare belts, bearings and filters ready can prevent harvest-time delays.',
+    'Checking oil levels before field work is one of the cheapest ways to prevent breakdowns.',
+    'Good storage of rubber seals, belts and hoses protects them from cracking and early failure.'
+  ];
+  function factIndex(){
+    const saved = Number(localStorage.hp_fact_index || 0);
+    const last = Number(localStorage.hp_fact_ts || 0);
+    if(!last || Date.now() - last > 5*60*1000){
+      const next = (saved + 1) % AGRI_FACTS.length;
+      localStorage.hp_fact_index = String(next);
+      localStorage.hp_fact_ts = String(Date.now());
+      return next;
+    }
+    return saved % AGRI_FACTS.length;
+  }
+  function currentAgriFact(){ return AGRI_FACTS[factIndex()] || AGRI_FACTS[0]; }
+  function agriFactCard(){
+    return `<section class="page-card agri-fact-card" id="agriFactCard"><div><span class="eyebrow">Agriculture fact</span><h2>Useful farm machine tip</h2><p id="agriFactText">${esc(currentAgriFact())}</p></div><span class="badge live-badge">Updates every 5 min</span></section>`;
+  }
+  function startFactTicker(){
+    clearInterval(window.__hpFactTimer);
+    const update=()=>{ const el=document.getElementById('agriFactText'); if(el){ localStorage.hp_fact_index=String((Number(localStorage.hp_fact_index||0)+1)%AGRI_FACTS.length); localStorage.hp_fact_ts=String(Date.now()); el.textContent=currentAgriFact(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,30); } };
+    window.__hpFactTimer=setInterval(update,5*60*1000);
+  }
   function carouselSlides(){ return (state.siteSlides&&state.siteSlides.length?state.siteSlides:fallbackSlides()).filter(s=>s!==null).slice(0,6); }
   function homeCarousel(){
-    const approved=(state.products||[]).filter(p=>p.status==='approved' || !p.status);
+    const approved=visibleProducts();
     const boosted=approved.filter(p=>p.is_boosted).slice(0,8);
     const newest=[...approved].sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0)).slice(0,8);
     const highValue=[...approved].sort((a,b)=>Number(b.price||0)-Number(a.price||0)).slice(0,8);
@@ -657,14 +695,16 @@
     const cats=AGRI_CATEGORIES;
     const categoryCount = state.stats.categories || cats.length;
     const sellerCount = state.stats.sellers || 0;
-    return `<section class="hero video-hero"><video class="hero-bg-video" autoplay muted loop playsinline preload="metadata" poster="./harvester-logo-full.jpg"><source src="./hero-bg.mp4" type="video/mp4"></video><div class="hero-copy"><span class="eyebrow">Verified agricultural marketplace</span><h1>Buy and sell farm machinery, implements and spare parts.</h1><p>Harvester Parts connects farmers, dealers, workshops and machine owners with approved sellers, secure orders, seller payouts and trusted product listings.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="ghost" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">View Plans</button></div></div><div class="hero-card glass"><img src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=1200&q=80" alt="Agriculture"><div class="stats"><div class="stat"><b data-count="${state.stats.products||state.products.length}">0</b><span>Live products</span></div><div class="stat"><b data-count="${categoryCount}">0</b><span>Categories</span></div><div class="stat"><b data-count="${sellerCount}">0</b><span>Verified sellers</span></div><div class="stat"><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section>${homeCarousel()}<section><div class="section-head"><h2>Shop by farming need</h2><p class="muted">Browse professional categories for machines and spare parts.</p></div><div class="agri-category-grid compact">${cats.slice(0,8).map(categoryCard).join('')}</div></section><section class="page-card explain-strip"><div><span class="eyebrow">Why Harvester Parts?</span><h2>Verified sellers, clear listings and organized payouts.</h2><p class="muted">Buy machinery, compare spare parts, send in-app messages and sell through an admin-approved marketplace.</p></div><div class="mini-steps"><div><b>01</b><span>Find machinery or part</span></div><div><b>02</b><span>Message or checkout</span></div><div><b>03</b><span>Platform manages seller payout</span></div></div></section><section><div class="section-head"><h2>Recently listed</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${state.products.slice(0,6).map(productCard).join('')||empty('No live products yet.')}</div></section>`;
+    const liveProducts = visibleProducts();
+    return `<section class="hero video-hero"><video class="hero-bg-video" autoplay muted loop playsinline preload="metadata" poster="./harvester-logo-full.jpg"><source src="./hero-bg.mp4" type="video/mp4"></video><div class="hero-copy"><span class="eyebrow">Verified agricultural marketplace</span><h1>Buy and sell farm machinery, implements and spare parts.</h1><p>Harvester Parts connects farmers, dealers, workshops and machine owners with approved sellers, secure orders, seller payouts and trusted product listings.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="ghost" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">View Plans</button></div></div><div class="hero-card glass"><img src="https://images.unsplash.com/photo-1592982537447-7440770cbfc9?auto=format&fit=crop&w=1200&q=80" alt="Agriculture"><div class="stats"><div class="stat"><b data-count="${state.stats.products||state.products.length}">0</b><span>Live products</span></div><div class="stat"><b data-count="${categoryCount}">0</b><span>Categories</span></div><div class="stat"><b data-count="${sellerCount}">0</b><span>Verified sellers</span></div><div class="stat"><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section>${homeCarousel()}${agriFactCard()}<section><div class="section-head"><h2>Shop by farming need</h2><p class="muted">Browse professional categories for machines and spare parts.</p></div><div class="agri-category-grid compact">${cats.slice(0,8).map(categoryCard).join('')}</div></section><section><div class="section-head"><h2>Recently listed</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${liveProducts.slice(0,6).map(productCard).join('')||empty('No live products yet.')}</div></section>`;
   }
 
   
   function market(){
-    const categories=[...new Set([...state.products.map(p=>p.category).filter(Boolean), ...AGRI_CATEGORIES.map(c=>c.title)])];
+    const marketProducts=visibleProducts();
+    const categories=[...new Set([...marketProducts.map(p=>p.category).filter(Boolean), ...AGRI_CATEGORIES.map(c=>c.title)])];
     const selected=sessionStorage.hp_market_category||'';
-    const shown=selected?state.products.filter(p=>String(p.category||'').toLowerCase().includes(selected.toLowerCase()) || String(p.title||'').toLowerCase().includes(selected.toLowerCase())):state.products;
+    const shown=selected?marketProducts.filter(p=>String(p.category||'').toLowerCase().includes(selected.toLowerCase()) || String(p.title||'').toLowerCase().includes(selected.toLowerCase())):marketProducts;
     return `<section class="page-card market-head-card"><div class="section-head"><h2>Browse Marketplace</h2><button class="primary" data-route="sell">List Product</button></div><div class="market-tools"><input id="searchInput" placeholder="Search parts, brand, model"><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="all">All listings</option><option value="condition_new">New</option><option value="condition_used">Used</option><option value="price_low">Price low to high</option><option value="price_high">Price high to low</option></select></div></section><section class="grid" id="marketGrid">${shown.map(productCard).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
   }
   
@@ -725,12 +765,13 @@
         if(type==='site' || type==='all') await loadSiteContent();
         if(type==='products' || type==='all') await loadProducts();
         if(type==='finance' || type==='all') await loadFinanceData();
+        if(type==='messages' || type==='all') await loadMessages();
         if(isAdminUser() && state.route==='admin') await loadAdminProData();
-        if(['home','market','account','admin','sell','orders'].includes(state.route) && !shouldHoldRender()) render();
+        if(['home','market','account','admin','sell','orders','messages'].includes(state.route) && !shouldHoldRender()) render();
       }catch(e){ console.warn('realtime refresh skipped', e); }
     };
     try{
-      sb.channel('hp-realtime-v87')
+      sb.channel('hp-realtime-v88')
         .on('postgres_changes',{event:'*',schema:'public',table:'products'},()=>refreshVisible('products'))
         .on('postgres_changes',{event:'*',schema:'public',table:'sellers'},()=>refreshVisible('all'))
         .on('postgres_changes',{event:'*',schema:'public',table:'orders'},()=>refreshVisible('finance'))
@@ -739,6 +780,7 @@
         .on('postgres_changes',{event:'*',schema:'public',table:'seller_balances'},()=>refreshVisible('finance'))
         .on('postgres_changes',{event:'*',schema:'public',table:'seller_payout_requests'},()=>refreshVisible('finance'))
         .on('postgres_changes',{event:'*',schema:'public',table:'site_carousel_slides'},()=>refreshVisible('site'))
+        .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages'},async(payload)=>{ await loadMessages(); if(payload?.new?.receiver_id===state.user?.id){ toast('New message received'); if(!shouldHoldRender()) render(); } })
         .subscribe();
     }catch(e){}
     setInterval(async()=>{ await refreshVisible(isAdminUser()?'all':'finance'); }, 25000);
@@ -904,7 +946,14 @@
     if(gate) return gate;
     const used=userListingCount(); const limit=currentListingLimit();
     const d=formDraft('sellFormDraft');
-    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Sell machinery or spare parts.</h1><p class="muted">Choose Machinery or Spare Part first. Your live listing can be removed by admin if it is unsafe, misleading or against policy.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card"><form id="sellForm" class="form sell-form"><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card active" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" checked><span class="sell-dot"></span><span><b>Machinery</b><small>Combine harvester, tractor, seed drill, straw reaper, implements</small></span></label><label class="sell-type-card" data-sell-card="spare"><input type="radio" name="sell_type" value="spare"><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, gears, hydraulic parts</small></span></label></div><select name="condition" required><option value="New">New</option><option value="Used" selected>Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name" required><input name="price" value="${esc(d.price||'')}" type="number" min="0" placeholder="Listing price" required><select name="category" id="sellCategorySelect" required>${categoryOptionsFor('machine')}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / machine"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><textarea name="description" placeholder="Describe condition, exact location, compatibility">${esc(d.description||'')}</textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to see your seller fee and payout estimate.</div><button class="primary">Publish Listing</button></form></section>`;
+    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Sell machinery or spare parts.</h1><p class="muted">Choose Machinery or Spare Part first. Your live listing can be removed by admin if it is unsafe, misleading or against policy.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card"><form id="sellForm" class="form sell-form"><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card active" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" checked><span class="sell-dot"></span><span><b>Machinery</b><small>Combine harvester, tractor, seed drill, straw reaper, implements</small></span></label><label class="sell-type-card" data-sell-card="spare"><input type="radio" name="sell_type" value="spare"><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, gears, hydraulic parts</small></span></label></div><select name="condition" required><option value="New">New</option><option value="Used" selected>Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name" required><input name="price" value="${esc(d.price||'')}" type="number" min="0" placeholder="Listing price" required><select name="category" id="sellCategorySelect" required>${categoryOptionsFor('machine')}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / machine"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><textarea name="description" placeholder="Describe condition, exact location, compatibility">${esc(d.description||'')}</textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to preview your seller fee.</div><button class="primary">Publish Listing</button></form></section>${sellerListingsPanel()}`;
+  }
+
+  function sellerListingsPanel(){
+    if(!state.user) return '';
+    const rows=myProducts().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
+    if(!rows.length) return `<section class="page-card my-listings-panel"><div class="section-head compact"><h2>My listings</h2><span class="badge">0</span></div><p class="muted">Your listings will appear here after you publish them.</p></section>`;
+    return `<section class="page-card my-listings-panel"><div class="section-head compact"><h2>My listings</h2><span class="badge">${rows.length}</span></div><div class="seller-listing-list">${rows.map(p=>`<div class="seller-listing-row"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'"><div><b>${esc(p.title||'Product')}</b><span>${money(p.price)} • ${esc(p.category||'Product')} • ${esc(p.status||'approved')}</span></div><div class="seller-listing-actions"><button class="ghost" onclick="HP.route('product',{id:'${esc(p.id)}'})">Open</button><button class="danger" onclick="HP.deleteOwnProduct('${esc(p.id)}')">Delete</button></div></div>`).join('')}</div></section>`;
   }
   async function submitSellerVerification(form){
     if(!state.user)return route('login');
@@ -948,20 +997,55 @@
     } else{ payload.id='local-'+Date.now(); payload.status='approved'; state.products.unshift(payload); localStorage.hp_products=JSON.stringify(state.products); }
     clearFormDraft('sellFormDraft'); toast('Listing published. Admin can remove unsafe or incorrect items.'); route('market');
   }
+  function messageRows(){
+    const rows=(state.messages||[]).slice(0,30);
+    if(!rows.length) return empty('No messages yet. Open a product and tap Message Seller to start.');
+    return rows.map(m=>{
+      const sent=String(m.sender_id)===String(state.user?.id);
+      const p=(state.products||[]).find(x=>String(x.id)===String(m.product_id));
+      const who=sent?'You':(m.sender?.full_name||m.sender?.email||m.receiver?.full_name||m.receiver?.email||'User');
+      return `<div class="message-row ${sent?'sent':'received'}"><div><b>${esc(who)}</b><span>${p?esc(p.title):'Marketplace message'} • ${m.created_at?new Date(m.created_at).toLocaleString('en-IN'):''}</span><p>${esc(m.message||'')}</p></div>${!sent && !m.is_read?'<span class="badge owner">New</span>':''}</div>`;
+    }).join('');
+  }
   function messagesPage(){
+    if(!state.user) return loginPage();
     const pid=state.currentProduct;
     const p=state.products.find(x=>String(x.id)===String(pid));
     const sellerName=p ? (p.sellers?.business_name || p.users?.full_name || p.users?.email || 'Seller') : '';
     const intro=p ? `You are messaging ${esc(sellerName)} about ${esc(p.title||'this listing')}.` : 'Use in-app chat for order and product questions.';
     const prefill=p ? `Hello, I am interested in ${p.title||'your product'} listed for ${money(p.price)}. Please confirm availability, condition and final price.` : '';
-    return `<section class="page-card"><h1>Messages</h1><div class="notice">${intro}</div><form id="messageForm" class="form"><input name="to" value="${esc(sellerName)}" placeholder="Seller name" readonly><input type="hidden" name="product_id" value="${esc(pid||'')}"><textarea name="message" placeholder="Write message">${esc(prefill)}</textarea><button class="primary">Send Message</button></form></section>`;
+    return `<section class="page-card"><h1>Messages</h1><div class="notice">${intro}</div><form id="messageForm" class="form"><input name="to" value="${esc(sellerName)}" placeholder="Seller name" readonly><input type="hidden" name="product_id" value="${esc(pid||'')}"><textarea name="message" placeholder="Write message">${esc(prefill)}</textarea><button class="primary">Send Message</button></form></section><section class="page-card message-inbox"><div class="section-head compact"><h2>Message inbox</h2><span class="badge ${state.unreadMessages?'owner':''}">${state.unreadMessages} new</span></div>${messageRows()}</section>`;
+  }
+  async function loadMessages(){
+    state.messages=[]; state.unreadMessages=0;
+    if(!sb||!state.user) return;
+    try{
+      let {data,error}=await sb.from('messages').select('*, sender:sender_id(email,full_name), receiver:receiver_id(email,full_name), products(title)').or(`sender_id.eq.${state.user.id},receiver_id.eq.${state.user.id}`).order('created_at',{ascending:false}).limit(60);
+      if(error){ const res=await sb.from('messages').select('*').or(`sender_id.eq.${state.user.id},receiver_id.eq.${state.user.id}`).order('created_at',{ascending:false}).limit(60); data=res.data; error=res.error; }
+      if(!error && data){ state.messages=data; state.unreadMessages=data.filter(m=>String(m.receiver_id)===String(state.user.id) && !m.is_read).length; }
+    }catch(e){}
   }
   function cleanMessage(m){ return String(m||'').replace(/\b\d{10}\b/g,'[phone blocked]').replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/ig,'[email blocked]').replace(/wa\.me|whatsapp/ig,'[contact link blocked]'); }
   async function sendAdminNotice(type, subject, body, payload={}){
     if(!sb) return;
     try{ await sb.from('admin_notifications').insert({type,subject,body,payload,status:'unread',admin_email:ADMIN_EMAIL}); }catch(e){}
   }
-  async function sendMsg(form){ if(!state.user)return route('login'); const fd=new FormData(form); const msg=cleanMessage(fd.get('message')); if(sb){ await sb.from('messages').insert({sender_id:state.user.id,receiver_id:null,message:msg}); } toast('Message sent inside platform'); form.reset(); }
+  async function sendMsg(form){
+    if(!state.user)return route('login');
+    const fd=new FormData(form); const productId=fd.get('product_id')||''; const msg=cleanMessage(fd.get('message'));
+    if(!msg.trim()) return toast('Write a message first');
+    const product=state.products.find(p=>String(p.id)===String(productId));
+    const receiverId=product?.user_id || null;
+    if(product && String(receiverId)===String(state.user.id)) return toast('This is your own listing.');
+    if(sb){
+      const payload={sender_id:state.user.id,receiver_id:receiverId,product_id:productId||null,message:msg,is_read:false};
+      const {error}=await sb.from('messages').insert(payload);
+      if(error) return toast(error.message);
+      if(receiverId){ await sendAdminNotice('buyer_message','New product message', `${state.profile?.full_name||state.user.email||'Buyer'} messaged ${product?.title||'a product'}`, {product_id:productId,seller_id:receiverId}); }
+      await loadMessages();
+    }
+    toast('Message sent to seller'); form.reset(); render();
+  }
   function ordersPage(){ return `<section class="page-card"><h1>Orders</h1><div class="notice">Orders placed through checkout will show here. Admin can manage shipment and payment status from dashboard.</div><div id="ordersList"></div></section>`; }
   async function loadOrders(){ if(!sb||!state.user)return; const {data}=await sb.from('orders').select('*').or(`buyer_id.eq.${state.user.id},user_id.eq.${state.user.id}`).order('created_at',{ascending:false}); $('#ordersList') && ($('#ordersList').innerHTML=localizeHtml((data||[]).map(o=>`<div class="cart-item"><div><b>Order ${String(o.id).slice(0,8)}</b><p>${money(o.amount)} • ${o.status}</p></div><span class="badge">${new Date(o.created_at).toLocaleDateString()}</span></div>`).join('')||empty('No orders yet.'))); }
   function sum(arr,key){ return (arr||[]).reduce((s,x)=>s+Number(x?.[key]||0),0); }
@@ -1047,7 +1131,7 @@
     </section>
     <section class="admin-columns">
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Live products</h2><span class="badge verified">${products.filter(p=>p.status==='approved').length} live</span></div><div id="approvedProductsList">${adminProductManager(products,'approved')}</div></div>
-      <div class="page-card admin-panel"><div class="section-head compact"><h2>Rejected / banned products</h2><span class="badge danger-soft">${products.filter(p=>['rejected','banned'].includes(p.status)).length}</span></div><div id="productArchiveList">${adminProductManager(products,'archive')}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Removed / banned products</h2><span class="badge danger-soft">${products.filter(p=>['removed','rejected','banned'].includes(p.status)).length}</span></div><div id="productArchiveList">${adminProductManager(products,'archive')}</div></div>
     </section>
     <section class="admin-columns">
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Latest orders</h2><span class="badge">${orders.length}</span></div><div id="adminOrdersList">${adminOrdersList(orders)}</div></div>
@@ -1133,10 +1217,10 @@
   function adminSellerManager(list=[],mode='approved'){ const rows=(list||[]).filter(s=> mode==='approved' ? s.status==='approved' : ['rejected','banned'].includes(s.status)); return localizeHtml(rows.map(s=>adminSellerRow(s,true)).join('')||empty(mode==='approved'?'No approved sellers yet':'No rejected or banned sellers')); }
   function adminProductRow(p,compact=false){
     const id=esc(p.id), title=esc(p.title||'Product'), img=productImage(p);
-    return `<details class="admin-detail-card product-admin-card" ${compact?'':'open'}><summary><img src="${img}" onerror="this.src='${placeholder(p.category)}'"><div><b>${title}</b><p>${money(p.price)} • ${esc(p.category||'Product')} • ${esc([p.city,p.state].filter(Boolean).join(', '))}</p><small>${esc(p.sell_type||'spare')} • ${esc(p.condition||'Used')} • Seller ${esc(p.users?.email||p.sellers?.business_name||'')}</small></div>${statusBadge(p.status)}</summary><div class="admin-detail-body"><p class="muted">${esc(p.description||'No description added.')}</p><div class="info-list"><div><span>Brand</span><b>${esc(p.brand||'Not added')}</b></div><div><span>Model</span><b>${esc(p.model||'Not added')}</b></div><div><span>Weight</span><b>${esc(p.weight_kg||'—')} kg</b></div><div><span>Seller earns</span><b>${money(Number(p.price||0)-sellerFeeForProduct(p))}</b></div></div><div class="approval-actions"><button class="secondary" onclick="HP.approveProduct('${id}')">Approve</button><button class="danger" onclick="HP.rejectProduct('${id}')">Reject</button><button class="danger" onclick="HP.banProduct('${id}')">Ban</button>${p.status==='banned'||p.status==='rejected'?`<button class="ghost" onclick="HP.restoreProduct('${id}')">Restore</button>`:''}<button class="ghost" onclick="HP.route('product',{id:'${id}'})">Open</button></div></div></details>`;
+    return `<details class="admin-detail-card product-admin-card" ${compact?'':'open'}><summary><img src="${img}" onerror="this.src='${placeholder(p.category)}'"><div><b>${title}</b><p>${money(p.price)} • ${esc(p.category||'Product')} • ${esc([p.city,p.state].filter(Boolean).join(', '))}</p><small>${esc(p.sell_type||'spare')} • ${esc(p.condition||'Used')} • Seller ${esc(p.users?.email||p.sellers?.business_name||'')}</small></div>${statusBadge(p.status)}</summary><div class="admin-detail-body"><p class="muted">${esc(p.description||'No description added.')}</p><div class="info-list"><div><span>Brand</span><b>${esc(p.brand||'Not added')}</b></div><div><span>Model</span><b>${esc(p.model||'Not added')}</b></div><div><span>Weight</span><b>${esc(p.weight_kg||'—')} kg</b></div><div><span>Status</span><b>${esc(p.status||'approved')}</b></div></div><div class="approval-actions">${!isVisibleProduct(p)?`<button class="secondary" onclick="HP.approveProduct('${id}')">Restore</button>`:''}<button class="danger" onclick="HP.removeProduct('${id}')">Remove</button><button class="danger" onclick="HP.banProduct('${id}')">Ban</button><button class="ghost" onclick="HP.route('product',{id:'${id}'})">Open</button></div></div></details>`;
   }
-  function adminProductQueue(products=[]){ const rows=(products||[]).filter(p=>p.status==='pending'); return rows.map(p=>adminProductRow(p,false)).join('')||empty('No pending products'); }
-  function adminProductManager(products=[],mode='approved'){ const rows=(products||[]).filter(p=> mode==='approved' ? p.status==='approved' : ['rejected','banned'].includes(p.status)); return rows.slice(0,40).map(p=>adminProductRow(p,true)).join('')||empty(mode==='approved'?'No approved products yet':'No rejected or banned products'); }
+  function adminProductQueue(products=[]){ const rows=(products||[]).filter(p=>productStatus(p)==='pending'); return rows.map(p=>adminProductRow(p,false)).join('')||empty('No pending products'); }
+  function adminProductManager(products=[],mode='approved'){ const rows=(products||[]).filter(p=> mode==='approved' ? isVisibleProduct(p) : ['removed','rejected','banned'].includes(productStatus(p))); return rows.slice(0,40).map(p=>adminProductRow(p,true)).join('')||empty(mode==='approved'?'No approved products yet':'No rejected or banned products'); }
   function adminOrdersList(orders=[]){ return (orders||[]).slice(0,12).map(o=>`<details class="admin-detail-card"><summary><div><b>Order ${esc(String(o.id).slice(0,8))}</b><p>${money(o.amount)} • ${esc(o.buyer_phone||'')}</p><small>${new Date(o.created_at||Date.now()).toLocaleString('en-IN')}</small></div>${statusBadge(o.status)}</summary><div class="approval-actions"><button class="ghost" onclick="HP.setOrderStatus('${esc(o.id)}','paid')">Paid</button><button class="ghost" onclick="HP.setOrderStatus('${esc(o.id)}','confirmed')">Confirm</button><button class="ghost" onclick="HP.setOrderStatus('${esc(o.id)}','shipped')">Ship</button><button class="secondary" onclick="HP.setOrderStatus('${esc(o.id)}','delivered')">Delivered</button><button class="danger" onclick="HP.setOrderStatus('${esc(o.id)}','cancelled')">Cancel</button></div></details>`).join('')||empty('No orders yet'); }
   function adminReportsList(reports=[]){ return (reports||[]).slice(0,8).map(r=>`<details class="admin-detail-card"><summary><div><b>${esc(r.target_type||'Report')} report</b><p>${esc(r.reason||'No reason added')}</p><small>${new Date(r.created_at||Date.now()).toLocaleDateString('en-IN')}</small></div>${statusBadge(r.status||'open')}</summary><div class="approval-actions"><button class="ghost" onclick="HP.setReportStatus('${esc(r.id)}','reviewing')">Reviewing</button><button class="secondary" onclick="HP.setReportStatus('${esc(r.id)}','closed')">Close</button></div></details>`).join('')||empty('No reports'); }
   function adminContactsList(contacts=[]){ if(!contacts?.length) return ''; return `<h3>Support messages</h3>`+(contacts||[]).slice(0,8).map(c=>`<details class="admin-detail-card"><summary><div><b>${esc(c.name||'Support request')}</b><p>${esc(c.topic||'Support')} • ${esc(c.phone||'')}</p><small>${new Date(c.created_at||Date.now()).toLocaleDateString('en-IN')}</small></div>${statusBadge(c.status||'open')}</summary><p>${esc(c.message||'')}</p><div class="approval-actions"><button class="secondary" onclick="HP.setContactStatus('${esc(c.id)}','closed')">Close</button><button class="ghost" onclick="HP.setContactStatus('${esc(c.id)}','open')">Reopen</button></div></details>`).join(''); }
@@ -1217,15 +1301,35 @@
   async function banSeller(id,userId){ if(confirm('Ban this seller and hide their products?')) return setSellerStatus(id,userId,'banned'); }
   async function restoreSeller(id,userId){ return setSellerStatus(id,userId,'approved'); }
   async function setProductStatus(id,status){
-    const patch={status}; if(status==='approved') patch.approved_at=new Date().toISOString(); if(status==='banned') patch.banned_at=new Date().toISOString();
+    const patch={status,updated_at:new Date().toISOString()}; if(status==='approved') patch.approved_at=new Date().toISOString(); if(status==='banned') patch.banned_at=new Date().toISOString(); if(status==='removed') patch.removed_at=new Date().toISOString();
     if(sb){ const {error}=await sb.from('products').update(patch).eq('id',id); if(error)return toast(statusPatchHint(error)); }
     const p=state.products.find(x=>String(x.id)===String(id)); if(p) Object.assign(p,patch);
-    toast(`Product ${status}`); await loadAdminProData();
+    toast(`Product ${status}`); await loadProducts(); await loadAdminProData(); render();
   }
   async function approveProduct(id){ return setProductStatus(id,'approved'); }
-  async function rejectProduct(id){ if(confirm('Reject this product?')) return setProductStatus(id,'rejected'); }
-  async function banProduct(id){ if(confirm('Ban this product from marketplace?')) return setProductStatus(id,'banned'); }
+  async function removeProduct(id){ const reason=prompt('Reason for removing this listing? This can be sent to seller.','Listing removed by admin review.'); if(reason===null) return; await notifyProductSeller(id, reason); return setProductStatus(id,'removed'); }
+  async function rejectProduct(id){ return removeProduct(id); }
+  async function banProduct(id){ const reason=prompt('Reason for banning this listing?','Listing banned due to safety or policy issue.'); if(reason===null) return; await notifyProductSeller(id, reason); return setProductStatus(id,'banned'); }
   async function restoreProduct(id){ return setProductStatus(id,'approved'); }
+  async function notifyProductSeller(id, reason=''){
+    const p=(state.products||[]).find(x=>String(x.id)===String(id)) || (state.admin.products||[]).find(x=>String(x.id)===String(id));
+    if(!p||!sb||!p.user_id) return;
+    try{ await sb.from('messages').insert({sender_id:state.user.id,receiver_id:p.user_id,product_id:id,message:`Admin notice for ${p.title||'your listing'}: ${reason}`,is_read:false}); }catch(e){}
+  }
+  async function deleteOwnProduct(id){
+    if(!state.user) return route('login');
+    const p=(state.products||[]).find(x=>String(x.id)===String(id));
+    if(!p || String(p.user_id)!==String(state.user.id)) return toast('You can delete only your own listing.');
+    if(!confirm('Delete this listing from marketplace?')) return;
+    if(sb){
+      const {error}=await sb.from('products').delete().eq('id',id).eq('user_id',state.user.id);
+      if(error) return toast('Unable to delete. Run v88 SQL patch once, then try again.');
+    }
+    state.products=state.products.filter(x=>String(x.id)!==String(id));
+    localStorage.hp_products=JSON.stringify(state.products);
+    toast('Listing deleted'); render();
+  }
+
   async function setOrderStatus(id,status){ if(!sb)return; const {error}=await sb.from('orders').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); toast('Order updated'); await loadAdminProData(); }
   async function setReportStatus(id,status){ if(!sb)return; const {error}=await sb.from('reports').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); toast('Report updated'); await loadAdminProData(); }
   async function setContactStatus(id,status){ if(!sb)return; const {error}=await sb.from('contact_messages').update({status}).eq('id',id); if(error)return toast(error.message); toast('Support message updated'); await loadAdminProData(); }
@@ -1408,7 +1512,7 @@
   }
 
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
-  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); animateCounters(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
+  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
   function bindPage(){
     $$('#app input, #app textarea, #app select').forEach(el=>el.addEventListener('click',e=>e.stopPropagation()));
     $('#loginForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); withLoading(e.target,()=>login(fd.get('email'),fd.get('password')),'Logging in...');});
@@ -1423,7 +1527,7 @@
     bindFormDraft('sellForm','sellFormDraft');
     $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitProduct(e.target),'Submitting listing...')});
     bindSellTypeChooser();
-    $('#sellForm input[name="price"]')?.addEventListener('input',e=>{ const price=Number(e.target.value||0); $('#sellerFeePreview').innerHTML=localizeHtml(`Listing price: <b>${money(price)}</b> • Seller platform fee: <b>${money(sellerFee(price))}</b> • Seller balance after fee: <b>${money(price-sellerFee(price))}</b> • ${feeDiscountForPlan(activePlan())}`); });
+    $('#sellForm input[name="price"]')?.addEventListener('input',e=>{ const price=Number(e.target.value||0); $('#sellerFeePreview').innerHTML=localizeHtml(`Listing price: <b>${money(price)}</b> • Seller fee: <b>${money(sellerFee(price))}</b> • Your payout before delivery/refund adjustments: <b>${money(price-sellerFee(price))}</b> • ${feeDiscountForPlan(activePlan())}`); });
     $('#checkoutForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>placeOrder(e.target),'Placing order...')});
     $('#checkoutForm select[name="shipping"]')?.addEventListener('change',e=>{ $('#checkoutSummary').innerHTML=localizeHtml(summaryRows(getTotals(e.target.value))); });
     $('#messageForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>sendMsg(e.target),'Sending...')});
@@ -1467,7 +1571,7 @@
     const q=($('#searchInput')?.value||'').toLowerCase();
     const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat;
     const sort=$('#sortFilter')?.value||'all';
-    let arr=state.products.filter(p=>(!q||[p.title,p.category,p.brand,p.model,p.condition].join(' ').toLowerCase().includes(q))&&(!cat||String(p.category||'').toLowerCase().includes(String(cat).toLowerCase()) || String(p.title||'').toLowerCase().includes(String(cat).toLowerCase())));
+    let arr=visibleProducts().filter(p=>(!q||[p.title,p.category,p.brand,p.model,p.condition].join(' ').toLowerCase().includes(q))&&(!cat||String(p.category||'').toLowerCase().includes(String(cat).toLowerCase()) || String(p.title||'').toLowerCase().includes(String(cat).toLowerCase())));
     if(sort==='condition_new') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='new');
     if(sort==='condition_used') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='used');
     if(sort==='price_low') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
@@ -1475,6 +1579,6 @@
     const grid=$('#marketGrid'); if(grid) grid.innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products'));
   }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,banProduct,restoreProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,openGallery,closeGallery,stepGallery};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,openGallery,closeGallery,stepGallery};
   document.addEventListener('DOMContentLoaded',init);
 })();
