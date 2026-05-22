@@ -169,7 +169,7 @@
     'Tap browser Share button.':'ब्राउज़र का शेयर बटन दबाएं।',
     'Choose “Add to Home Screen”.':'“Add to Home Screen” चुनें।',
     'Open Harvester Parts from your phone.':'फोन से Harvester Parts खोलें।',
-    'Continue':'जारी रखें','or':'या','Login service is not ready yet':'पहले Supabase keys जोड़ें','Account created. Please verify your email if Supabase asks.':'अकाउंट बन गया। अगर Supabase पूछे तो ईमेल verify करें।','Logged in':'लॉगिन हो गया','Enter phone with country code, e.g. +919814800017':'देश कोड के साथ फोन डालें, जैसे +919814800017','OTP sent':'OTP भेज दिया गया','Phone login successful':'फोन लॉगिन सफल','Enter your email first':'पहले ईमेल डालें','Password reset link sent to email':'पासवर्ड रीसेट लिंक ईमेल पर भेज दिया गया','Added to cart':'कार्ट में जोड़ दिया','Removed from wishlist':'वishlist से हटाया','Saved to wishlist':'वishlist में सेव किया','Cart is empty':'कार्ट खाली है','Order saved. Connect Razorpay key for online payment.':'ऑर्डर सेव हो गया। ऑनलाइन पेमेंट के लिए Razorpay key जोड़ें।','Payment successful. Order placed.':'पेमेंट सफल। ऑर्डर हो गया।','Listing submitted for admin approval':'लिस्टिंग admin approval के लिए भेजी गई','Message sent inside platform':'संदेश प्लेटफॉर्म में भेजा गया','Product approved':'प्रोडक्ट approve हुआ','Product rejected':'प्रोडक्ट reject हुआ','Profile saved':'प्रोफाइल सेव हुई',
+    'Continue':'जारी रखें','or':'या','Login service is not ready yet':'लॉगिन सेवा अभी तैयार नहीं है','Account created. Please verify your email if Supabase asks.':'अकाउंट बन गया। अगर Supabase पूछे तो ईमेल verify करें।','Logged in':'लॉगिन हो गया','Enter phone with country code, e.g. +919814800017':'देश कोड के साथ फोन डालें','OTP sent':'OTP भेज दिया गया','Phone login successful':'फोन लॉगिन सफल','Enter your email first':'पहले ईमेल डालें','Password reset link sent to email':'पासवर्ड रीसेट लिंक ईमेल पर भेज दिया गया','Added to cart':'कार्ट में जोड़ दिया','Removed from wishlist':'वishlist से हटाया','Saved to wishlist':'वishlist में सेव किया','Cart is empty':'कार्ट खाली है','Order saved. Connect Razorpay key for online payment.':'ऑर्डर सेव हो गया। ऑनलाइन पेमेंट के लिए Razorpay key जोड़ें।','Payment successful. Order placed.':'पेमेंट सफल। ऑर्डर हो गया।','Listing submitted for admin approval':'लिस्टिंग admin approval के लिए भेजी गई','Message sent inside platform':'संदेश प्लेटफॉर्म में भेजा गया','Product approved':'प्रोडक्ट approve हुआ','Product rejected':'प्रोडक्ट reject हुआ','Profile saved':'प्रोफाइल सेव हुई',
     'Buyer protection':'खरीदार सुरक्षा','Platform fee':'प्लेटफॉर्म फीस','Calculated at checkout':'चेकआउट पर गणना होगी','Seller receives approx.':'','Product details':'प्रोडक्ट विवरण','Genuine agricultural spare part listing. Please confirm compatibility, dimensions and condition through in-app message before final purchase.':'असली कृषि spare part listing। अंतिम खरीद से पहले in-app message से compatibility, size और condition confirm करें।','Condition':'स्थिति','Weight':'वजन','Location':'स्थान','Views':'व्यूज','Verified listing':'सत्यापित लिस्टिंग','Spare part':'स्पेयर पार्ट','Harvester Parts':'Harvester Parts','Agricultural Part':'कृषि पार्ट','Stock':'स्टॉक','India':'भारत','Standard / Premium':'स्टैंडर्ड / प्रीमियम',
     'Seller/User ID or email':'Seller/User ID या ईमेल','Write message':'संदेश लिखें','Send Message':'संदेश भेजें','In-app chat protects your platform earnings. Phone numbers and emails are blocked automatically.':'In-app chat आपकी platform earnings बचाता है। फोन नंबर और ईमेल अपने आप block होते हैं।','Orders placed through checkout will show here. Admin can manage shipment and payment status from dashboard.':'Checkout से दिए गए orders यहां दिखेंगे। Admin shipment और payment status dashboard से manage कर सकता है।','Order':'ऑर्डर','pending':'pending','paid':'paid','Products':'प्रोडक्ट्स','Pending listings':'Pending listings','Boosted':'Boosted','ADMIN CONTROL':'ADMIN CONTROL','Go Home':'होम जाएं',
     'Listing price:':'लिस्टिंग कीमत:','Platform marketing fee:':'प्लेटफॉर्म मार्केटिंग फीस:','Seller earns approx:':'Seller को लगभग मिलेगा:'
@@ -177,7 +177,7 @@
   Object.assign(COMMON_TRANSLATIONS.pa, {
     'Preparing a verified agri marketplace':'ਤਸਦੀਕਸ਼ੁਦਾ ਖੇਤੀ ਮਾਰਕੀਟਪਲੇਸ ਤਿਆਰ ਹੋ ਰਿਹਾ ਹੈ',
     'For faster access, install it like an app.':'ਤੇਜ਼ ਵਰਤੋਂ ਲਈ ਇਸਨੂੰ ਐਪ ਵਾਂਗ ਇੰਸਟਾਲ ਕਰੋ।',
-    'Tap browser Share button.':'ਬਰਾਊਜ਼ਰ ਦਾ Share ਬਟਨ ਦਬਾਓ।','Choose “Add to Home Screen”.':'“Add to Home Screen” ਚੁਣੋ।','Open Harvester Parts from your phone.':'ਫੋਨ ਤੋਂ Harvester Parts ਖੋਲ੍ਹੋ।','Continue':'ਜਾਰੀ ਰੱਖੋ','or':'ਜਾਂ','Login service is not ready yet':'ਪਹਿਲਾਂ Supabase keys ਜੋੜੋ','Account created. Please verify your email if Supabase asks.':'ਅਕਾਊਂਟ ਬਣ ਗਿਆ। ਜੇ Supabase ਪੁੱਛੇ ਤਾਂ email verify ਕਰੋ।','Logged in':'ਲਾਗਿਨ ਹੋ ਗਿਆ','Enter phone with country code, e.g. +919814800017':'ਦੇਸ਼ ਕੋਡ ਨਾਲ ਫੋਨ ਪਾਓ, ਜਿਵੇਂ +919814800017','OTP sent':'OTP ਭੇਜਿਆ ਗਿਆ','Phone login successful':'ਫੋਨ ਲਾਗਿਨ ਸਫਲ','Enter your email first':'ਪਹਿਲਾਂ email ਪਾਓ','Password reset link sent to email':'Password reset link email ਤੇ ਭੇਜਿਆ ਗਿਆ','Added to cart':'ਕਾਰਟ ਵਿੱਚ ਜੋੜਿਆ','Removed from wishlist':'Wishlist ਤੋਂ ਹਟਾਇਆ','Saved to wishlist':'Wishlist ਵਿੱਚ save ਕੀਤਾ','Cart is empty':'ਕਾਰਟ ਖਾਲੀ ਹੈ','Order saved. Connect Razorpay key for online payment.':'Order save ਹੋ ਗਿਆ। Online payment ਲਈ Razorpay key ਜੋੜੋ।','Payment successful. Order placed.':'Payment successful। Order placed।','Listing submitted for admin approval':'Listing admin approval ਲਈ ਭੇਜੀ ਗਈ','Message sent inside platform':'ਸੁਨੇਹਾ platform ਵਿੱਚ ਭੇਜਿਆ ਗਿਆ','Product approved':'Product approve ਹੋਇਆ','Product rejected':'Product reject ਹੋਇਆ','Profile saved':'Profile save ਹੋਈ',
+    'Tap browser Share button.':'ਬਰਾਊਜ਼ਰ ਦਾ Share ਬਟਨ ਦਬਾਓ।','Choose “Add to Home Screen”.':'“Add to Home Screen” ਚੁਣੋ।','Open Harvester Parts from your phone.':'ਫੋਨ ਤੋਂ Harvester Parts ਖੋਲ੍ਹੋ।','Continue':'ਜਾਰੀ ਰੱਖੋ','or':'ਜਾਂ','Login service is not ready yet':'ਪਹਿਲਾਂ Supabase keys ਜੋੜੋ','Account created. Please verify your email if Supabase asks.':'ਅਕਾਊਂਟ ਬਣ ਗਿਆ। ਜੇ ਕਿਹਾ ਜਾਵੇ ਤਾਂ email verify ਕਰੋ।','Logged in':'ਲਾਗਿਨ ਹੋ ਗਿਆ','Enter phone with country code, e.g. +919814800017':'ਦੇਸ਼ ਕੋਡ ਨਾਲ ਫੋਨ ਪਾਓ','OTP sent':'OTP ਭੇਜਿਆ ਗਿਆ','Phone login successful':'ਫੋਨ ਲਾਗਿਨ ਸਫਲ','Enter your email first':'ਪਹਿਲਾਂ email ਪਾਓ','Password reset link sent to email':'Password reset link email ਤੇ ਭੇਜਿਆ ਗਿਆ','Added to cart':'ਕਾਰਟ ਵਿੱਚ ਜੋੜਿਆ','Removed from wishlist':'Wishlist ਤੋਂ ਹਟਾਇਆ','Saved to wishlist':'Wishlist ਵਿੱਚ save ਕੀਤਾ','Cart is empty':'ਕਾਰਟ ਖਾਲੀ ਹੈ','Order saved. Connect Razorpay key for online payment.':'Order save ਹੋ ਗਿਆ। Online payment ਲਈ Razorpay key ਜੋੜੋ।','Payment successful. Order placed.':'Payment successful। Order placed।','Listing submitted for admin approval':'Listing admin approval ਲਈ ਭੇਜੀ ਗਈ','Message sent inside platform':'ਸੁਨੇਹਾ platform ਵਿੱਚ ਭੇਜਿਆ ਗਿਆ','Product approved':'Product approve ਹੋਇਆ','Product rejected':'Product reject ਹੋਇਆ','Profile saved':'Profile save ਹੋਈ',
     'Buyer protection':'ਖਰੀਦਦਾਰ ਸੁਰੱਖਿਆ','Platform fee':'ਪਲੇਟਫਾਰਮ ਫੀਸ','Calculated at checkout':'Checkout ਤੇ calculate ਹੋਵੇਗੀ','Seller receives approx.':'','Product details':'Product ਵੇਰਵਾ','Genuine agricultural spare part listing. Please confirm compatibility, dimensions and condition through in-app message before final purchase.':'ਅਸਲੀ agriculture spare part listing। Final purchase ਤੋਂ ਪਹਿਲਾਂ in-app message ਨਾਲ compatibility, size ਅਤੇ condition confirm ਕਰੋ।','Condition':'ਹਾਲਤ','Weight':'ਵਜ਼ਨ','Location':'ਸਥਾਨ','Views':'Views','Verified listing':'ਤਸਦੀਕਸ਼ੁਦਾ listing','Spare part':'Spare part','Agricultural Part':'ਖੇਤੀ ਪਾਰਟ','Stock':'ਸਟਾਕ','India':'ਭਾਰਤ','Standard / Premium':'Standard / Premium',
     'Seller/User ID or email':'Seller/User ID ਜਾਂ email','Write message':'ਸੁਨੇਹਾ ਲਿਖੋ','Send Message':'ਸੁਨੇਹਾ ਭੇਜੋ','In-app chat protects your platform earnings. Phone numbers and emails are blocked automatically.':'In-app chat ਤੁਹਾਡੀ platform earnings ਬਚਾਉਂਦਾ ਹੈ। Phone numbers ਅਤੇ emails ਆਪਣੇ ਆਪ block ਹੁੰਦੇ ਹਨ।','Orders placed through checkout will show here. Admin can manage shipment and payment status from dashboard.':'Checkout ਰਾਹੀਂ ਕੀਤੇ orders ਇੱਥੇ ਦਿਖਣਗੇ। Admin shipment ਅਤੇ payment status dashboard ਤੋਂ manage ਕਰ ਸਕਦਾ ਹੈ।','Order':'ਆਰਡਰ','Products':'ਪ੍ਰੋਡਕਟਸ','Pending listings':'Pending listings','Boosted':'Boosted','ADMIN CONTROL':'ADMIN CONTROL','Go Home':'ਹੋਮ ਜਾਓ',
     'Listing price:':'Listing ਕੀਮਤ:','Platform marketing fee:':'Platform marketing fee:','Seller earns approx:':'Seller ਨੂੰ ਲਗਭਗ ਮਿਲੇਗਾ:'
@@ -262,7 +262,7 @@
     return `<article class="membership-card ${active?'active':''}"><div class="plan-ribbon">${esc(p.tag)}</div><div class="plan-head"><span>${esc(p.banner)}</span><h3>${esc(p.name)}</h3><div class="plan-price">₹${Number(p.price).toLocaleString('en-IN')}<small>/${p.days} days</small></div></div><div class="plan-title-preview"><b>${esc(p.title)}</b><small>${esc(p.badge)} custom badge • no icons</small></div><div class="plan-stats"><div><b>${limitLabel(p.listings)}</b><span>listing limit</span></div><div><b>${(p.feeRate*100).toFixed(2)}%</b><span>seller fee</span></div><div><b>${p.boost}</b><span>boost days</span></div><div><b>${p.reward}</b><span>points</span></div></div><div class="plan-fee-strip"><b>${esc(p.discount)}</b><span>Lower platform commission on seller payout</span></div><ul>${p.benefits.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="${active?'secondary':'primary'}" data-plan-key="${esc(p.key)}">${active?'Current Plan':'Choose Plan'}</button></article>`;
   }
   function freePlanCard(){
-    return `<article class="membership-card free-plan-card"><div class="plan-ribbon">Free</div><div class="plan-head"><span>Free Seller Start</span><h3>Free Member</h3><div class="plan-price">₹0<small>/always</small></div></div><div class="plan-title-preview"><b>Marketplace Starter</b><small>Default member title</small></div><div class="plan-stats"><div><b>5</b><span>free listings</span></div><div><b>3.00%</b><span>seller fee</span></div><div><b>0</b><span>boost days</span></div></div><div class="plan-fee-strip"><b>Standard commission</b><span>Example: ₹30,00,000 sale → ₹90,000 platform fee → seller balance ₹29,10,000.</span></div><button class="ghost" data-route="sell">Use Free Plan</button></article>`;
+    return `<article class="membership-card free-plan-card"><div class="plan-ribbon">Free</div><div class="plan-head"><span>Free Seller Start</span><h3>Free Member</h3><div class="plan-price">₹0<small>/always</small></div></div><div class="plan-title-preview"><b>Marketplace Starter</b><small>Default member title</small></div><div class="plan-stats"><div><b>5</b><span>free listings</span></div><div><b>3.00%</b><span>seller fee</span></div><div><b>0</b><span>boost days</span></div></div><div class="plan-fee-strip"><b>Standard commission</b><span>Standard seller commission applies on completed orders.</span></div><button class="ghost" data-route="sell">Use Free Plan</button></article>`;
   }
   function membershipPage(){
     const plan=activePlan(); const used=userListingCount(); const limit=currentListingLimit();
@@ -280,7 +280,7 @@
       try{
         const {data,error}=await sb.from('membership_purchases').insert(purchase).select('id').single();
         if(error) throw error; purchaseId=data?.id||null;
-      }catch(e){ return toast('Run SUPABASE_v78_MEMBERSHIP_PATCH.sql and SUPABASE_v82_PAYOUT_PATCH.sql once, then try plan purchase.'); }
+      }catch(e){ return toast('Membership setup is not fully ready yet. Please contact support.'); }
     }
     const activate=async(paymentId='manual_pending')=>{
       if(sb){
@@ -569,9 +569,9 @@
       if(!error && data){
         state.products=data;
         const cats=[...new Set(data.map(p=>p.category).filter(Boolean))];
-        state.stats.products=data.filter(p=>p.status==='approved').length;
+        state.stats.products=data.filter(isVisibleProduct).length;
         state.stats.categories=cats.length || 0;
-        state.stats.sellers=[...new Set(data.filter(p=>p.status==='approved').map(p=>p.user_id||p.seller_id).filter(Boolean))].length || 0;
+        state.stats.sellers=[...new Set(data.filter(isVisibleProduct).map(p=>p.user_id||p.seller_id).filter(Boolean))].length || 0;
         try{ const {count}=await sb.from('orders').select('*',{count:'exact',head:true}); state.stats.orders=count||0; }catch(e){}
         return;
       }
@@ -796,13 +796,13 @@
     return `<div class="page-card payout-card"><div class="section-head compact"><h2>Payout method</h2><span class="badge">${esc(payoutMethodLabel(a))}</span></div><p class="muted">Choose where admin should send your seller payout: UPI or bank account.</p><form id="payoutAccountForm" class="form payout-form"><select name="payout_method"><option value="upi" ${method==='upi'?'selected':''}>UPI</option><option value="bank" ${method==='bank'?'selected':''}>Bank account</option></select><input name="account_holder_name" placeholder="Account holder name" value="${esc(a.account_holder_name||state.profile?.full_name||'')}"><input name="upi_id" placeholder="UPI ID, e.g. name@upi" value="${esc(a.upi_id||'')}"><input name="bank_name" placeholder="Bank name" value="${esc(a.bank_name||'')}"><input name="account_number" placeholder="Account number" value="${esc(a.account_number||'')}"><input name="ifsc" placeholder="IFSC code" value="${esc(a.ifsc||'')}"><button class="primary">Save payout details</button></form></div>`;
   }
   async function savePayoutAccount(form){
-    if(!state.user||!sb) return toast('Login and connect Supabase first');
+    if(!state.user||!sb) return toast('Please login first. If this continues, contact support.');
     const fd=new FormData(form); const method=fd.get('payout_method');
     const payload={user_id:state.user.id,payout_method:method,account_holder_name:fd.get('account_holder_name'),upi_id:fd.get('upi_id'),bank_name:fd.get('bank_name'),account_number:fd.get('account_number'),ifsc:String(fd.get('ifsc')||'').toUpperCase(),updated_at:new Date().toISOString()};
     if(method==='upi' && !payload.upi_id) return toast('Enter UPI ID');
     if(method==='bank' && (!payload.account_number || !payload.ifsc || !payload.account_holder_name)) return toast('Enter bank account holder, account number and IFSC');
     const {error}=await sb.from('seller_payout_accounts').upsert(payload,{onConflict:'user_id'});
-    if(error) return toast('Run SUPABASE_v82_PAYOUT_PATCH.sql once, then save payout details.');
+    if(error) return toast('Payout setup is not ready yet. Please contact support.');
     await loadFinanceData(); toast('Payout details saved'); render();
   }
   async function requestPayout(){
@@ -812,7 +812,7 @@
     const a=state.finance.payoutAccount; if(!a) return toast('Save UPI or bank payout details first');
     const payload={user_id:state.user.id,amount,status:'requested',payout_method:a.payout_method,upi_id:a.upi_id,account_holder_name:a.account_holder_name,bank_name:a.bank_name,account_number:a.account_number,ifsc:a.ifsc};
     const {error}=await sb.from('seller_payout_requests').insert(payload);
-    if(error) return toast('Run SUPABASE_v82_PAYOUT_PATCH.sql once, then request payout.');
+    if(error) return toast('Payout request could not be created. Please contact support.');
     await sb.from('seller_ledger').update({status:'payout_requested',updated_at:new Date().toISOString()}).eq('seller_id',state.user.id).in('status',['pending_clearance','available']);
     await loadFinanceData(); toast('Payout request sent to admin'); render();
   }
@@ -855,7 +855,7 @@
       if(itemRes.error && /seller_user_id|platform_commission|seller_amount|payout_status/i.test(String(itemRes.error.message||''))){
         const fallbackItems=items.map(i=>({order_id:i.order_id,product_id:i.product_id,quantity:i.quantity,price:i.price}));
         await sb.from('order_items').insert(fallbackItems);
-        toast('Order saved. Run SUPABASE_v82_PAYOUT_PATCH.sql to enable payout ledger.');
+        toast('Order saved. Seller payout record will be updated by admin.');
       } else if(itemRes.error){ return toast(itemRes.error.message); }
       if(ledgerRows.length){
         const ledgers=ledgerRows.map(l=>({...l,order_id:orderId}));
@@ -1036,9 +1036,10 @@
     if(!msg.trim()) return toast('Write a message first');
     const product=state.products.find(p=>String(p.id)===String(productId));
     const receiverId=product?.user_id || null;
+    if(!product || !receiverId) return toast('Open a product and tap Message Seller to start a seller chat.');
     if(product && String(receiverId)===String(state.user.id)) return toast('This is your own listing.');
     if(sb){
-      const payload={sender_id:state.user.id,receiver_id:receiverId,product_id:productId||null,message:msg,is_read:false};
+      const payload={sender_id:state.user.id,receiver_id:receiverId,product_id:productId,message:msg,is_read:false};
       const {error}=await sb.from('messages').insert(payload);
       if(error) return toast(error.message);
       if(receiverId){ await sendAdminNotice('buyer_message','New product message', `${state.profile?.full_name||state.user.email||'Buyer'} messaged ${product?.title||'a product'}`, {product_id:productId,seller_id:receiverId}); }
@@ -1075,7 +1076,7 @@
   function adminNotificationsPanel(){
     if(!isAdminUser()) return '';
     const rows=(state.admin.notifications||[]).slice(0,12).map(n=>`<details class="admin-detail-card"><summary><div><b>${esc(n.subject||'Admin notification')}</b><p>${esc(n.body||'')}</p><small>${n.created_at?new Date(n.created_at).toLocaleString('en-IN'):''}</small></div><span class="badge ${n.status==='unread'?'owner':'verified'}">${esc(n.status||'new')}</span></summary><pre class="admin-json">${esc(JSON.stringify(n.payload||{},null,2))}</pre></details>`).join('');
-    return `<section class="page-card admin-panel"><div class="section-head compact"><h2>Admin notifications</h2><span class="badge live-badge">Realtime</span></div><p class="muted">Seller verification requests and important platform actions appear here instantly. Email delivery can be connected through Supabase SMTP/Edge Function using this notification table.</p><div>${rows||empty('No notifications yet')}</div></section>`;
+    return `<section class="page-card admin-panel"><div class="section-head compact"><h2>Admin notifications</h2><span class="badge live-badge">Realtime</span></div><p class="muted">Seller verification requests, product messages and important platform actions appear here instantly.</p><div>${rows||empty('No notifications yet')}</div></section>`;
   }
 
   function adminCarouselRows(){
@@ -1086,7 +1087,7 @@
     if(!sb||!isAdminUser()) return toast('Admin access required');
     const fd=new FormData(form); const payload={title:fd.get('title'),subtitle:fd.get('subtitle'),image_url:fd.get('image_url')||'',cta_text:fd.get('cta_text')||'Open',cta_route:normalizeRouteName(fd.get('cta_route')||'market'),sort_order:Number(fd.get('sort_order')||10),active:true,updated_at:new Date().toISOString()};
     const {error}=await sb.from('site_carousel_slides').insert(payload);
-    if(error) return toast('Run the v82 SQL patch once to enable dynamic carousel.');
+    if(error) return toast('Carousel save failed. Please check admin setup.');
     form.reset(); await loadSiteContent(); toast('Carousel slide saved'); render();
   }
   async function toggleCarouselSlide(id,active){ if(!sb||!isAdminUser()) return; const {error}=await sb.from('site_carousel_slides').update({active,updated_at:new Date().toISOString()}).eq('id',id); if(error)return toast(error.message); await loadSiteContent(); render(); }
@@ -1118,19 +1119,19 @@
       <div class="admin-kpi"><small>Paid Revenue</small><b>${adminMoney(paid)}</b><span>Paid / shipped / delivered</span></div>
       <div class="admin-kpi"><small>Platform Fees</small><b>${adminMoney(platform)}</b><span>Buyer protection fees</span></div>
       <div class="admin-kpi"><small>Pending Sellers</small><b>${pendingSellers.length}</b><span>Need document review</span></div>
-      <div class="admin-kpi"><small>Live Products</small><b>${products.filter(p=>p.status==='approved').length}</b><span>Monitor and remove unsafe items</span></div>
+      <div class="admin-kpi"><small>Live Products</small><b>${products.filter(isVisibleProduct).length}</b><span>Monitor and remove unsafe items</span></div>
       <div class="admin-kpi"><small>Safety Reports</small><b>${reports.filter(r=>r.status==='open').length}</b><span>Open reports</span></div>
     </section>
     <section class="admin-columns">
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Seller approval queue</h2><span class="badge">${pendingSellers.length} pending</span></div><div id="sellerApprovalList">${adminSellerList(sellers)}</div></div>
-      <div class="page-card admin-panel"><div class="section-head compact"><h2>Product safety review</h2><span class="badge verified">${products.filter(p=>p.status==='approved').length} live</span></div><p class="muted">Approved sellers publish directly. Remove or ban unsafe listings from Live products.</p></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Product safety review</h2><span class="badge verified">${products.filter(isVisibleProduct).length} live</span></div><p class="muted">Approved sellers publish directly. Remove or ban unsafe listings from Live products.</p></div>
     </section>
     <section class="admin-columns">
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Approved sellers</h2><span class="badge verified">${sellers.filter(s=>s.status==='approved').length} active</span></div><div id="approvedSellersList">${adminSellerManager(sellers,'approved')}</div></div>
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Rejected / banned sellers</h2><span class="badge danger-soft">${sellers.filter(s=>['rejected','banned'].includes(s.status)).length}</span></div><div id="sellerArchiveList">${adminSellerManager(sellers,'archive')}</div></div>
     </section>
     <section class="admin-columns">
-      <div class="page-card admin-panel"><div class="section-head compact"><h2>Live products</h2><span class="badge verified">${products.filter(p=>p.status==='approved').length} live</span></div><div id="approvedProductsList">${adminProductManager(products,'approved')}</div></div>
+      <div class="page-card admin-panel"><div class="section-head compact"><h2>Live products</h2><span class="badge verified">${products.filter(isVisibleProduct).length} live</span></div><div id="approvedProductsList">${adminProductManager(products,'approved')}</div></div>
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Removed / banned products</h2><span class="badge danger-soft">${products.filter(p=>['removed','rejected','banned'].includes(p.status)).length}</span></div><div id="productArchiveList">${adminProductManager(products,'archive')}</div></div>
     </section>
     <section class="admin-columns">
@@ -1141,7 +1142,7 @@
       <div class="revenue-mini-grid">
         <div><b>Memberships</b><span>${memberships.length} purchases</span><strong>${adminMoney(memberships.reduce((s,p)=>s+Number(p.amount||0),0))}</strong></div><div><b>Seller Plans</b><span>${plans.length} purchases</span><strong>${adminMoney(plans.reduce((s,p)=>s+Number(p.amount||0),0))}</strong></div>
         <div><b>Boosted Listings</b><span>${products.filter(p=>p.is_boosted).length} active / ${boosts.length} logs</span><strong>${adminMoney(boosts.reduce((s,b)=>s+Number(b.amount||0),0))}</strong></div>
-        <div><b>Approved Products</b><span>${products.filter(p=>p.status==='approved').length} live</span><strong>${products.length} total</strong></div>
+        <div><b>Approved Products</b><span>${products.filter(isVisibleProduct).length} live</span><strong>${products.length} total</strong></div>
         <div><b>Seller Pipeline</b><span>${sellers.length} sellers</span><strong>${sellers.filter(s=>s.status==='approved').length} approved</strong></div>
       </div>
     </section>
@@ -1576,7 +1577,7 @@
     if(sort==='condition_used') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='used');
     if(sort==='price_low') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
     if(sort==='price_high') arr.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
-    const grid=$('#marketGrid'); if(grid) grid.innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products'));
+    const grid=$('#marketGrid'); if(grid){ grid.innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,20); }
   }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
   window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,openGallery,closeGallery,stepGallery};
