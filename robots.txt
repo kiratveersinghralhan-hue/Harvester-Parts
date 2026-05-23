@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://harvesterparts.in/sitemap.xml
