@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Harvester Parts | Agricultural Machinery & Spare Parts Marketplace</title>
+  <meta name="description" content="Harvester Parts is a trusted agricultural machinery and spare parts marketplace for farmers, dealers, workshops and machine owners across India." />
+  <meta name="theme-color" content="#102115" />
+  <meta property="og:title" content="Harvester Parts" />
+  <meta property="og:description" content="A premium agriculture marketplace for harvesters, tractors, implements and genuine spare parts." />
+  <meta property="og:image" content="./logo-512.png" />
+  <meta name="keywords" content="harvester parts, combine harvester parts, tractor parts, agriculture machinery, farm equipment, spare parts India, seed drill, straw reaper, rotavator, bearings, belts" />
+  <meta property="og:url" content="https://harvesterparts.in" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="canonical" href="https://harvesterparts.in" />
+  <link rel="icon" href="./favicon.png" />
+  <link rel="apple-touch-icon" href="./logo-192.png" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="stylesheet" href="./styles.css?v=91" />
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script defer src="./supabase-config.js?v=91"></script>
+  <script defer src="./app.js?v=91"></script>
+  <script defer src="./language-ux-patch.js?v=91"></script>
+
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Harvester Parts","url":"https://harvesterparts.in","logo":"https://harvesterparts.in/logo-512.png","sameAs":[],"description":"Premium verified marketplace for agricultural machinery, harvester parts, tractor spares and farm equipment in India."}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Harvester Parts","url":"https://harvesterparts.in","potentialAction":{"@type":"SearchAction","target":"https://harvesterparts.in/#market?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
+</head>
+<body>
+  <div id="intro" class="intro">
+    <div class="intro-card">
+      <span class="intro-kicker">Verified agri marketplace</span>
+      <img src="./harvester-logo-full.jpg" alt="Harvester Parts">
+      <div class="intro-line"></div>
+      <p>Opening Harvester Parts</p>
+    </div>
+  </div>
+
+  <div id="languageModal" class="modal show">
+    <div class="modal-card language-card">
+      <img src="./logo-192.png" alt="Harvester Parts" class="modal-logo">
+      <h2 data-i18n="choose_language">Choose your language</h2>
+      <p data-i18n="language_hint">You can change it anytime from the menu.</p>
+      <div class="language-grid">
+        <button data-lang="en">English</button><button data-lang="hi">हिन्दी</button><button data-lang="pa">ਪੰਜਾਬੀ</button><button data-lang="ta">தமிழ்</button><button data-lang="te">తెలుగు</button><button data-lang="bn">বাংলা</button><button data-lang="mr">मराठी</button><button data-lang="gu">ગુજરાતી</button>
+      </div>
+      <label class="check-row"><input id="dontShowLang" type="checkbox"> <span data-i18n="dont_show">Do not show again</span></label>
+    </div>
+  </div>
+
+  <div id="installModal" class="modal">
+    <div class="modal-card">
+      <button class="modal-x" data-close-modal="installModal">×</button>
+      <h2 data-i18n="install_title">Add Harvester Parts to your phone</h2>
+      <p data-i18n="install_hint">For faster access, install it like an app.</p>
+      <ol class="steps"><li>Tap browser Share button.</li><li>Choose “Add to Home Screen”.</li><li>Open Harvester Parts from your phone.</li></ol>
+      <label class="check-row"><input id="dontShowInstall" type="checkbox"> <span data-i18n="dont_show">Do not show again</span></label>
+      <button class="primary" data-close-modal="installModal">Continue</button>
+    </div>
+  </div>
+
+  <header class="topbar glass">
+    <a class="brand" data-route="home"><img src="./logo-192.png" alt=""><span>Harvester Parts</span></a>
+    <nav class="nav-tabs desktop">
+      <button data-route="home">Home</button><button data-route="market">Market</button><button data-route="categories">Categories</button><button data-route="sell">Sell</button><button data-route="membership">Plans</button><button data-route="how">How it works</button><button data-route="support">Support</button><button data-route="admin" data-admin-only>Admin</button>
+    </nav>
+    <div class="header-actions"><button class="icon-btn" data-route="cart" aria-label="Open cart">Cart <b id="cartCount">0</b></button><button id="authButton" class="primary small">Login</button><button id="menuButton" class="hamb" aria-label="Open menu">☰</button></div>
+  </header>
+
+  <aside id="sideMenu" class="side-menu glass">
+    <div class="menu-head"><img src="./logo-192.png" alt=""><div><b id="menuName">Guest</b><small id="menuRole">Buyer</small></div><button id="closeMenu">×</button></div>
+    <div class="menu-group-label">Main</div><button data-route="home">Home</button><button data-route="market">Market</button><button data-route="categories">Categories</button><button data-route="sell">Sell Machine / Spare Part</button><button data-route="membership">Plans & Rewards</button><div class="menu-group-label">Account</div><button data-route="account">My Account</button><button data-route="orders">My Orders</button><button data-route="messages">Messages</button><button data-route="cart">Cart</button><button data-route="checkout">Checkout</button><button data-route="admin" data-admin-only>Admin Panel</button><div class="menu-group-label">Company</div><button data-route="how">How it works</button><button data-route="support">Support</button><button data-route="about">About Us</button><button data-route="contact">Contact Us</button><div class="menu-group-label">Legal</div><button data-route="legal">Legal Centre</button><button data-route="terms">Terms & Conditions</button><button data-route="privacy">Privacy Policy</button><button data-route="refund">Refund & Cancellation</button><button data-route="shipping">Shipping & Delivery</button><button data-route="razorpay">Razorpay Payment Policy</button><button data-route="payout-policy">Seller Payout Policy</button><button data-route="grievance">Grievance Redressal</button><button id="menuLoginBtn">Login / Signup</button><button id="logoutBtn" class="danger hidden">Logout</button>
+    <div class="menu-lang"><label>Language</label><select id="languageSelect"><option value="en">English</option><option value="hi">हिन्दी</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="bn">বাংলা</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option></select></div>
+  </aside>
+  <div id="backdrop" class="backdrop"></div>
+
+  <main id="app"></main>
+
+  <nav class="bottom-nav glass"><button data-route="home">Home</button><button data-route="market">Market</button><button class="sell-fab" data-route="sell">＋</button><button data-route="membership">Plans</button><button data-route="account">Account</button></nav>
+
+  <div id="toast" class="toast"></div>
+  <button id="scrollTop" class="scroll-top">↑</button>
+</body>
+</html>
