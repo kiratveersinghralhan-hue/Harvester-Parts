@@ -2170,3 +2170,374 @@ body.menu-open #menuButton.hamb{
     display:grid!important;
   }
 }
+
+/* v100 mobile-first seller flow, inbox and readability repair */
+.seller-step-flow{
+  gap:18px!important;
+}
+.seller-step-block{
+  display:grid!important;
+  gap:14px!important;
+  padding:18px!important;
+  border:1px solid #d9e6dc!important;
+  border-radius:16px!important;
+  background:#fbfdfb!important;
+  color:#142219!important;
+}
+.seller-step-title{
+  display:flex!important;
+  gap:12px!important;
+  align-items:flex-start!important;
+}
+.seller-step-title>span{
+  display:grid!important;
+  place-items:center!important;
+  width:34px!important;
+  height:34px!important;
+  flex:0 0 34px!important;
+  border-radius:10px!important;
+  background:#145b36!important;
+  color:#fff!important;
+  font-weight:950!important;
+}
+.seller-step-title h2{
+  margin:0 0 4px!important;
+  color:#142219!important;
+  font-size:clamp(22px,3.6vw,30px)!important;
+  line-height:1.05!important;
+}
+.seller-step-title p{
+  margin:0!important;
+  color:#53665b!important;
+}
+.step-muted{
+  opacity:.82!important;
+  background:#f7faf7!important;
+}
+.form-choice-hint{
+  padding:16px!important;
+  border:1px dashed #b9d2c0!important;
+  border-radius:16px!important;
+  background:#f4faf6!important;
+  color:#142219!important;
+}
+.form-choice-hint b,.assist-type-pill{
+  color:#145b36!important;
+  font-weight:950!important;
+}
+.assist-type-pill{
+  display:inline-flex!important;
+  width:max-content!important;
+  max-width:100%!important;
+  padding:9px 12px!important;
+  border-radius:999px!important;
+  background:#e9f5ec!important;
+  border:1px solid #cde1d2!important;
+}
+.seller-flow-card .listing-mode-card,.seller-flow-card .sell-type-card{
+  min-height:118px!important;
+}
+.seller-verify-form{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px!important;
+}
+.seller-verify-form textarea,.seller-verify-form .doc-upload-grid,.seller-verify-form .notice,.seller-verify-form button{
+  grid-column:1/-1!important;
+}
+.doc-upload-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:12px!important;
+}
+.file-label{
+  min-width:0!important;
+  background:#f8fbf8!important;
+  border:1px solid #d7e4da!important;
+  border-radius:14px!important;
+  padding:12px!important;
+}
+.messages-layout{
+  display:grid!important;
+  grid-template-columns:minmax(260px,330px) minmax(0,1fr)!important;
+  gap:16px!important;
+  align-items:start!important;
+}
+.message-thread-list,.message-chat-panel,.messages-head,.messages-empty{
+  background:#fff!important;
+  color:#142219!important;
+}
+.thread-select{
+  width:100%!important;
+  display:none!important;
+  border:1px solid #cbdcd0!important;
+  background:#fff!important;
+  color:#142219!important;
+  border-radius:12px!important;
+  padding:12px!important;
+  margin-bottom:12px!important;
+}
+.thread-buttons{
+  display:grid!important;
+  gap:9px!important;
+}
+.thread-button{
+  display:flex!important;
+  justify-content:space-between!important;
+  align-items:center!important;
+  gap:10px!important;
+  width:100%!important;
+  text-align:left!important;
+  padding:12px!important;
+  border-radius:14px!important;
+  border:1px solid #d7e4da!important;
+  background:#f7faf8!important;
+  color:#142219!important;
+}
+.thread-button.active{
+  background:#eaf5ed!important;
+  border-color:#145b36!important;
+  box-shadow:0 12px 30px rgba(20,91,54,.10)!important;
+}
+.thread-button span{
+  min-width:0!important;
+  display:grid!important;
+  gap:3px!important;
+}
+.thread-button b,.chat-product-head b{
+  color:#142219!important;
+  overflow-wrap:anywhere!important;
+}
+.thread-button small,.chat-product-head span{
+  color:#53665b!important;
+  overflow-wrap:anywhere!important;
+}
+.thread-button em{
+  display:grid!important;
+  place-items:center!important;
+  min-width:22px!important;
+  height:22px!important;
+  border-radius:999px!important;
+  background:#145b36!important;
+  color:#fff!important;
+  font-style:normal!important;
+  font-size:12px!important;
+  font-weight:950!important;
+}
+.chat-product-head{
+  display:flex!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  align-items:flex-start!important;
+  padding-bottom:12px!important;
+  border-bottom:1px solid #dbe8de!important;
+}
+.message-timeline{
+  display:grid!important;
+  gap:10px!important;
+  margin:14px 0!important;
+}
+.message-bubble{
+  display:flex!important;
+  max-width:min(78%,680px)!important;
+}
+.message-bubble>div{
+  padding:12px 14px!important;
+  border-radius:16px!important;
+  border:1px solid #d7e4da!important;
+}
+.message-bubble.sent{
+  margin-left:auto!important;
+  justify-content:flex-end!important;
+}
+.message-bubble.sent>div{
+  background:#145b36!important;
+  color:#fff!important;
+  border-color:#145b36!important;
+}
+.message-bubble.received>div{
+  background:#f4f8f5!important;
+  color:#142219!important;
+}
+.message-bubble span{
+  display:block!important;
+  color:#6b7d72!important;
+  font-size:12px!important;
+  margin:2px 0 6px!important;
+}
+.message-bubble.sent span,.message-bubble.sent b,.message-bubble.sent p{
+  color:#fff!important;
+}
+.message-bubble p{
+  margin:0!important;
+  line-height:1.45!important;
+  overflow-wrap:anywhere!important;
+}
+.message-bubble em{
+  align-self:start!important;
+  margin-left:8px!important;
+  padding:4px 8px!important;
+  border-radius:999px!important;
+  background:#f3c861!important;
+  color:#142219!important;
+  font-style:normal!important;
+  font-size:11px!important;
+  font-weight:950!important;
+}
+.message-reply-form textarea{
+  min-height:92px!important;
+}
+.admin-hero-pro,.admin-kpi,.admin-panel,.admin-fold,.admin-assisted-panel,.money-admin-panel{
+  background:#fff!important;
+  color:#142219!important;
+  border:1px solid #d9e6dc!important;
+  box-shadow:0 18px 48px rgba(21,47,31,.10)!important;
+}
+.admin-hero-pro .admin-orb{
+  display:none!important;
+}
+.admin-owner-row h1,.admin-panel h2,.admin-kpi b,.admin-detail-card b{
+  color:#142219!important;
+}
+.admin-owner-row p,.admin-kpi span,.admin-detail-card summary p,.admin-detail-card summary small,.admin-panel p{
+  color:#53665b!important;
+}
+.admin-kpi small{
+  color:#145b36!important;
+}
+.admin-detail-card,.admin-detail-card[open]{
+  background:#fff!important;
+  color:#142219!important;
+  border:1px solid #d9e6dc!important;
+}
+.admin-detail-body,.info-list div,.revenue-mini-grid div,.money-grid div{
+  background:#f7faf8!important;
+  color:#142219!important;
+}
+.premium-info-grid .page-card,.about-grid .page-card,.support-list div,.faq details,.process-card,.contact-card,.about-hero,.legal-hero{
+  background:#fff!important;
+  color:#142219!important;
+  border:1px solid #d9e6dc!important;
+}
+.premium-info-grid .page-card p,.about-grid .page-card p,.support-list span,.faq p,.process-card p,.contact-card p,.about-hero p,.legal-hero p{
+  color:#53665b!important;
+}
+.faq summary,.support-list b,.about-metrics b{
+  color:#145b36!important;
+}
+.product-card .price-row{
+  align-items:flex-start!important;
+  gap:10px!important;
+}
+.product-card .price{
+  line-height:1.05!important;
+  white-space:nowrap!important;
+  font-size:18px!important;
+}
+.product-card .chip,.product-card .badge{
+  white-space:normal!important;
+  text-align:left!important;
+}
+.photo-lightbox{
+  background:rgba(7,12,8,.88)!important;
+  backdrop-filter:blur(12px)!important;
+  -webkit-backdrop-filter:blur(12px)!important;
+  padding:22px!important;
+}
+.photo-lightbox img{
+  max-width:min(94vw,1100px)!important;
+  max-height:78dvh!important;
+  border-radius:16px!important;
+  background:#fff!important;
+  box-shadow:0 24px 90px rgba(0,0,0,.45)!important;
+}
+.lightbox-close,.lightbox-nav{
+  background:#fff!important;
+  color:#142219!important;
+  border:1px solid rgba(255,255,255,.75)!important;
+  box-shadow:0 14px 42px rgba(0,0,0,.28)!important;
+}
+.lightbox-close{
+  width:54px!important;
+  height:54px!important;
+  right:18px!important;
+  top:18px!important;
+  font-size:34px!important;
+  line-height:1!important;
+}
+.lightbox-nav{
+  width:50px!important;
+  height:50px!important;
+  font-size:34px!important;
+}
+.lightbox-count{
+  background:#fff!important;
+  color:#142219!important;
+  border:1px solid #d9e6dc!important;
+  font-weight:950!important;
+}
+@media(max-width:900px){
+  .messages-layout{
+    grid-template-columns:1fr!important;
+  }
+  .thread-select{
+    display:block!important;
+  }
+  .thread-buttons{
+    max-height:220px!important;
+    overflow:auto!important;
+  }
+  .seller-verify-form,.doc-upload-grid{
+    grid-template-columns:1fr!important;
+  }
+  .chat-product-head{
+    display:grid!important;
+  }
+}
+@media(max-width:560px){
+  .sell-head h1,.messages-head h1,.category-hero h1,.about-hero h1,.contact-card h1{
+    font-size:clamp(30px,9vw,40px)!important;
+    line-height:1.02!important;
+  }
+  .seller-step-block{
+    padding:14px!important;
+    border-radius:14px!important;
+  }
+  .seller-step-title{
+    gap:10px!important;
+  }
+  .seller-step-title>span{
+    width:30px!important;
+    height:30px!important;
+    flex-basis:30px!important;
+  }
+  .seller-flow-card .listing-mode-card,.seller-flow-card .sell-type-card{
+    min-height:auto!important;
+    padding:14px!important;
+  }
+  .message-bubble{
+    max-width:94%!important;
+  }
+  .chat-product-head .ghost,.message-reply-form button{
+    width:100%!important;
+  }
+  .photo-lightbox{
+    padding:10px!important;
+  }
+  .photo-lightbox img{
+    max-height:72dvh!important;
+    border-radius:12px!important;
+  }
+  .lightbox-close{
+    width:48px!important;
+    height:48px!important;
+    right:10px!important;
+    top:10px!important;
+  }
+  .lightbox-nav{
+    width:44px!important;
+    height:44px!important;
+  }
+  .lightbox-count{
+    bottom:14px!important;
+  }
+}

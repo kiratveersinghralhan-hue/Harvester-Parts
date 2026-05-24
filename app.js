@@ -42,9 +42,9 @@
   const BUYER_PLATFORM_FEE_RATE = 0.035;
   const SUPPORT_EMAIL = cfg.SUPPORT_EMAIL || 'support@harvesterparts.in';
   const ADMIN_ALERT_EMAIL = cfg.ADMIN_ALERT_EMAIL || ADMIN_EMAIL;
-  const ASSISTED_LISTING_FEE = 29;
+  const ASSISTED_LISTING_FEE = 19;
   const ROAD_TRANSPORT_RATE_PER_KM = 60;
-  const LAUNCH_CLEAN_VERSION = 'v99';
+  const LAUNCH_CLEAN_VERSION = 'v100';
   const LIVE_FINANCE_START = new Date(cfg.LIVE_FINANCE_START || '2026-05-24T00:00:00+05:30').getTime();
   const COMMISSION_SLABS = [
     {upto:5000, rate:0.035, label:'3.5% under Rs. 5,000'},
@@ -1161,7 +1161,19 @@
     if(gate) return gate;
     const used=userListingCount(); const limit=currentListingLimit();
     const d=formDraft('sellFormDraft');
-    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Choose how you want to list.</h1><p class="muted">Self fill keeps the full product form in your control. Professional fill lets Harvester Parts prepare the final listing from your basic details and notes.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card seller-flow-card"><form id="sellForm" class="form sell-form"><div class="listing-mode-grid" role="radiogroup" aria-label="Listing method"><label class="listing-mode-card" data-listing-mode="self"><input type="radio" name="listing_service" value="self" ${d.listing_service==='assisted'?'':'checked'}><b>Self fill listing form</b><span>Free. You add complete product details, photos, price and delivery notes.</span></label><label class="listing-mode-card" data-listing-mode="assisted"><input type="radio" name="listing_service" value="assisted" ${d.listing_service==='assisted'?'checked':''}><b>Get it professionally filled</b><span>${money(ASSISTED_LISTING_FEE)} per item. Send basics and our team prepares precise details.</span></label></div><div class="self-listing-fields"><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card active" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" checked><span class="sell-dot"></span><span><b>Machinery</b><small>Combine, tractor, trolley, seed drill, reaper or implement</small></span></label><label class="sell-type-card" data-sell-card="spare"><input type="radio" name="sell_type" value="spare"><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, filters and exact fitment</small></span></label></div><div class="sell-form-grid"><select name="condition"><option value="New">New</option><option value="Used" selected>Used</option><option value="Refurbished">Refurbished</option><option value="Factory Stock">Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name"><input name="price" value="${esc(formatINRInput(d.price)||'')}" inputmode="numeric" placeholder="Listing price, e.g. 1,25,000"><select name="category" id="sellCategorySelect">${categoryOptionsFor('machine')}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / company"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"></div><div class="sell-dynamic-section machine-fields"><h3>Machinery details</h3><div class="sell-form-grid"><input name="machine_year" value="${esc(d.machine_year||'')}" placeholder="Year / hours used, if known"><input name="engine_hp" value="${esc(d.engine_hp||'')}" placeholder="HP / capacity / attachment details"><input name="machine_delivery_note" value="${esc(d.machine_delivery_note||'')}" placeholder="Seller delivery or buyer pickup note"></div></div><div class="sell-dynamic-section spare-fields"><h3>Spare part details</h3><div class="sell-form-grid"><input name="part_number" value="${esc(d.part_number||'')}" placeholder="Part number / code"><input name="compatible_machine" value="${esc(d.compatible_machine||'')}" placeholder="Compatible machine, brand or model"><input name="dimensions" value="${esc(d.dimensions||'')}" placeholder="Dimensions L x W x H, size or belt/bearing number"><input name="material" value="${esc(d.material||'')}" placeholder="Material / grade / teeth / blade size"></div></div><div class="sell-form-grid"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state">${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District"><input name="city" value="${esc(d.city||'')}" placeholder="City / village"><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6"></div><textarea name="description" placeholder="Describe condition, exact location, compatibility, dimensions and delivery details">${esc(d.description||'')}</textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to preview your slab commission and payout.</div><button class="primary">Publish Listing</button></div><div class="assisted-listing-fields hidden-fields"><div class="assisted-pack"><b>Professional listing service</b><span>${money(ASSISTED_LISTING_FEE)} per item. We write the final details after your basic request, photos and notes.</span></div><div class="sell-form-grid"><input name="assist_name" value="${esc(d.assist_name||state.profile?.full_name||'')}" placeholder="Your name"><input name="assist_phone" value="${esc(d.assist_phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number"><select name="assist_item_type"><option value="machine">Machinery</option><option value="spare">Spare part</option></select><select name="assist_condition"><option>Used</option><option>New</option><option>Refurbished</option><option>Factory Stock</option></select><input name="assist_title" value="${esc(d.assist_title||'')}" placeholder="Machine / part name"><input name="assist_expected_price" value="${esc(formatINRInput(d.assist_expected_price)||'')}" inputmode="numeric" placeholder="Expected price optional"><input name="assist_location" value="${esc(d.assist_location||'')}" placeholder="City / village and pincode"></div><textarea name="assist_note" placeholder="Tell us what you know: brand, model, photos available, issue, size, compatibility, pickup/delivery note">${esc(d.assist_note||'')}</textarea><button class="primary">Pay ${money(ASSISTED_LISTING_FEE)} and request listing help</button></div></form></section>${sellerListingsPanel()}`;
+    const chosenType=['machine','spare'].includes(d.sell_type) ? d.sell_type : '';
+    const chosenMode=['self','assisted'].includes(d.listing_service) ? d.listing_service : '';
+    const categoryType=chosenType || 'machine';
+    const machineChecked=chosenType==='machine'?'checked':'';
+    const spareChecked=chosenType==='spare'?'checked':'';
+    const selfChecked=chosenMode==='self'?'checked':'';
+    const assistedChecked=chosenMode==='assisted'?'checked':'';
+    const selfHidden=chosenMode==='self'?'':'hidden-fields';
+    const assistedHidden=chosenMode==='assisted'?'':'hidden-fields';
+    const hintHidden=(chosenType&&chosenMode)?'hidden-fields':'';
+    const condition=d.condition||'Used';
+    const assistCondition=d.assist_condition||'Used';
+    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>List machinery or spare parts in a guided flow.</h1><p class="muted">First choose what you are selling, then choose whether you want to fill the listing yourself or send a small professional listing request to Harvester Parts.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card seller-flow-card"><form id="sellForm" class="form sell-form seller-step-flow"><div class="seller-step-block"><div class="seller-step-title"><span>1</span><div><h2>What do you want to sell?</h2><p class="muted">Pick one type so the page shows the correct details.</p></div></div><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card ${chosenType==='machine'?'active':''}" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" ${machineChecked}><span class="sell-dot"></span><span><b>Machinery</b><small>Combine, tractor, trolley, seed drill, reaper or farm implement</small></span></label><label class="sell-type-card ${chosenType==='spare'?'active':''}" data-sell-card="spare"><input type="radio" name="sell_type" value="spare" ${spareChecked}><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, filters, gears or exact fitment parts</small></span></label></div></div><div class="seller-step-block listing-step ${chosenType?'':'step-muted'}"><div class="seller-step-title"><span>2</span><div><h2>How should this listing be made?</h2><p class="muted">Use self listing for full control, or let our team prepare the final details for a small fee.</p></div></div><div class="listing-mode-grid" role="radiogroup" aria-label="Listing method"><label class="listing-mode-card ${chosenMode==='self'?'active':''}" data-listing-mode="self"><input type="radio" name="listing_service" value="self" ${selfChecked}><b>List it myself</b><span>Free. Add product name, model, photos, specifications, price and location yourself.</span></label><label class="listing-mode-card ${chosenMode==='assisted'?'active':''}" data-listing-mode="assisted"><input type="radio" name="listing_service" value="assisted" ${assistedChecked}><b>Send to company</b><span>${money(ASSISTED_LISTING_FEE)} per item. Share basics now and we prepare the precise listing.</span></label></div></div><div class="form-choice-hint request-note ${hintHidden}"><b>Next step</b><p>Choose the item type and listing method above. The correct form will open after both choices are selected.</p></div><div class="self-listing-fields ${selfHidden}"><div class="assisted-pack"><b>Self listing form</b><span>Add clear details so buyers can search, compare and contact you confidently.</span></div><div class="sell-form-grid"><select name="condition"><option value="New" ${condition==='New'?'selected':''}>New</option><option value="Used" ${condition==='Used'?'selected':''}>Used</option><option value="Refurbished" ${condition==='Refurbished'?'selected':''}>Refurbished</option><option value="Factory Stock" ${condition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name"><input name="price" value="${esc(formatINRInput(d.price)||'')}" inputmode="numeric" placeholder="Listing price, e.g. 1,25,000"><select name="category" id="sellCategorySelect">${categoryOptionsFor(categoryType)}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / company"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"></div><div class="sell-dynamic-section machine-fields ${chosenType==='spare'?'hidden-fields':''}"><h3>Machinery details</h3><div class="sell-form-grid"><input name="machine_year" value="${esc(d.machine_year||'')}" placeholder="Year / hours used, if known"><input name="engine_hp" value="${esc(d.engine_hp||'')}" placeholder="HP / capacity / attachment details"><input name="machine_delivery_note" value="${esc(d.machine_delivery_note||'')}" placeholder="Seller delivery, buyer pickup or road transport note"></div></div><div class="sell-dynamic-section spare-fields ${chosenType==='spare'?'':'hidden-fields'}"><h3>Spare part details</h3><div class="sell-form-grid"><input name="part_number" value="${esc(d.part_number||'')}" placeholder="Part number / code"><input name="compatible_machine" value="${esc(d.compatible_machine||'')}" placeholder="Compatible machine, brand or model"><input name="dimensions" value="${esc(d.dimensions||'')}" placeholder="Dimensions L x W x H, size or belt/bearing number"><input name="material" value="${esc(d.material||'')}" placeholder="Material / grade / teeth / blade size"></div></div><div class="sell-form-grid"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state">${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District"><input name="city" value="${esc(d.city||'')}" placeholder="City / village"><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6"></div><textarea name="description" placeholder="Describe condition, exact location, compatibility, dimensions and delivery details">${esc(d.description||'')}</textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to preview your slab commission and payout.</div><button class="primary">Publish Listing</button></div><div class="assisted-listing-fields ${assistedHidden}"><div class="assisted-pack"><b>Professional listing request</b><span>Pay ${money(ASSISTED_LISTING_FEE)} for this item. Send basics now; our team will prepare the final title, details and specifications before listing.</span></div><input type="hidden" name="assist_item_type" value="${esc(chosenType)}"><div class="assist-type-pill">${chosenType==='spare'?'Spare part request':chosenType==='machine'?'Machinery request':'Choose item type above'}</div><div class="sell-form-grid"><input name="assist_name" value="${esc(d.assist_name||state.profile?.full_name||'')}" placeholder="Your name"><input name="assist_phone" value="${esc(d.assist_phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number"><select name="assist_condition"><option ${assistCondition==='Used'?'selected':''}>Used</option><option ${assistCondition==='New'?'selected':''}>New</option><option ${assistCondition==='Refurbished'?'selected':''}>Refurbished</option><option ${assistCondition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="assist_title" value="${esc(d.assist_title||'')}" placeholder="Machine / part name"><input name="assist_qty" value="${esc(d.assist_qty||'1')}" inputmode="numeric" placeholder="Quantity"><input name="assist_expected_price" value="${esc(formatINRInput(d.assist_expected_price)||'')}" inputmode="numeric" placeholder="Expected selling price"><input name="assist_location" value="${esc(d.assist_location||'')}" placeholder="City / village and pincode"><input class="spare-fields ${chosenType==='spare'?'':'hidden-fields'}" name="assist_part_number" value="${esc(d.assist_part_number||'')}" placeholder="Part number / code, if spare part"></div><textarea name="assist_note" placeholder="Add any note: brand, model, photos available, size, compatibility, condition, pickup or delivery requirement">${esc(d.assist_note||'')}</textarea><button class="primary">Pay ${money(ASSISTED_LISTING_FEE)} and send request</button></div></form></section>${sellerListingsPanel()}`;
   }
 
   function sellerListingsPanel(){
@@ -1190,10 +1202,12 @@
   }
   async function submitAssistedListingRequest(form){
     const fd=new FormData(form);
+    const itemType=String(fd.get('assist_item_type')||fd.get('sell_type')||'').trim();
     const title=String(fd.get('assist_title')||'').trim();
+    if(!itemType) return toast('Choose machinery or spare part first.');
     if(!title) return toast('Enter machine or part name');
     const saveRequest=async(paymentId='manual_pending')=>{
-      const payload={user_id:state.user.id,name:fd.get('assist_name')||state.profile?.full_name||'',phone:fd.get('assist_phone')||state.profile?.phone||'',item_type:fd.get('assist_item_type')||'machine',condition:fd.get('assist_condition')||'Used',title,expected_price:parsePrice(fd.get('assist_expected_price')),location:fd.get('assist_location')||'',note:fd.get('assist_note')||'',assisted_fee:ASSISTED_LISTING_FEE,payment_id:paymentId,status:paymentId==='manual_pending'?'payment_pending':'paid_request'};
+      const payload={user_id:state.user.id,name:fd.get('assist_name')||state.profile?.full_name||'',phone:fd.get('assist_phone')||state.profile?.phone||'',item_type:itemType,condition:fd.get('assist_condition')||'Used',title,quantity:parsePrice(fd.get('assist_qty'))||1,part_number:fd.get('assist_part_number')||'',expected_price:parsePrice(fd.get('assist_expected_price')),location:fd.get('assist_location')||'',note:fd.get('assist_note')||'',assisted_fee:ASSISTED_LISTING_FEE,payment_id:paymentId,status:paymentId==='manual_pending'?'payment_pending':'paid_request'};
       await sendAdminNotice('assisted_listing_request','Paid assisted listing request', `${payload.name||state.user.email||'Seller'} requested professional listing help for ${payload.title}`, payload);
       clearFormDraft('sellFormDraft'); form.reset(); toast(paymentId==='manual_pending'?'Assisted listing request saved. Complete payment when Razorpay opens.':'Payment noted. Assisted listing request sent to admin.'); render();
     };
@@ -1208,7 +1222,11 @@
     if(!state.user)return route('login');
     if(!isSellerApproved()) return toast('Seller verification must be approved before listing.');
     const fd=new FormData(form);
-    if(fd.get('listing_service')==='assisted') return submitAssistedListingRequest(form);
+    const sellType=String(fd.get('sell_type')||'');
+    const listingService=String(fd.get('listing_service')||'');
+    if(!sellType) return toast('Choose machinery or spare part first.');
+    if(!listingService) return toast('Choose self listing or professional listing.');
+    if(listingService==='assisted') return submitAssistedListingRequest(form);
     const limit=currentListingLimit(); const used=userListingCount();
     if(used>=limit){ toast(`Your ${activePlan()?.name||'Free'} plan allows ${limitLabel(limit)} listings. Upgrade to list more.`); setTimeout(()=>route('membership'),700); return; }
     const title=String(fd.get('title')||'').trim();
@@ -1225,13 +1243,13 @@
       }
     }
     const detailLines=[
-      fd.get('sell_type')==='machine' && `Machinery details: Year/hours ${fd.get('machine_year')||'not added'}, HP/capacity ${fd.get('engine_hp')||'not added'}, delivery note ${fd.get('machine_delivery_note')||'not added'}`,
-      fd.get('sell_type')==='spare' && `Spare part details: part number ${fd.get('part_number')||'not added'}, compatible machine ${fd.get('compatible_machine')||'not added'}, dimensions/size ${fd.get('dimensions')||'not added'}, material/grade ${fd.get('material')||'not added'}`,
+      sellType==='machine' && `Machinery details: Year/hours ${fd.get('machine_year')||'not added'}, HP/capacity ${fd.get('engine_hp')||'not added'}, delivery note ${fd.get('machine_delivery_note')||'not added'}`,
+      sellType==='spare' && `Spare part details: part number ${fd.get('part_number')||'not added'}, compatible machine ${fd.get('compatible_machine')||'not added'}, dimensions/size ${fd.get('dimensions')||'not added'}, material/grade ${fd.get('material')||'not added'}`,
       fd.get('pincode') && `Pickup pincode: ${fd.get('pincode')}`,
       fd.get('listing_service')==='assisted' && `Assisted listing requested: ${money(ASSISTED_LISTING_FEE)} per item.`
     ].filter(Boolean);
     const description=[fd.get('description'),...detailLines].filter(Boolean).join('\n\n');
-    const payload={user_id:state.user.id,seller_id:state.seller?.id||null,sell_type:fd.get('sell_type')||'spare',condition:fd.get('condition')||'Used',title:fd.get('title'),price,category:fd.get('category'),brand:fd.get('brand'),model:fd.get('model'),weight_kg:Number(fd.get('weight_kg')||0),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),pincode:fd.get('pincode')||'',description,image_urls,status:'approved'};
+    const payload={user_id:state.user.id,seller_id:state.seller?.id||null,sell_type:sellType,condition:fd.get('condition')||'Used',title:fd.get('title'),price,category:fd.get('category'),brand:fd.get('brand'),model:fd.get('model'),weight_kg:Number(fd.get('weight_kg')||0),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),pincode:fd.get('pincode')||'',description,image_urls,status:'approved'};
     if(sb){
       let {error}=await sb.from('products').insert(payload);
       if(error && /seller_id|pincode/i.test(String(error.message||''))){ const fallback={...payload}; delete fallback.seller_id; delete fallback.pincode; const res=await sb.from('products').insert(fallback); error=res.error; }
@@ -1260,6 +1278,70 @@
     const prefill=p ? `Hello, I am interested in ${p.title||'your product'} listed for ${money(p.price)}. Please confirm availability, condition and final price.` : '';
     return `<section class="page-card"><h1>Messages</h1><div class="notice">${intro}</div><form id="messageForm" class="form"><input name="to" value="${esc(sellerName)}" placeholder="Seller name" readonly><input type="hidden" name="product_id" value="${esc(pid||'')}"><textarea name="message" placeholder="Write message">${esc(prefill)}</textarea><button class="primary">Send Message</button></form></section><section class="page-card message-inbox"><div class="section-head compact"><h2>Message inbox</h2><span class="badge ${state.unreadMessages?'owner':''}">${state.unreadMessages} new</span></div>${messageRows()}</section>`;
   }
+  function threadKeyFor(receiverId, productId=''){ return `${receiverId||'unknown'}|${productId||'general'}`; }
+  function messageProduct(productId){ return (state.products||[]).find(x=>String(x.id)===String(productId)); }
+  function messageProductSellerName(p){ return p ? (p.sellers?.business_name || p.users?.full_name || p.users?.email || 'Seller') : 'Marketplace user'; }
+  function messageThreads(){
+    const uid=String(state.user?.id||'');
+    const map=new Map();
+    (state.messages||[]).forEach(m=>{
+      const sent=String(m.sender_id)===uid;
+      const otherId=String(sent ? (m.receiver_id||'') : (m.sender_id||''));
+      if(!otherId) return;
+      const productId=String(m.product_id||'');
+      const p=messageProduct(productId);
+      const key=threadKeyFor(otherId, productId);
+      const otherName=sent ? (m.receiver?.full_name||m.receiver?.email||'Seller') : (m.sender?.full_name||m.sender?.email||'User');
+      if(!map.has(key)) map.set(key,{key,receiverId:otherId,productId,name:otherName,title:p?.title||m.products?.title||'Marketplace chat',messages:[],last:m.created_at||'',unread:0});
+      const t=map.get(key);
+      t.messages.push(m);
+      if(new Date(m.created_at||0).getTime() > new Date(t.last||0).getTime()) t.last=m.created_at||t.last;
+      if(String(m.receiver_id)===uid && !m.is_read) t.unread+=1;
+    });
+    const routedProduct=/^#messages\//.test(location.hash||'') ? messageProduct(state.currentProduct) : null;
+    if(routedProduct && String(routedProduct.user_id||'')!==uid){
+      const receiverId=String(routedProduct.user_id||'');
+      const key=threadKeyFor(receiverId, routedProduct.id);
+      if(!map.has(key)) map.set(key,{key,receiverId,productId:String(routedProduct.id),name:messageProductSellerName(routedProduct),title:routedProduct.title||'Product enquiry',messages:[],last:'',unread:0,prefill:true});
+    }
+    return [...map.values()].map(t=>{ t.messages.sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0)); return t; }).sort((a,b)=>new Date(b.last||0)-new Date(a.last||0));
+  }
+  function selectedMessageThread(threads=[]){
+    const routedProduct=/^#messages\//.test(location.hash||'') ? String(state.currentProduct||'') : '';
+    if(routedProduct) return threads.find(t=>String(t.productId)===routedProduct) || threads[0] || null;
+    const stored=sessionStorage.hp_message_thread_key||'';
+    return threads.find(t=>t.key===stored) || threads[0] || null;
+  }
+  function selectMessageThread(key){
+    const threads=messageThreads();
+    const t=threads.find(x=>x.key===key);
+    if(!t) return;
+    sessionStorage.hp_message_thread_key=key;
+    state.currentProduct=t.productId||null;
+    if(location.hash!=='#messages') history.replaceState(null,'','#messages');
+    render();
+  }
+  function messageRows(thread){
+    const rows=(thread?.messages||[]);
+    if(!thread) return empty('No conversations yet. Open a product and tap Message Seller to start.');
+    if(!rows.length) return `<div class="empty">No messages in this conversation yet. Write the first message below.</div>`;
+    return rows.map(m=>{
+      const sent=String(m.sender_id)===String(state.user?.id);
+      const who=sent?'You':(thread.name||'User');
+      return `<div class="message-bubble ${sent?'sent':'received'}"><div><b>${esc(who)}</b><span>${m.created_at?new Date(m.created_at).toLocaleString('en-IN'):''}</span><p>${esc(m.message||'')}</p></div>${!sent && !m.is_read?'<em>New</em>':''}</div>`;
+    }).join('');
+  }
+  function messagesPage(){
+    if(!state.user) return loginPage();
+    const threads=messageThreads();
+    const selected=selectedMessageThread(threads);
+    const product=selected ? messageProduct(selected.productId) : null;
+    const prefill=(selected?.prefill||(!selected?.messages?.length && product)) ? `Hello, I am interested in ${product?.title||'your product'} listed for ${money(product?.price||0)}. Please confirm availability, condition and final price.` : '';
+    const options=threads.map(t=>`<option value="${esc(t.key)}" ${selected?.key===t.key?'selected':''}>${esc(t.name)} - ${esc(t.title)}</option>`).join('');
+    const threadButtons=threads.map(t=>`<button type="button" class="thread-button ${selected?.key===t.key?'active':''}" onclick="HP.selectMessageThread('${esc(t.key)}')"><span><b>${esc(t.name)}</b><small>${esc(t.title)}${t.last?' - '+new Date(t.last).toLocaleDateString('en-IN'):''}</small></span>${t.unread?`<em>${t.unread}</em>`:''}</button>`).join('');
+    if(!threads.length) return `<section class="page-card messages-empty"><h1>Messages</h1><p class="muted">Open a product and tap Message Seller to start a conversation. Your buyer and seller chats will appear here.</p><button class="primary" data-route="market">Browse Marketplace</button></section>`;
+    return `<section class="page-card messages-head"><span class="eyebrow">Buyer and seller inbox</span><h1>Messages</h1><p class="muted">Choose any conversation, read previous messages and reply from the same place.</p></section><section class="messages-layout"><aside class="page-card message-thread-list"><div class="section-head compact"><h2>Inbox</h2><span class="badge ${state.unreadMessages?'owner':''}">${state.unreadMessages} new</span></div><select id="messageThreadSelect" class="thread-select">${options}</select><div class="thread-buttons">${threadButtons}</div></aside><section class="page-card message-chat-panel"><div class="chat-product-head"><div><b>${esc(selected.name)}</b><span>${esc(selected.title)}</span></div>${product?`<button class="ghost" onclick="HP.route('product',{id:'${esc(product.id)}'})">Open Product</button>`:''}</div><div class="message-timeline">${messageRows(selected)}</div><form id="messageForm" class="form message-reply-form"><input type="hidden" name="thread_key" value="${esc(selected.key)}"><textarea name="message" placeholder="Write a reply">${esc(prefill)}</textarea><button class="primary">Send Message</button></form></section></section>`;
+  }
   async function loadMessages(){
     state.messages=[]; state.unreadMessages=0;
     if(!sb||!state.user) return;
@@ -1280,20 +1362,28 @@
   }
   async function sendMsg(form){
     if(!state.user)return route('login');
-    const fd=new FormData(form); const productId=fd.get('product_id')||''; const msg=cleanMessage(fd.get('message'));
+    const fd=new FormData(form);
+    const key=String(fd.get('thread_key')||'');
+    const parts=key.split('|');
+    let receiverId=parts[0]&&parts[0]!=='unknown'?parts[0]:'';
+    let productId=parts[1]&&parts[1]!=='general'?parts[1]:'';
+    const msg=cleanMessage(fd.get('message'));
     if(!msg.trim()) return toast('Write a message first');
     const product=state.products.find(p=>String(p.id)===String(productId));
-    const receiverId=product?.user_id || null;
-    if(!product || !receiverId) return toast('Open a product and tap Message Seller to start a seller chat.');
+    if(!receiverId && product?.user_id) receiverId=String(product.user_id);
+    if(!receiverId) return toast('Choose a conversation first.');
     if(product && String(receiverId)===String(state.user.id)) return toast('This is your own listing.');
     if(sb){
-      const payload={sender_id:state.user.id,receiver_id:receiverId,product_id:productId,message:msg,is_read:false};
+      const payload={sender_id:state.user.id,receiver_id:receiverId,product_id:productId||null,message:msg,is_read:false};
       const {error}=await sb.from('messages').insert(payload);
       if(error) return toast(error.message);
-      if(receiverId){ await sendAdminNotice('buyer_message','New product message', `${state.profile?.full_name||state.user.email||'Buyer'} messaged ${product?.title||'a product'}`, {product_id:productId,seller_id:receiverId}); }
+      if(receiverId){ await sendAdminNotice('buyer_message','New product message', `${state.profile?.full_name||state.user.email||'Buyer'} messaged ${product?.title||'a marketplace user'}`, {product_id:productId,seller_id:receiverId}); }
       await loadMessages();
+    } else {
+      state.messages.unshift({sender_id:state.user.id,receiver_id:receiverId,product_id:productId,message:msg,is_read:false,created_at:new Date().toISOString()});
     }
-    toast('Message sent to seller'); form.reset(); render();
+    sessionStorage.hp_message_thread_key=threadKeyFor(receiverId, productId);
+    toast('Message sent'); form.reset(); render();
   }
   function ordersPage(){ return `<section class="page-card orders-head"><span class="eyebrow">Buyer area</span><h1>Order history</h1><p class="muted">Track marketplace orders, repeat a previous cart when product details are still available, or remove old pending history.</p></section><section class="orders-list-wrap" id="ordersList">${empty('Loading orders...')}</section>`; }
   function orderCard(o){
@@ -1846,6 +1936,7 @@
     $('#checkoutForm')?.addEventListener('change',updateCheckoutSummary);
     $('#applyCouponBtn')?.addEventListener('click',e=>{ e.preventDefault(); updateCheckoutSummary(true); });
     $('#messageForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>sendMsg(e.target),'Sending...')});
+    $('#messageThreadSelect')?.addEventListener('change',e=>selectMessageThread(e.target.value));
     $('#contactForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>sendContact(e.target),'Saving request...')});
     $('#supportBotForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); const ans=$('#supportBotAnswer'); if(ans){ ans.textContent=supportBotReply(fd.get('topic'),fd.get('question')); ans.classList.add('active'); }});
     $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); withLoading(btn.closest('.membership-card')||btn,()=>purchaseMembership(btn.dataset.planKey),'Opening plan...'); }));
@@ -1860,48 +1951,64 @@
     $('#searchInput')?.addEventListener('blur',()=>setTimeout(()=>$('#searchSuggest')?.classList.remove('show'),140));
     $('#searchSuggest')?.addEventListener('click',e=>{ const b=e.target.closest('[data-suggest]'); if(!b)return; const input=$('#searchInput'); if(input){ input.value=b.dataset.suggest; input.blur(); $('#searchSuggest')?.classList.remove('show'); filterMarket(); } });
     $('#typeFilter')?.addEventListener('change',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
+    bindPhotoLightbox();
+  }
+  function syncSellerFormVisibility(form){
+    if(!form) return;
+    const type=form.querySelector('input[name="sell_type"]:checked')?.value || '';
+    const mode=form.querySelector('input[name="listing_service"]:checked')?.value || '';
+    const selfWrap=form.querySelector('.self-listing-fields');
+    const assistedWrap=form.querySelector('.assisted-listing-fields');
+    const hint=form.querySelector('.form-choice-hint');
+    const listingStep=form.querySelector('.listing-step');
+    selfWrap?.classList.toggle('hidden-fields', mode!=='self');
+    assistedWrap?.classList.toggle('hidden-fields', mode!=='assisted');
+    hint?.classList.toggle('hidden-fields', !!(type&&mode));
+    listingStep?.classList.toggle('step-muted', !type);
+    form.querySelectorAll('.machine-fields').forEach(el=>el.classList.toggle('hidden-fields', type!=='machine'));
+    form.querySelectorAll('.spare-fields').forEach(el=>el.classList.toggle('hidden-fields', type!=='spare'));
+    const assistType=form.querySelector('input[name="assist_item_type"]');
+    if(assistType) assistType.value=type;
+    const pill=form.querySelector('.assist-type-pill');
+    if(pill) pill.textContent=type==='spare'?'Spare part request':type==='machine'?'Machinery request':'Choose item type above';
+    const setDisabled=(wrap,disabled)=>wrap?.querySelectorAll('input,select,textarea,button').forEach(el=>{ el.disabled=disabled; });
+    setDisabled(selfWrap, mode!=='self');
+    setDisabled(assistedWrap, mode!=='assisted');
   }
   function bindListingModeChooser(){
     const form=$('#sellForm'); if(!form) return;
     const draft=formDraft('sellFormDraft');
     const cards=$$('.listing-mode-card');
-    const selfWrap=form.querySelector('.self-listing-fields');
-    const assistedWrap=form.querySelector('.assisted-listing-fields');
-    const setDisabled=(wrap,disabled)=>wrap?.querySelectorAll('input,select,textarea,button').forEach(el=>{ if(el.name!=='listing_service') el.disabled=disabled; });
     const setMode=(mode)=>{
-      mode = mode === 'assisted' ? 'assisted' : 'self';
+      mode = mode === 'assisted' ? 'assisted' : mode === 'self' ? 'self' : '';
       cards.forEach(card=>card.classList.toggle('active', card.dataset.listingMode===mode));
       const radio=form.querySelector(`input[name="listing_service"][value="${mode}"]`); if(radio) radio.checked=true;
-      selfWrap?.classList.toggle('hidden-fields', mode!=='self');
-      assistedWrap?.classList.toggle('hidden-fields', mode!=='assisted');
-      setDisabled(selfWrap, mode!=='self');
-      setDisabled(assistedWrap, mode!=='assisted');
+      syncSellerFormVisibility(form);
       saveFormDraft(form,'sellFormDraft');
     };
     cards.forEach(card=>card.addEventListener('click',()=>setMode(card.dataset.listingMode||'self')));
     form.querySelectorAll('input[name="listing_service"]').forEach(r=>r.addEventListener('change',()=>setMode(r.value)));
-    setMode(draft.listing_service || form.querySelector('input[name="listing_service"]:checked')?.value || 'self');
+    setMode(draft.listing_service || form.querySelector('input[name="listing_service"]:checked')?.value || '');
   }
   function bindSellTypeChooser(){
     const form=$('#sellForm'); if(!form) return;
     const cards=$$('.sell-type-card'); const select=$('#sellCategorySelect');
     const draft=formDraft('sellFormDraft');
     const setType=(type, preferredCategory='')=>{
-      type = type === 'spare' ? 'spare' : 'machine';
+      type = type === 'spare' ? 'spare' : type === 'machine' ? 'machine' : '';
       cards.forEach(card=>card.classList.toggle('active', card.dataset.sellCard===type));
       const radio=form.querySelector(`input[name="sell_type"][value="${type}"]`); if(radio) radio.checked=true;
       if(select){
         const old=preferredCategory || select.value || draft.category || '';
-        select.innerHTML=categoryOptionsFor(type);
+        select.innerHTML=categoryOptionsFor(type || 'machine');
         if([...select.options].some(o=>o.value===old)) select.value=old;
       }
-      form.querySelectorAll('.machine-fields').forEach(el=>el.classList.toggle('hidden-fields', type!=='machine'));
-      form.querySelectorAll('.spare-fields').forEach(el=>el.classList.toggle('hidden-fields', type!=='spare'));
+      syncSellerFormVisibility(form);
       saveFormDraft(form,'sellFormDraft');
     };
     cards.forEach(card=>card.addEventListener('click',()=>setType(card.dataset.sellCard||'machine')));
     form.querySelectorAll('input[name="sell_type"]').forEach(r=>r.addEventListener('change',()=>setType(r.value)));
-    setType(draft.sell_type || form.querySelector('input[name="sell_type"]:checked')?.value || 'machine', draft.category || '');
+    setType(draft.sell_type || form.querySelector('input[name="sell_type"]:checked')?.value || '', draft.category || '');
   }
   function matchesProductType(p,type='all'){
     if(type==='all') return true;
@@ -1937,6 +2044,30 @@
   }
   function stepGallery(delta){ const g=window.__hpGallery; if(!g||!g.imgs?.length)return; g.index=(g.index+delta+g.imgs.length)%g.imgs.length; const img=document.getElementById('lightboxImage'); const cnt=document.getElementById('lightboxCount'); if(img)img.src=g.imgs[g.index]; if(cnt)cnt.textContent=`${g.index+1} / ${g.imgs.length}`; }
   function closeGallery(){ document.getElementById('photoLightbox')?.classList.remove('show'); document.body.classList.remove('lightbox-open'); }
+  function bindPhotoLightbox(){
+    const lb=document.getElementById('photoLightbox');
+    if(lb && !lb.dataset.bound){
+      lb.dataset.bound='1';
+      lb.addEventListener('click',e=>{ if(e.target===lb) closeGallery(); });
+      let startX=0;
+      lb.addEventListener('touchstart',e=>{ startX=e.touches?.[0]?.clientX||0; },{passive:true});
+      lb.addEventListener('touchend',e=>{
+        const endX=e.changedTouches?.[0]?.clientX||startX;
+        const dx=endX-startX;
+        if(Math.abs(dx)>42) stepGallery(dx<0?1:-1);
+      },{passive:true});
+    }
+    if(!window.__hpGalleryKeysBound){
+      window.__hpGalleryKeysBound=true;
+      document.addEventListener('keydown',e=>{
+        const open=document.getElementById('photoLightbox')?.classList.contains('show');
+        if(!open) return;
+        if(e.key==='Escape') closeGallery();
+        if(e.key==='ArrowLeft') stepGallery(-1);
+        if(e.key==='ArrowRight') stepGallery(1);
+      });
+    }
+  }
 
   function filterMarket(){
     const q=($('#searchInput')?.value||'').toLowerCase();
@@ -1952,6 +2083,6 @@
     updateSearchSuggestions();
   }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,reorderOrder,deleteOrder,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,equipBadge,openGallery,closeGallery,stepGallery};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,reorderOrder,deleteOrder,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,equipBadge,openGallery,closeGallery,stepGallery,selectMessageThread};
   document.addEventListener('DOMContentLoaded',init);
 })();
