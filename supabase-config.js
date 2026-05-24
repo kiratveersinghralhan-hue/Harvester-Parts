@@ -6,8 +6,11 @@ window.HP_CONFIG = {
   RAZORPAY_KEY_ID: "rzp_live_Sq44DIwS74kUQV",
   OPENAI_ENABLED: false,
   ADMIN_EMAIL: "kiratveersinghralhan@gmail.com",
+  ADMIN_ALERT_EMAIL: "kiratveersinghralhan@gmail.com",
+  // Optional: paste a Supabase Edge Function / email webhook URL to send real email alerts.
+  ADMIN_ALERT_WEBHOOK: "",
+  SUPPORT_EMAIL: "ralhanstore985@gmail.com",
+  SHOW_DEMO_CATALOG: false,
   CURRENCY: "INR",
   ENABLE_PHONE_OTP: false
 };
-
-

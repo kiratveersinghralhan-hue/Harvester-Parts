@@ -148,11 +148,11 @@
     "Contact Harvester Parts": "हार्वेस्टर पार्ट्स से संपर्क करें",
     "Need help buying, selling or listing spare parts?": "खरीदने, बेचने या स्पेयर पार्ट जोड़ने में मदद चाहिए?",
     "Reach us for seller approval, product listing help, order questions or platform support.": "विक्रेता अनुमोदन, उत्पाद लिस्टिंग, ऑर्डर प्रश्न या प्लेटफ़ॉर्म सहायता के लिए हमसे संपर्क करें।",
-    "Call 9814800017": "9814800017 पर कॉल करें",
-    "WhatsApp Support": "व्हाट्सऐप सहायता",
+    "Email Support": "ईमेल सहायता",
+    "Email Support": "ईमेल सहायता",
     "Email Us": "ईमेल करें",
     "Phone": "फ़ोन",
-    "WhatsApp": "व्हाट्सऐप",
+    "Email": "ईमेल",
     "Email": "ईमेल",
     "Send a message": "संदेश भेजें",
     "Your name": "आपका नाम",
@@ -164,7 +164,7 @@
     "Other": "अन्य",
     "Tell us what you need": "हमें बताएं आपको क्या चाहिए",
     "Send Support Request": "सहायता अनुरोध भेजें",
-    "Support request saved. You can also call or WhatsApp us.": "सहायता अनुरोध सेव हो गया। आप हमें कॉल या व्हाट्सऐप भी कर सकते हैं।",
+    "Support request saved. You can also call or Email us.": "सहायता अनुरोध सेव हो गया। हम ईमेल या सपोर्ट रिकॉर्ड से जवाब देंगे।",
     "How Harvester Parts works": "हार्वेस्टर पार्ट्स कैसे काम करता है",
     "A simple verified marketplace for agriculture.": "कृषि के लिए सरल प्रमाणित बाज़ार।",
     "Harvester Parts helps buyers find machinery and spare parts while keeping sellers verified and listings organized.": "हार्वेस्टर पार्ट्स खरीदारों को मशीनरी और स्पेयर पार्ट्स खोजने में मदद करता है, साथ ही विक्रेताओं को सत्यापित और लिस्टिंग को व्यवस्थित रखता है।",
@@ -221,7 +221,7 @@
     "or": "या",
     "Continue with Google": "Google से जारी रखें",
     "Mobile OTP Login": "मोबाइल OTP लॉगिन",
-    "Phone with country code, e.g. +919814800017": "देश कोड के साथ फ़ोन, जैसे +919814800017",
+    "Phone with country code, e.g. +919000000000": "देश कोड के साथ फ़ोन, जैसे +919000000000",
     "Send OTP": "OTP भेजें",
     "OTP code": "OTP कोड",
     "Verify OTP": "OTP सत्यापित करें",
@@ -424,7 +424,7 @@
     "or": "ਜਾਂ",
     "Continue with Google": "Google ਨਾਲ ਜਾਰੀ ਰੱਖੋ",
     "Mobile OTP Login": "ਮੋਬਾਈਲ OTP ਲਾਗਇਨ",
-    "Phone with country code, e.g. +919814800017": "ਦੇਸ਼ ਕੋਡ ਨਾਲ ਫੋਨ, ਜਿਵੇਂ +919814800017",
+    "Phone with country code, e.g. +919000000000": "ਦੇਸ਼ ਕੋਡ ਨਾਲ ਫੋਨ, ਜਿਵੇਂ +919000000000",
     "Send OTP": "OTP ਭੇਜੋ",
     "OTP code": "OTP ਕੋਡ",
     "Verify OTP": "OTP ਤਸਦੀਕ ਕਰੋ",
@@ -988,10 +988,10 @@
 };
   const EXTRA_V75 = {
     hi: {
-      'Phone login account':'फोन लॉगिन खाता','Choose country code, then enter mobile number. Example: 9814800017':'देश कोड चुनें, फिर मोबाइल नंबर डालें। उदाहरण: 9814800017','Mobile number':'मोबाइल नंबर','Country code':'देश कोड','If OTP fails with Twilio 60200, check the SMS provider credentials in Supabase. The website formats the number before sending.':'फोन OTP अभी सार्वजनिक उपयोग के लिए उपलब्ध नहीं है। कृपया ईमेल या Google लॉगिन करें।','Email login works after Supabase Auth is configured. Phone OTP is currently disabled. Please use email or Google login.':'ईमेल लॉगिन उपलब्ध है। फोन OTP अभी बंद है।','Profile details':'प्रोफाइल विवरण','Keep your buyer and seller profile updated for faster support and verification.':'तेज support और verification के लिए buyer और seller profile updated रखें।','Account overview':'अकाउंट overview','Quick tools':'Quick tools','Trust & safety':'भरोसा और सुरक्षा','Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.':'Website chat और checkout इस्तेमाल करें ताकि orders, seller approvals और support history Harvester Parts के अंदर सुरक्षित रहे।','Listings':'लिस्टिंग','Live':'लाइव','Wishlist':'Wishlist','Seller status':'Seller status','Pending listings':'Pending listings','Not added':'नहीं जोड़ा गया','not verified':'verified नहीं','Become Verified Seller':'Verified seller बनें','Add New Listing':'नई listing जोड़ें','Contact Support':'Support से संपर्क करें','Browse Marketplace':'मार्केट देखें','Verified sellers':'Verified sellers','Admin review':'Admin review','Secure orders':'Secure orders'
+      'Phone login account':'फोन लॉगिन खाता','Choose country code, then enter mobile number. Example: 9000000000':'देश कोड चुनें, फिर मोबाइल नंबर डालें। उदाहरण: 9000000000','Mobile number':'मोबाइल नंबर','Country code':'देश कोड','If OTP fails with Twilio 60200, check the SMS provider credentials in Supabase. The website formats the number before sending.':'फोन OTP अभी सार्वजनिक उपयोग के लिए उपलब्ध नहीं है। कृपया ईमेल या Google लॉगिन करें।','Email login works after Supabase Auth is configured. Phone OTP is currently disabled. Please use email or Google login.':'ईमेल लॉगिन उपलब्ध है। फोन OTP अभी बंद है।','Profile details':'प्रोफाइल विवरण','Keep your buyer and seller profile updated for faster support and verification.':'तेज support और verification के लिए buyer और seller profile updated रखें।','Account overview':'अकाउंट overview','Quick tools':'Quick tools','Trust & safety':'भरोसा और सुरक्षा','Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.':'Website chat और checkout इस्तेमाल करें ताकि orders, seller approvals और support history Harvester Parts के अंदर सुरक्षित रहे।','Listings':'लिस्टिंग','Live':'लाइव','Wishlist':'Wishlist','Seller status':'Seller status','Pending listings':'Pending listings','Not added':'नहीं जोड़ा गया','not verified':'verified नहीं','Become Verified Seller':'Verified seller बनें','Add New Listing':'नई listing जोड़ें','Contact Support':'Support से संपर्क करें','Browse Marketplace':'मार्केट देखें','Verified sellers':'Verified sellers','Admin review':'Admin review','Secure orders':'Secure orders'
     },
     pa: {
-      'Phone login account':'ਫੋਨ ਲਾਗਿਨ ਖਾਤਾ','Choose country code, then enter mobile number. Example: 9814800017':'ਦੇਸ਼ ਕੋਡ ਚੁਣੋ, ਫਿਰ ਮੋਬਾਈਲ ਨੰਬਰ ਪਾਓ। ਉਦਾਹਰਨ: 9814800017','Mobile number':'ਮੋਬਾਈਲ ਨੰਬਰ','Country code':'ਦੇਸ਼ ਕੋਡ','If OTP fails with Twilio 60200, check the SMS provider credentials in Supabase. The website formats the number before sending.':'Phone OTP ਹੁਣ public use ਲਈ ਉਪਲਬਧ ਨਹੀਂ। Email ਜਾਂ Google login ਵਰਤੋ।','Email login works after Supabase Auth is configured. Phone OTP is currently disabled. Please use email or Google login.':'Email login ਉਪਲਬਧ ਹੈ। Phone OTP ਇਸ ਵੇਲੇ ਬੰਦ ਹੈ।','Profile details':'ਪ੍ਰੋਫਾਈਲ ਵੇਰਵੇ','Keep your buyer and seller profile updated for faster support and verification.':'ਤੇਜ਼ support ਅਤੇ verification ਲਈ buyer ਅਤੇ seller profile updated ਰੱਖੋ।','Account overview':'ਖਾਤਾ ਜਾਣਕਾਰੀ','Quick tools':'ਤੇਜ਼ ਟੂਲ','Trust & safety':'ਭਰੋਸਾ ਅਤੇ ਸੁਰੱਖਿਆ','Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.':'Website chat ਅਤੇ checkout ਵਰਤੋ ਤਾਂ ਜੋ orders, seller approvals ਅਤੇ support history Harvester Parts ਅੰਦਰ ਸੁਰੱਖਿਅਤ ਰਹੇ।','Listings':'ਲਿਸਟਿੰਗਾਂ','Live':'ਲਾਈਵ','Wishlist':'ਵਿਸ਼ਲਿਸਟ','Seller status':'ਵਿਕਰੇਤਾ status','Pending listings':'ਬਕਾਇਆ listings','Not added':'ਨਹੀਂ ਜੋੜਿਆ','not verified':'ਤਸਦੀਕ ਨਹੀਂ','Become Verified Seller':'ਤਸਦੀਕਸ਼ੁਦਾ seller ਬਣੋ','Add New Listing':'ਨਵੀਂ listing ਜੋੜੋ','Contact Support':'Support ਨਾਲ ਸੰਪਰਕ','Verified sellers':'ਤਸਦੀਕਸ਼ੁਦਾ seller','Admin review':'Admin review','Secure orders':'ਸੁਰੱਖਿਅਤ orders'
+      'Phone login account':'ਫੋਨ ਲਾਗਿਨ ਖਾਤਾ','Choose country code, then enter mobile number. Example: 9000000000':'ਦੇਸ਼ ਕੋਡ ਚੁਣੋ, ਫਿਰ ਮੋਬਾਈਲ ਨੰਬਰ ਪਾਓ। ਉਦਾਹਰਨ: 9000000000','Mobile number':'ਮੋਬਾਈਲ ਨੰਬਰ','Country code':'ਦੇਸ਼ ਕੋਡ','If OTP fails with Twilio 60200, check the SMS provider credentials in Supabase. The website formats the number before sending.':'Phone OTP ਹੁਣ public use ਲਈ ਉਪਲਬਧ ਨਹੀਂ। Email ਜਾਂ Google login ਵਰਤੋ।','Email login works after Supabase Auth is configured. Phone OTP is currently disabled. Please use email or Google login.':'Email login ਉਪਲਬਧ ਹੈ। Phone OTP ਇਸ ਵੇਲੇ ਬੰਦ ਹੈ।','Profile details':'ਪ੍ਰੋਫਾਈਲ ਵੇਰਵੇ','Keep your buyer and seller profile updated for faster support and verification.':'ਤੇਜ਼ support ਅਤੇ verification ਲਈ buyer ਅਤੇ seller profile updated ਰੱਖੋ।','Account overview':'ਖਾਤਾ ਜਾਣਕਾਰੀ','Quick tools':'ਤੇਜ਼ ਟੂਲ','Trust & safety':'ਭਰੋਸਾ ਅਤੇ ਸੁਰੱਖਿਆ','Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.':'Website chat ਅਤੇ checkout ਵਰਤੋ ਤਾਂ ਜੋ orders, seller approvals ਅਤੇ support history Harvester Parts ਅੰਦਰ ਸੁਰੱਖਿਅਤ ਰਹੇ।','Listings':'ਲਿਸਟਿੰਗਾਂ','Live':'ਲਾਈਵ','Wishlist':'ਵਿਸ਼ਲਿਸਟ','Seller status':'ਵਿਕਰੇਤਾ status','Pending listings':'ਬਕਾਇਆ listings','Not added':'ਨਹੀਂ ਜੋੜਿਆ','not verified':'ਤਸਦੀਕ ਨਹੀਂ','Become Verified Seller':'ਤਸਦੀਕਸ਼ੁਦਾ seller ਬਣੋ','Add New Listing':'ਨਵੀਂ listing ਜੋੜੋ','Contact Support':'Support ਨਾਲ ਸੰਪਰਕ','Verified sellers':'ਤਸਦੀਕਸ਼ੁਦਾ seller','Admin review':'Admin review','Secure orders':'ਸੁਰੱਖਿਅਤ orders'
     },
     ta: {'Profile details':'சுயவிவர விவரங்கள்','Account overview':'கணக்கு சுருக்கம்','Quick tools':'விரைவு கருவிகள்','Trust & safety':'நம்பிக்கை மற்றும் பாதுகாப்பு','Listings':'பட்டியல்கள்','Live':'நேரடி','Wishlist':'விருப்பப்பட்டியல்','Mobile number':'மொபைல் எண்','Country code':'நாட்டு குறியீடு','Seller status':'விற்பவர் நிலை','Pending listings':'நிலுவை பட்டியல்கள்','Not added':'சேர்க்கப்படவில்லை','not verified':'சரிபார்க்கப்படவில்லை','Become Verified Seller':'சரிபார்க்கப்பட்ட விற்பவராகுங்கள்','Add New Listing':'புதிய பட்டியல் சேர்க்கவும்','Contact Support':'உதவியை தொடர்புகொள்ளவும்'},
     te: {'Profile details':'ప్రొఫైల్ వివరాలు','Account overview':'ఖాతా సారాంశం','Quick tools':'త్వరిత సాధనాలు','Trust & safety':'నమ్మకం మరియు భద్రత','Listings':'లిస్టింగ్స్','Live':'లైవ్','Wishlist':'విష్‌లిస్ట్','Mobile number':'మొబైల్ నంబర్','Country code':'దేశ కోడ్','Seller status':'సెల్లర్ స్థితి','Pending listings':'పెండింగ్ లిస్టింగ్స్','Not added':'జోడించలేదు','not verified':'ధృవీకరించలేదు','Become Verified Seller':'ధృవీకరించిన సెల్లర్ అవ్వండి','Add New Listing':'కొత్త లిస్టింగ్ జోడించండి','Contact Support':'సపోర్ట్‌ను సంప్రదించండి'},
@@ -1330,8 +1330,8 @@
       'Search tractor, harvester, bearing, belt or model':'ट्रैक्टर, हार्वेस्टर, बेयरिंग, बेल्ट या मॉडल खोजें',
       'Marketplace highlights':'मार्केटप्लेस हाइलाइट्स',
       'Quick rotating cards for buying, selling, plans and verified listings.':'खरीद, बिक्री, प्लान और सत्यापित लिस्टिंग के छोटे हाइलाइट कार्ड।',
-      '1% buyer fee':'1% खरीदार शुल्क',
-      '1% seller commission':'1% विक्रेता कमीशन',
+      'Slab buyer fee':'1% खरीदार शुल्क',
+      'Slab seller commission':'1% विक्रेता कमीशन',
       'Low-cost seller plans for more listings, badges and visibility.':'अधिक लिस्टिंग, बैज और विजिबिलिटी के लिए कम कीमत वाले विक्रेता प्लान।',
       'Choose your plan':'अपना प्लान चुनें',
       'View Badges':'बैज देखें',
@@ -1358,8 +1358,8 @@
       'Search tractor, harvester, bearing, belt or model':'ਟਰੈਕਟਰ, ਹਾਰਵੈਸਟਰ, ਬੇਅਰਿੰਗ, ਬੈਲਟ ਜਾਂ ਮਾਡਲ ਖੋਜੋ',
       'Marketplace highlights':'ਮਾਰਕੀਟਪਲੇਸ ਹਾਈਲਾਈਟਸ',
       'Quick rotating cards for buying, selling, plans and verified listings.':'ਖਰੀਦ, ਵੇਚ, ਪਲਾਨ ਅਤੇ ਤਸਦੀਕਸ਼ੁਦਾ ਲਿਸਟਿੰਗ ਲਈ ਛੋਟੇ ਹਾਈਲਾਈਟ ਕਾਰਡ।',
-      '1% buyer fee':'1% ਖਰੀਦਦਾਰ ਫੀਸ',
-      '1% seller commission':'1% ਵੇਚਣ ਵਾਲਾ ਕਮਿਸ਼ਨ',
+      'Slab buyer fee':'1% ਖਰੀਦਦਾਰ ਫੀਸ',
+      'Slab seller commission':'1% ਵੇਚਣ ਵਾਲਾ ਕਮਿਸ਼ਨ',
       'Low-cost seller plans for more listings, badges and visibility.':'ਵੱਧ ਲਿਸਟਿੰਗ, ਬੈਜ ਅਤੇ ਵਿਜ਼ਿਬਿਲਟੀ ਲਈ ਘੱਟ ਕੀਮਤ ਵਾਲੇ ਵੇਚਣ ਵਾਲੇ ਪਲਾਨ।',
       'Choose your plan':'ਆਪਣਾ ਪਲਾਨ ਚੁਣੋ',
       'View Badges':'ਬੈਜ ਵੇਖੋ',
