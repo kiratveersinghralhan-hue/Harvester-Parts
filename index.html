@@ -3,36 +3,51 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>Harvester Parts | Agricultural Machinery & Spare Parts Marketplace</title>
-  <meta name="description" content="Harvester Parts is a trusted agricultural machinery and spare parts marketplace for farmers, dealers, workshops and machine owners across India." />
+  <title>Harvester Parts | Buy & Sell Farm Machinery, Tractor Parts and Harvester Spares</title>
+  <meta name="description" content="Harvester Parts is a verified agricultural marketplace to buy and sell new or used farm machinery, tractor parts, combine harvester spares, implements and repair inventory across India." />
   <meta name="theme-color" content="#102115" />
   <meta property="og:title" content="Harvester Parts" />
-  <meta property="og:description" content="A premium agriculture marketplace for harvesters, tractors, implements and genuine spare parts." />
+  <meta property="og:description" content="Search, buy and sell farm equipment, used agricultural machinery, tractor parts and combine harvester spare parts with verified sellers and secure checkout." />
   <meta property="og:image" content="./logo-512.png" />
-  <meta name="keywords" content="harvester parts, combine harvester parts, tractor parts, agriculture machinery, farm equipment, spare parts India, seed drill, straw reaper, rotavator, bearings, belts" />
+  <meta name="keywords" content="harvester parts, combine harvester parts, tractor parts, agricultural machinery marketplace, buy sell used farm equipment, farming spare parts India, tractor spare parts, seed drill parts, straw reaper parts, rotavator, bearings, belts, agricultural implements" />
   <meta property="og:url" content="https://harvesterparts.in" />
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="canonical" href="https://harvesterparts.in" />
   <link rel="icon" href="./favicon.png" />
   <link rel="apple-touch-icon" href="./logo-192.png" />
   <link rel="manifest" href="./manifest.json" />
-  <link rel="stylesheet" href="./styles.css?v=93" />
+  <link rel="stylesheet" href="./styles.css?v=96" />
   <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script defer src="./supabase-config.js?v=93"></script>
-  <script defer src="./app.js?v=93"></script>
-  <script defer src="./language-ux-patch.js?v=93"></script>
+  <script defer src="./supabase-config.js?v=96"></script>
+  <script defer src="./app.js?v=96"></script>
+  <script defer src="./language-ux-patch.js?v=96"></script>
 
-  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Harvester Parts","url":"https://harvesterparts.in","logo":"https://harvesterparts.in/logo-512.png","sameAs":[],"description":"Premium verified marketplace for agricultural machinery, harvester parts, tractor spares and farm equipment in India."}</script>
+  <script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Harvester Parts","url":"https://harvesterparts.in","logo":"https://harvesterparts.in/logo-512.png","sameAs":[],"description":"Verified marketplace for agricultural machinery, combine harvester parts, tractor spares, farm implements and repair inventory in India."}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"Harvester Parts","url":"https://harvesterparts.in","potentialAction":{"@type":"SearchAction","target":"https://harvesterparts.in/#market?q={search_term_string}","query-input":"required name=search_term_string"}}</script>
 </head>
 <body>
   <div id="intro" class="intro">
-    <div class="intro-card">
-      <span class="intro-badge">Verified marketplace</span>
-      <img src="./logo-512.png" alt="Harvester Parts">
-      <div class="intro-line"></div>
-      <p>Preparing your agri trading hub</p>
+    <video class="intro-video" src="./hero-bg.mp4" autoplay muted loop playsinline></video>
+    <div class="intro-veil" aria-hidden="true"></div>
+    <div class="intro-shell">
+      <div class="intro-card">
+        <span class="intro-badge">Trusted agri marketplace</span>
+        <div class="intro-brand-lockup">
+          <img src="./logo-512.png" alt="Harvester Parts">
+          <div>
+            <strong>Harvester Parts</strong>
+            <small>Buy, sell and verify machines & spares</small>
+          </div>
+        </div>
+        <div class="intro-stats" aria-label="Platform highlights">
+          <span><b>1%</b> buyer fee</span>
+          <span><b>1%</b> seller commission</span>
+          <span><b>24x7</b> marketplace</span>
+        </div>
+        <div class="intro-scan" aria-hidden="true"><span></span><i></i></div>
+        <p>Opening buyer marketplace, seller tools and secure checkout</p>
+      </div>
     </div>
   </div>
 
@@ -62,21 +77,21 @@
   <header class="topbar glass">
     <a class="brand" data-route="home"><img src="./logo-192.png" alt=""><span>Harvester Parts</span></a>
     <nav class="nav-tabs desktop">
-      <button data-route="home">Home</button><button data-route="market">Market</button><button data-route="categories">Categories</button><button data-route="sell">Sell</button><button data-route="membership">Plans</button><button data-route="how">How it works</button><button data-route="support">Support</button><button data-route="admin" data-admin-only>Admin</button>
+      <button data-route="home">Home</button><button data-route="market">Buyer Marketplace</button><button data-route="categories">Farm Categories</button><button data-route="sell">Seller Tools</button><button data-route="membership">Seller Plans</button><button data-route="rewards">Rewards</button><button data-route="support">Support</button><button data-route="admin" data-admin-only>Admin</button>
     </nav>
     <div class="header-actions"><button class="icon-btn" data-route="cart">Cart <b id="cartCount">0</b></button><button id="authButton" class="primary small">Login</button><button id="menuButton" class="hamb">☰</button></div>
   </header>
 
   <aside id="sideMenu" class="side-menu glass">
     <div class="menu-head"><img src="./logo-192.png" alt=""><div><b id="menuName">Guest</b><small id="menuRole">Buyer</small></div><button id="closeMenu">×</button></div>
-    <div class="menu-group-label">Main</div><button data-route="home">Home</button><button data-route="market">Market</button><button data-route="categories">Categories</button><button data-route="sell">Sell Machine / Spare Part</button><button data-route="membership">Plans & Rewards</button><div class="menu-group-label">Account</div><button data-route="account">My Account</button><button data-route="orders">My Orders</button><button data-route="messages">Messages</button><button data-route="cart">Cart</button><button data-route="checkout">Checkout</button><button data-route="admin" data-admin-only>Admin Panel</button><div class="menu-group-label">Company</div><button data-route="how">How it works</button><button data-route="support">Support</button><button data-route="about">About Us</button><button data-route="contact">Contact Us</button><div class="menu-group-label">Legal</div><button data-route="legal">Legal Centre</button><button data-route="terms">Terms & Conditions</button><button data-route="privacy">Privacy Policy</button><button data-route="refund">Refund & Cancellation</button><button data-route="shipping">Shipping & Delivery</button><button data-route="razorpay">Razorpay Payment Policy</button><button data-route="payout-policy">Seller Payout Policy</button><button data-route="grievance">Grievance Redressal</button><button id="menuLoginBtn">Login / Signup</button><button id="logoutBtn" class="danger hidden">Logout</button>
+    <div class="menu-group-label">Buyer Area</div><button data-route="home">Home</button><button data-route="market">Buyer Marketplace</button><button data-route="categories">Farm Categories</button><button data-route="cart">Cart</button><button data-route="checkout">Checkout</button><div class="menu-group-label">Seller Tools</div><button data-route="sell">List Machinery or Spare Part</button><button data-route="membership">Seller Plans</button><button data-route="rewards">Badges & Titles</button><button data-route="orders">Order History</button><button data-route="messages">Messages</button><div class="menu-group-label">Account</div><button data-route="account">My Account</button><button data-route="admin" data-admin-only>Admin Panel</button><div class="menu-group-label">Company</div><button data-route="how">How it works</button><button data-route="support">Support</button><button data-route="about">About Us</button><button data-route="contact">Contact Us</button><div class="menu-group-label">Legal</div><button data-route="legal">Legal Centre</button><button data-route="terms">Terms & Conditions</button><button data-route="privacy">Privacy Policy</button><button data-route="refund">Refund & Cancellation</button><button data-route="shipping">Shipping & Delivery</button><button data-route="razorpay">Razorpay Payment Policy</button><button data-route="payout-policy">Seller Payout Policy</button><button data-route="grievance">Grievance Redressal</button><button id="menuLoginBtn">Login / Signup</button><button id="logoutBtn" class="danger hidden">Logout</button>
     <div class="menu-lang"><label>Language</label><select id="languageSelect"><option value="en">English</option><option value="hi">हिन्दी</option><option value="pa">ਪੰਜਾਬੀ</option><option value="ta">தமிழ்</option><option value="te">తెలుగు</option><option value="bn">বাংলা</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option></select></div>
   </aside>
   <div id="backdrop" class="backdrop"></div>
 
   <main id="app"></main>
 
-  <nav class="bottom-nav glass"><button data-route="home">Home</button><button data-route="market">Market</button><button class="sell-fab" data-route="sell">＋</button><button data-route="membership">Plans</button><button data-route="account">Account</button></nav>
+  <nav class="bottom-nav glass"><button data-route="home">Home</button><button data-route="market">Buyer</button><button class="sell-fab" data-route="sell">＋</button><button data-route="membership">Plans</button><button data-route="account">Account</button></nav>
 
   <div id="toast" class="toast"></div>
   <button id="scrollTop" class="scroll-top">↑</button>

@@ -5,8 +5,8 @@
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
   const PHONE_OTP_ENABLED = cfg.ENABLE_PHONE_OTP === true || String(cfg.ENABLE_PHONE_OTP || '').toLowerCase() === 'true';
   const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], messages:[], unreadMessages:0, factIndex:0, route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[],notifications:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
-  const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
-  function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',order:'orders',message:'messages',parts:'market',browse:'market',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','disputes':'dispute-policy','grievance-redressal':'grievance'}[r] || r); }
+  const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','rewards','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
+  function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',badges:'rewards',rewards:'rewards',order:'orders',message:'messages',parts:'market',browse:'market',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','disputes':'dispute-policy','grievance-redressal':'grievance'}[r] || r); }
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const app = $('#app');
@@ -37,17 +37,15 @@
     buyer_member:{name:'Buyer Member', title:'Market Member', tier:'base', line:'Joined Harvester Parts marketplace.', rarity:'MEMBER'}
   };
 
-  const FREE_LISTING_LIMIT = 5;
-  const DEFAULT_SELLER_COMMISSION_RATE = 0.03;
+  const FREE_LISTING_LIMIT = 10;
+  const DEFAULT_SELLER_COMMISSION_RATE = 0.01;
+  const BUYER_PLATFORM_FEE_RATE = 0.01;
   const MEMBERSHIP_PLANS = [
-    {key:'starter_49', name:'Starter Boost', price:49, days:7, title:'Starter Supporter', banner:'Starter Boost Banner', badge:'Starter Boost', tag:'Entry', listings:6, boost:1, reward:80, feeRate:0.029, discount:'3% lower fee', benefits:['6 total listings after free 5','2.90% seller platform fee','1 listing visibility boost','Starter custom title and banner']},
-    {key:'basic_99', name:'Basic Member', price:99, days:15, title:'Basic Member', banner:'Basic Member Banner', badge:'Basic Member', tag:'Popular start', listings:12, boost:2, reward:180, feeRate:0.0275, discount:'8% lower fee', benefits:['12 total listing limit','2.75% seller platform fee','2 boosted listing days','Basic member badge and title']},
-    {key:'seller_199', name:'Seller Plus', price:199, days:30, title:'Seller Plus', banner:'Seller Plus Banner', badge:'Seller Plus', tag:'Seller', listings:25, boost:5, reward:420, feeRate:0.025, discount:'17% lower fee', benefits:['25 total listing limit','2.50% seller platform fee','5 boosted listing days','Priority review request']},
-    {key:'growth_499', name:'Growth Seller', price:499, days:30, title:'Growth Seller Pro', banner:'Growth Seller Banner', badge:'Growth Plan', tag:'Growth', listings:60, boost:12, reward:1100, feeRate:0.0225, discount:'25% lower fee', benefits:['60 total listing limit','2.25% seller platform fee','12 boosted listing days','Growth seller profile banner']},
-    {key:'pro_999', name:'Pro Dealer', price:999, days:45, title:'Pro Dealer', banner:'Pro Dealer Banner', badge:'Pro Dealer', tag:'Best value', listings:150, boost:30, reward:2500, feeRate:0.02, discount:'33% lower fee', benefits:['150 total listing limit','2.00% seller platform fee','30 boost days','Priority seller support']},
-    {key:'elite_1999', name:'Elite Dealer', price:1999, days:60, title:'Elite Dealer', banner:'Elite Dealer Banner', badge:'Elite Dealer', tag:'Premium', listings:400, boost:70, reward:6200, feeRate:0.0175, discount:'42% lower fee', benefits:['400 total listing limit','1.75% seller platform fee','70 boost days','Premium profile presence']},
-    {key:'partner_2999', name:'Market Partner', price:2999, days:75, title:'Market Partner', banner:'Market Partner Banner', badge:'Market Partner', tag:'Partner', listings:1000, boost:120, reward:9800, feeRate:0.015, discount:'50% lower fee', benefits:['1,000 total listing limit','1.50% seller platform fee','120 boost days','Partner title and banner']},
-    {key:'leader_5999', name:'Market Leader', price:5999, days:120, title:'Market Leader', banner:'Market Leader Banner', badge:'Market Leader', tag:'Maximum', listings:999999, boost:250, reward:24000, feeRate:0.0125, discount:'58% lower fee', benefits:['Unlimited fair-usage listings','1.25% seller platform fee','250 boost days','Maximum earning visibility pack']}
+    {key:'starter_19', name:'Starter Offer', price:19, days:15, title:'Starter Seller', banner:'New Seller Offer', badge:'Starter Offer', tag:'Launch offer', listings:25, boost:3, reward:180, feeRate:0.01, discount:'Launch price', benefits:['25 listing limit','1.00% seller commission','3 boosted listing days','Starter badge and title']},
+    {key:'growth_49', name:'Growth Seller', price:49, days:30, title:'Growth Seller', banner:'Growth Seller Banner', badge:'Growth Seller', tag:'Best start', listings:75, boost:12, reward:650, feeRate:0.01, discount:'High value plan', benefits:['75 listing limit','1.00% seller commission','12 boost days','Priority listing review']},
+    {key:'dealer_99', name:'Dealer Plus', price:99, days:45, title:'Dealer Plus', banner:'Dealer Plus Banner', badge:'Dealer Plus', tag:'Popular', listings:180, boost:35, reward:1500, feeRate:0.01, discount:'More reach', benefits:['180 listing limit','1.00% seller commission','35 boost days','Dealer profile presence']},
+    {key:'partner_199', name:'Market Partner', price:199, days:75, title:'Market Partner', banner:'Market Partner Banner', badge:'Market Partner', tag:'Partner', listings:500, boost:90, reward:3600, feeRate:0.01, discount:'Agency ready', benefits:['500 listing limit','1.00% seller commission','90 boost days','Partner title and banner']},
+    {key:'leader_499', name:'Market Leader', price:499, days:120, title:'Market Leader', banner:'Market Leader Banner', badge:'Market Leader', tag:'Maximum', listings:999999, boost:250, reward:9000, feeRate:0.01, discount:'Unlimited launch pack', benefits:['Unlimited fair-use listings','1.00% seller commission','250 boost days','Maximum visibility pack']}
   ];
 
   const ADMIN_UNLOCKED_PLAN = {key:'admin_unlimited', name:'Admin Unlimited Access', price:0, days:9999, title:'Platform Founder', banner:'Original Founder • One of One', badge:'Founder 1 of 1', tag:'Admin', listings:999999, boost:999999, reward:999999, feeRate:0, discount:'Admin unlocked access', benefits:['Unlimited listings','0% seller platform fee for admin test listings','All titles, badges and banners selectable','Full admin controls unlocked']};
@@ -110,10 +108,26 @@
   }
   function badgeCollectionCard(){
     const have=earnedBadges(); const all=['founder_1_of_1','original_builder','admin_crown','market_guardian','premium_member','verified_seller','first_listing','growth_seller','trusted_dealer','event_champion','buyer_member'];
-    return `<div class="page-card badge-collection"><div class="section-head compact"><h2>Badge collection</h2><span class="badge">${have.length} earned</span></div><p class="muted">Custom text badges only. No icon badges. More event badges can be added later.</p><div class="badge-grid-custom">${all.map(k=>customBadge(k,!have.includes(k))).join('')}</div></div>`;
+    return `<div class="page-card badge-collection"><div class="section-head compact"><h2>Badge collection</h2><span class="badge">${have.length} earned</span></div><p class="muted">Custom text badges only. No icon badges. More event badges can be added later.</p><div class="badge-grid-custom">${all.map(k=>customBadge(k,!have.includes(k))).join('')}</div><button class="primary" data-route="rewards">Manage badges and titles</button></div>`;
+  }
+  function rewardsPage(){
+    const have=earnedBadges();
+    const all=Object.keys(CUSTOM_BADGE_DEFS);
+    const equipped=state.profile?.badge_key || have[0] || 'buyer_member';
+    return `<section class="page-card rewards-hero"><span class="eyebrow">Badges & titles</span><h1>Your marketplace identity, rewards and equipped badge.</h1><p class="muted">Users can see earned badges, locked achievements and the badge/title currently equipped on their profile. More seasonal event rewards can be added later from admin.</p><div class="title-row"><em>Equipped badge: ${esc(CUSTOM_BADGE_DEFS[equipped]?.name||'Member')}</em><em>Title: ${esc(state.profile?.membership_title||state.profile?.badge_title||'Marketplace Member')}</em><em>Earned: ${have.length}</em></div></section><section class="badge-page-grid">${all.map(k=>`<article class="page-card reward-equip-card ${have.includes(k)?'earned':'locked'}">${customBadge(k,!have.includes(k))}<div><b>${have.includes(k)?'Unlocked':'Locked'}</b><p class="muted">${esc(CUSTOM_BADGE_DEFS[k].line)}</p>${have.includes(k)?`<button class="secondary" onclick="HP.equipBadge('${esc(k)}')">${k===equipped?'Equipped':'Equip badge'}</button>`:'<button class="ghost" data-route="sell">How to unlock</button>'}</div></article>`).join('')}</section>`;
   }
   function eventPreviewCard(){
     return `<div class="page-card event-preview-card"><div class="section-head compact"><h2>Future events</h2><span class="badge owner">Ready</span></div><p class="muted">Use this system later for challenges like highest listings, most approved sellers, most orders or festival rewards.</p><div class="event-strip"><div><b>Listing Sprint</b><span>Highest approved listings wins a custom event badge.</span></div><div><b>Dealer Week</b><span>Top seller gets a limited banner and title.</span></div><div><b>Buyer Trust Drive</b><span>Reward trusted buying activity and completed profiles.</span></div></div></div>`;
+  }
+  async function equipBadge(key){
+    if(!state.user) return route('login');
+    if(!earnedBadges().includes(key)) return toast('This badge is locked.');
+    const badge=CUSTOM_BADGE_DEFS[key]||CUSTOM_BADGE_DEFS.buyer_member;
+    const patch={badge_key:key,badge_title:badge.name,rank_title:badge.title,updated_at:new Date().toISOString()};
+    if(sb){ const {error}=await sb.from('users').update(patch).eq('auth_id',state.user.id); if(error) return toast(error.message); }
+    state.profile={...(state.profile||{}),...patch};
+    toast('Badge equipped');
+    render();
   }
 
   const i18n = {
@@ -206,14 +220,14 @@
     }
 
     const routeLabels = {
-      home:'Home', market:'Market', sell:'Sell a Part', membership:'Membership & Rewards', categories:'Categories', how:'How it works',
-      about:'About Us', contact:'Contact Us', support:'Support', legal:'Legal Centre', terms:'Terms', privacy:'Privacy', refund:'Refunds', shipping:'Shipping', razorpay:'Payments', 'payout-policy':'Payouts', grievance:'Grievance', messages:'Chat', account:'Account', cart:'Cart', checkout:'Checkout', orders:'My Orders', admin:'Admin Panel'
+      home:'Home', market:'Buyer Marketplace', sell:'Seller Tools', membership:'Seller Plans', rewards:'Rewards', categories:'Farm Categories', how:'How it works',
+      about:'About Us', contact:'Contact Us', support:'Support', legal:'Legal Centre', terms:'Terms', privacy:'Privacy', refund:'Refunds', shipping:'Shipping', razorpay:'Payments', 'payout-policy':'Payouts', grievance:'Grievance', messages:'Messages', account:'My Account', cart:'Cart', checkout:'Checkout', orders:'Order History', admin:'Admin Panel'
     };
     $$('.side-menu button[data-route], .bottom-nav button, .nav-tabs button').forEach(el=>{
       if(el.classList.contains('sell-fab') || el.textContent.trim()==='＋'){ el.dataset.rawText='＋'; el.textContent='＋'; return; }
       let key = routeLabels[el.dataset.route] || el.dataset.i18n || el.dataset.label || el.textContent.trim();
       if(el.closest('.bottom-nav') && el.dataset.route === 'membership') key = 'Plans';
-      if(el.closest('.nav-tabs') && el.dataset.route === 'membership') key = 'Plans';
+      if(el.closest('.bottom-nav') && el.dataset.route === 'market') key = 'Buyer';
       el.dataset.rawText = key;
       el.textContent = tx(key);
     });
@@ -249,7 +263,7 @@
   function myProducts(uid=state.user?.id){ return (state.products||[]).filter(p=>String(p.user_id||'')===String(uid)); }
   function myLiveProducts(uid=state.user?.id){ return myProducts(uid).filter(isVisibleProduct); }
 
-  function feeDiscountForPlan(plan=activePlan()){ if(isAdminUser()) return 'Admin account: all plans, titles, banners and listing controls unlocked'; if(!plan) return 'Free plan: 5 listings • 3.00% seller platform fee'; return `${plan.discount} • ${(plan.feeRate*100).toFixed(2)}% seller platform fee`; }
+  function feeDiscountForPlan(plan=activePlan()){ if(isAdminUser()) return 'Admin account: all plans, titles, banners and listing controls unlocked'; if(!plan) return 'Free launch plan: 10 listings • 1.00% seller commission'; return `${plan.discount} • 1.00% seller commission`; }
   function sevenBusinessDaysFrom(date=new Date()){
     const d=new Date(date); let added=0;
     while(added<7){ d.setDate(d.getDate()+1); const day=d.getDay(); if(day!==0 && day!==6) added++; }
@@ -259,44 +273,58 @@
   function isSellerApproved(){ return isAdminUser() || ['approved'].includes(String(state.seller?.status||state.seller?.verification_status||'').toLowerCase()); }
   function planCard(p){
     const active=(state.profile?.active_membership===p.key || state.profile?.membership_key===p.key);
-    return `<article class="membership-card ${active?'active':''}"><div class="plan-ribbon">${esc(p.tag)}</div><div class="plan-head"><span>${esc(p.banner)}</span><h3>${esc(p.name)}</h3><div class="plan-price">₹${Number(p.price).toLocaleString('en-IN')}<small>/${p.days} days</small></div></div><div class="plan-title-preview"><b>${esc(p.title)}</b><small>${esc(p.badge)} custom badge • no icons</small></div><div class="plan-stats"><div><b>${limitLabel(p.listings)}</b><span>listing limit</span></div><div><b>${(p.feeRate*100).toFixed(2)}%</b><span>seller fee</span></div><div><b>${p.boost}</b><span>boost days</span></div><div><b>${p.reward}</b><span>points</span></div></div><div class="plan-fee-strip"><b>${esc(p.discount)}</b><span>Lower platform commission on seller payout</span></div><ul>${p.benefits.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="${active?'secondary':'primary'}" data-plan-key="${esc(p.key)}">${active?'Current Plan':'Choose Plan'}</button></article>`;
+    return `<article class="membership-card ${active?'active':''}"><div class="plan-ribbon">${esc(p.tag)}</div><div class="plan-head"><span>${esc(p.banner)}</span><h3>${esc(p.name)}</h3><div class="plan-price">₹${Number(p.price).toLocaleString('en-IN')}<small>/${p.days} days</small></div></div><div class="plan-title-preview"><b>${esc(p.title)}</b><small>${esc(p.badge)} custom badge • no icons</small></div><div class="plan-stats"><div><b>${limitLabel(p.listings)}</b><span>listing limit</span></div><div><b>${(p.feeRate*100).toFixed(2)}%</b><span>seller fee</span></div><div><b>${p.boost}</b><span>boost days</span></div><div><b>${p.reward}</b><span>points</span></div></div><div class="plan-fee-strip"><b>${esc(p.discount)}</b><span>More visibility, same simple 1% seller commission.</span></div><ul>${p.benefits.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="${active?'secondary':'primary'}" data-plan-key="${esc(p.key)}">${active?'Current Plan':'Choose Plan'}</button></article>`;
   }
   function freePlanCard(){
-    return `<article class="membership-card free-plan-card"><div class="plan-ribbon">Free</div><div class="plan-head"><span>Free Seller Start</span><h3>Free Member</h3><div class="plan-price">₹0<small>/always</small></div></div><div class="plan-title-preview"><b>Marketplace Starter</b><small>Default member title</small></div><div class="plan-stats"><div><b>5</b><span>free listings</span></div><div><b>3.00%</b><span>seller fee</span></div><div><b>0</b><span>boost days</span></div></div><div class="plan-fee-strip"><b>Standard commission</b><span>Standard seller commission applies on completed orders.</span></div><button class="ghost" data-route="sell">Use Free Plan</button></article>`;
+    return `<article class="membership-card free-plan-card"><div class="plan-ribbon">Free</div><div class="plan-head"><span>Launch free offer</span><h3>Free Member</h3><div class="plan-price">₹0<small>/always</small></div></div><div class="plan-title-preview"><b>Marketplace Starter</b><small>Default member title</small></div><div class="plan-stats"><div><b>10</b><span>free listings</span></div><div><b>1.00%</b><span>seller fee</span></div><div><b>1</b><span>trial boost</span></div></div><div class="plan-fee-strip"><b>Start free</b><span>Only 1% seller commission applies on completed orders.</span></div><button class="ghost" data-route="sell">Use Free Plan</button></article>`;
   }
   function membershipPage(){
     const plan=activePlan(); const used=userListingCount(); const limit=currentListingLimit();
     const d=formDraft('sellFormDraft');
-    return `<section class="membership-hero page-card"><div><span class="eyebrow">Membership & rewards</span><h1>Plans that increase listing limits and reduce seller platform fees.</h1><p class="muted">Free users can post 5 listings. Paid plans start at ₹49 and unlock more listings, lower commission, custom titles, custom banners, reward points and boost days.</p><div class="hero-actions"><button class="primary" data-route="sell">Become a Seller</button><button class="ghost" data-route="account">View My Badges</button></div></div><div class="membership-current ${plan?'active':''}"><span>${plan?'ACTIVE PLAN':'FREE PLAN'}</span><h2>${esc(plan?.name || 'Free Member')}</h2><p>${esc(feeDiscountForPlan(plan))}</p><div class="mini-limit"><b>${used}/${limitLabel(limit)}</b><span>listings used</span></div></div></section><section><div class="section-head"><h2>Choose your plan</h2><p class="muted">Free gives 5 listings. Paid options from ₹49 to ₹5,999 unlock 6 to unlimited listings and lower platform commission.</p></div><div class="membership-grid">${freePlanCard()}${MEMBERSHIP_PLANS.map(planCard).join('')}</div></section><section class="page-card reward-system-card"><div class="section-head compact"><h2>Rewards and membership benefits</h2><span class="badge owner">Ready</span></div><div class="reward-columns"><div><b>Post more</b><span>Points for approved listings and seller verification.</span></div><div><b>Pay less fee</b><span>Higher plans reduce seller platform commission before payout.</span></div><div><b>Win events</b><span>Future events can reward top sellers with limited badges, titles and banners.</span></div></div></section>`;
+    return `<section class="membership-hero page-card"><div><span class="eyebrow">Membership & rewards</span><h1>Low-cost seller plans for more listings, badges and visibility.</h1><p class="muted">Free users can post 10 listings during launch. Paid plans start at ₹19 and keep the seller commission simple at 1% while unlocking more listings, boosts, custom titles, banners and reward points.</p><div class="hero-actions"><button class="primary" data-route="sell">Become a Seller</button><button class="ghost" data-route="rewards">View Badges</button></div></div><div class="membership-current ${plan?'active':''}"><span>${plan?'ACTIVE PLAN':'FREE PLAN'}</span><h2>${esc(plan?.name || 'Free Member')}</h2><p>${esc(feeDiscountForPlan(plan))}</p><div class="mini-limit"><b>${used}/${limitLabel(limit)}</b><span>listings used</span></div></div></section><section><div class="section-head"><h2>Choose your plan</h2><p class="muted">Start free, upgrade only when you need more listings and visibility. Commission stays 1% for both demo and live marketplace flows.</p></div><div class="membership-grid">${freePlanCard()}${MEMBERSHIP_PLANS.map(planCard).join('')}</div></section><section class="page-card reward-system-card"><div class="section-head compact"><h2>Rewards and membership benefits</h2><span class="badge owner">Ready</span></div><div class="reward-columns"><div><b>Post more</b><span>Points for approved listings and seller verification.</span></div><div><b>Keep fees simple</b><span>1% buyer fee and 1% seller commission make the launch attractive.</span></div><div><b>Win events</b><span>Future events can reward top sellers with limited badges, titles and banners.</span></div></div></section>`;
+  }
+  function hasRazorpayKey(){ return !!(cfg.RAZORPAY_KEY_ID && !String(cfg.RAZORPAY_KEY_ID).includes('YOUR_')); }
+  async function ensureRazorpayReady(){
+    if(!hasRazorpayKey()){ toast('Razorpay key is missing. Add your live or test key in supabase-config.js.'); return false; }
+    if(window.Razorpay) return true;
+    await new Promise(resolve=>{
+      const existing=document.querySelector('script[src*="checkout.razorpay.com"]');
+      if(existing){ existing.addEventListener('load',resolve,{once:true}); existing.addEventListener('error',resolve,{once:true}); setTimeout(resolve,2500); return; }
+      const s=document.createElement('script'); s.src='https://checkout.razorpay.com/v1/checkout.js'; s.async=true; s.onload=resolve; s.onerror=resolve; document.head.appendChild(s);
+    });
+    if(!window.Razorpay){ toast('Razorpay could not open. Check internet, ad blocker, and Razorpay key activation.'); return false; }
+    return true;
+  }
+  async function openRazorpayPayment({amount,description,handler,prefill={}}){
+    if(!(await ensureRazorpayReady())) return false;
+    try{
+      const rz=new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:Math.round(Number(amount||0)*100),currency:'INR',name:'Harvester Parts',description,handler,modal:{ondismiss:()=>toast('Payment window closed. No payment was captured.')},prefill});
+      rz.open();
+      return true;
+    }catch(e){
+      toast('Razorpay could not open. Please check the key and browser permissions.');
+      return false;
+    }
   }
   async function purchaseMembership(key){
     if(!state.user) return route('login');
     const plan=MEMBERSHIP_PLANS.find(p=>p.key===key);
     if(!plan) return toast('Plan not found');
     const start=new Date(); const exp=new Date(Date.now()+plan.days*86400000);
-    const purchase={user_id:state.user.id, plan_key:plan.key, plan_name:plan.name, amount:plan.price, status:'pending', starts_at:start.toISOString(), expires_at:exp.toISOString()};
-    let purchaseId=null;
-    if(sb){
-      try{
-        const {data,error}=await sb.from('membership_purchases').insert(purchase).select('id').single();
-        if(error) throw error; purchaseId=data?.id||null;
-      }catch(e){ return toast('Membership setup is not fully ready yet. Please contact support.'); }
-    }
-    const activate=async(paymentId='manual_pending')=>{
+    const activate=async(paymentId)=>{
+      const purchase={user_id:state.user.id, plan_key:plan.key, plan_name:plan.name, amount:plan.price, status:'paid', payment_id:paymentId, starts_at:start.toISOString(), expires_at:exp.toISOString(), updated_at:new Date().toISOString()};
       if(sb){
-        await sb.from('membership_purchases').update({status:paymentId==='manual_pending'?'pending':'paid',payment_id:paymentId,updated_at:new Date().toISOString()}).eq('id',purchaseId);
+        const {error}=await sb.from('membership_purchases').insert(purchase);
+        if(error) return toast('Membership payment succeeded, but plan save failed. Contact support with Razorpay ID.');
         await sb.from('users').update({active_membership:plan.key,membership_key:plan.key,membership_title:plan.title,membership_badge:plan.badge,membership_banner:plan.banner,membership_expires_at:exp.toISOString(),badge_key:'premium_member',badge_title:plan.title,banner_key:plan.key,banner_title:plan.banner,points:Math.max(Number(state.profile?.points||0), userPoints()+plan.reward)}).eq('auth_id',state.user.id);
         await loadSession(); await loadFinanceData();
+      } else {
+        state.profile={...(state.profile||{}),active_membership:plan.key,membership_key:plan.key,membership_title:plan.title,membership_badge:plan.badge,membership_banner:plan.banner,membership_expires_at:exp.toISOString(),badge_key:'premium_member',badge_title:plan.title,banner_title:plan.banner};
       }
-      toast(paymentId==='manual_pending'?'Membership request saved. Connect Razorpay/admin confirmation for live payments.':'Membership activated');
+      toast('Payment successful. Membership activated.');
       route('account');
     };
-    if(cfg.RAZORPAY_KEY_ID && !cfg.RAZORPAY_KEY_ID.includes('YOUR_') && window.Razorpay){
-      const rz=new Razorpay({key:cfg.RAZORPAY_KEY_ID,amount:Math.round(plan.price*100),currency:'INR',name:'Harvester Parts',description:plan.name,handler:async(resp)=>activate(resp.razorpay_payment_id)});
-      rz.open();
-    } else {
-      await activate('manual_pending');
-    }
+    await openRazorpayPayment({amount:plan.price,description:plan.name,prefill:{email:state.user.email||'',contact:state.profile?.phone||''},handler:async(resp)=>activate(resp.razorpay_payment_id||'razorpay_paid')});
   }
   function toast(msg){ const el=$('#toast'); el.textContent=localText(msg); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
   function setFormLoading(form,on=true,msg='Working...'){
@@ -362,8 +390,8 @@
     const clean=[...new Set(arr.map(x=>String(x||'').trim()).filter(Boolean))];
     return clean.length ? clean : [placeholder(p?.category)];
   }
-  function platformFee(subtotal){ subtotal=Number(subtotal||0); if(!subtotal) return 0; if(subtotal<=2000) return Math.max(20, Math.round(subtotal*.025)); if(subtotal<=3000) return 100; if(subtotal<=5000) return 200; if(subtotal<=10000) return 350; if(subtotal<=25000) return 750; if(subtotal<=50000) return 1400; if(subtotal<=100000) return 2500; if(subtotal<=500000) return 12000; return Math.min(30000, Math.round(subtotal*.03)); }
-  function sellerFee(price, planKey){ price=Number(price||0); if(!price)return 0; const rate=commissionRateForKey(planKey || state.profile?.active_membership || state.profile?.membership_key || ''); return Math.max(price>=1000?20:0, Math.round(price*rate)); }
+  function platformFee(subtotal){ subtotal=Number(subtotal||0); if(!subtotal) return 0; return Math.round(subtotal * BUYER_PLATFORM_FEE_RATE); }
+  function sellerFee(price, planKey){ price=Number(price||0); if(!price)return 0; const rate=commissionRateForKey(planKey || state.profile?.active_membership || state.profile?.membership_key || ''); return Math.round(price*rate); }
   function sellerFeeForProduct(p){ return sellerFee(p?.price, sellerPlanKeyFromProduct(p)); }
   function shippingFee(subtotal, method='standard'){ subtotal=Number(subtotal||0); if(!subtotal)return 0; const base = subtotal<=2000?120:subtotal<=10000?250:subtotal<=50000?850:1800; return method==='premium'?Math.round(base*1.8):base; }
 
@@ -555,6 +583,58 @@
     }catch(e){}
   }
 
+  function commonsImg(file){ return `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}`; }
+  function demoProducts(){
+    const now=Date.now();
+    const imgs={
+      combine:commonsImg('Combine_harvester.jpg'),
+      tractor:commonsImg('Farmall_Tractor_(51325633027).jpg'),
+      harvester2:commonsImg('CaseCombineHarvester.jpg'),
+      belt:commonsImg('Keilriemen-V-Belt.png'),
+      pulley:commonsImg('Belt_pulleys.svg'),
+      bearing:commonsImg('High_Speed_Ball_Bearing_(6868658067).jpg'),
+      hydraulic:commonsImg('Hydraulic_cylinder.JPG'),
+      tyre:commonsImg('Old_Truck_or_Tractor_Tire_(14621672472).jpg')
+    };
+    const base=[
+      ['demo-m-1','New Holland TC56 Combine Harvester','Combine Harvester','New Holland','TC56','Used',875000,'Ludhiana','Punjab',imgs.combine,'Field-ready combine harvester demo listing with header, threshing unit and basic service history.'],
+      ['demo-m-2','Mahindra 575 DI Tractor With Trolley','Tractor','Mahindra','575 DI','Used',385000,'Karnal','Haryana',imgs.tractor,'Popular 45 HP tractor package for haulage, tillage and daily farm work.'],
+      ['demo-m-3','Swaraj 744 FE Tractor 4WD','Tractor','Swaraj','744 FE','Used',515000,'Patiala','Punjab',imgs.tractor,'Strong demo tractor listing with 4WD configuration and good tyres.'],
+      ['demo-m-4','Super Seeder 7 Feet Heavy Duty','Super Seeder','Fieldking','7 ft','Factory Stock',145000,'Sangrur','Punjab',imgs.harvester2,'Residue-management seeder for wheat sowing after paddy harvest.'],
+      ['demo-m-5','Straw Reaper With New Blades','Straw Reaper','Dasmesh','SR-56','Used',225000,'Hisar','Haryana',imgs.combine,'Demo straw reaper listing with cutter assembly and belt condition notes.'],
+      ['demo-m-6','Laser Land Leveler Scraper Set','Laser Land Leveler','SoilPro','LL-84','New',168000,'Jaipur','Rajasthan',imgs.tractor,'Laser land leveler setup for field levelling and water saving.'],
+      ['demo-m-7','Boom Sprayer 600 Litre','Sprayer','AgriTech','600L','New',72000,'Moga','Punjab',imgs.harvester2,'Mounted boom sprayer with pump, nozzles and hose kit.'],
+      ['demo-m-8','Rotavator 6 Feet Heavy Series','Rotavator','Shaktiman','6 ft','Used',82000,'Meerut','Uttar Pradesh',imgs.tractor,'Demo rotavator listing for soil preparation and seedbed finishing.'],
+      ['demo-p-1','Harvester V Belt Set B-72','Belts & Chains','Pix','B-72','New',1350,'Ludhiana','Punjab',imgs.belt,'Matched V belt set for harvester drive and workshop replacement.'],
+      ['demo-p-2','Combine Elevator Chain Kit','Belts & Chains','Diamond','ECK-22','New',4200,'Karnal','Haryana',imgs.pulley,'Elevator chain kit for grain handling assembly.'],
+      ['demo-p-3','High Speed Ball Bearing 6208','Bearings','SKF','6208','New',780,'Delhi','Delhi',imgs.bearing,'Sealed high-speed bearing for shaft and pulley applications.'],
+      ['demo-p-4','Harvester Cutter Blade Pack','Blades & Cutter Parts','AgroBlade','CB-24','New',2450,'Patiala','Punjab',imgs.harvester2,'Cutter blade pack for crop cutting bar maintenance.'],
+      ['demo-p-5','Cutter Bar Guard Finger Set','Blades & Cutter Parts','CropCut','GF-10','New',3100,'Hisar','Haryana',imgs.combine,'Guard finger set for smoother crop feeding and reduced losses.'],
+      ['demo-p-6','Air Filter For Tractor Engine','Filters','Fleetguard','AF-204','New',950,'Bathinda','Punjab',imgs.tractor,'Air filter demo listing for tractor and harvester engine protection.'],
+      ['demo-p-7','Fuel Filter Pair For Harvester','Filters','Bosch','FF-19','New',680,'Moga','Punjab',imgs.tractor,'Fuel filter pair for clean diesel supply and reliable engine running.'],
+      ['demo-p-8','PTO Shaft With Cross Joint','PTO & Universal Joints','AgriLine','PTO-6','New',6500,'Jaipur','Rajasthan',imgs.pulley,'PTO shaft assembly with cross joint for implements.'],
+      ['demo-p-9','Hydraulic Cylinder 2 Inch Bore','Hydraulic Parts','HydroMax','HC-2','New',7800,'Meerut','Uttar Pradesh',imgs.hydraulic,'Hydraulic cylinder for trolleys, loaders and implements.'],
+      ['demo-p-10','Hydraulic Hose Pipe Set','Hydraulic Parts','HydroFlex','HHP-12','New',1900,'Sangrur','Punjab',imgs.hydraulic,'High-pressure hydraulic hose set for farm machinery.'],
+      ['demo-p-11','Rear Tractor Tyre 13.6-28','Tyres & Tubes','MRF','13.6-28','New',26500,'Karnal','Haryana',imgs.tyre,'Rear tractor tyre demo listing with agricultural tread.'],
+      ['demo-p-12','LED Work Light Pair','Electrical Parts','Lumax','LED-48W','New',1600,'Delhi','Delhi',imgs.tractor,'Water-resistant LED work light pair for night harvesting.'],
+      ['demo-p-13','Starter Motor Assembly','Electrical Parts','Lucas','SM-12V','Refurbished',5400,'Ludhiana','Punjab',imgs.tractor,'Refurbished starter motor assembly for tractor engines.'],
+      ['demo-p-14','Engine Piston Ring Set','Engine Parts','Goetze','PRS-4','New',2100,'Patiala','Punjab',imgs.bearing,'Piston ring set for common tractor engine rebuilds.'],
+      ['demo-p-15','Clutch Plate 11 Inch','Clutch & Brake Parts','Luk','CP-11','New',3200,'Hisar','Haryana',imgs.pulley,'Clutch plate demo listing for tractor and implement power transfer.'],
+      ['demo-p-16','Oil Seal Kit For Gearbox','Rubber Seals & Bushes','NOK','OSK-9','New',850,'Moga','Punjab',imgs.belt,'Oil seal kit for gearbox and shaft sealing work.'],
+      ['demo-p-17','Nut Bolt Hardware Assortment','Nuts, Bolts & Hardware','TVS','NB-100','New',1200,'Delhi','Delhi',imgs.pulley,'Workshop pack of bolts, nuts, pins and common fasteners.'],
+      ['demo-p-18','Pulley Wheel For Thresher','Shafts & Gears','AgroPulley','PW-18','New',2750,'Bathinda','Punjab',imgs.pulley,'Pulley wheel for thresher and belt-drive repair.']
+    ];
+    return base.map((x,i)=>({id:x[0],title:x[1],category:x[2],brand:x[3],model:x[4],condition:x[5],price:x[6],city:x[7],state:x[8],image_urls:[x[9]],image:x[9],description:x[10],status:'approved',is_boosted:i<5,views:220-i*6,user_id:'demo-seller',created_at:new Date(now-i*86400000).toISOString()}));
+  }
+
+  function withDemoCatalog(products=[]){
+    const arr=Array.isArray(products)?products:[];
+    if(cfg.SHOW_DEMO_CATALOG===false) return arr;
+    const seen=new Set(arr.map(p=>String(p.id||p.title||'').toLowerCase()));
+    const demo=demoProducts().filter(p=>!seen.has(String(p.id||p.title||'').toLowerCase()));
+    return [...arr, ...demo];
+  }
+
   async function loadProducts(){
     if(sb){
       const cols='*, sellers(business_name,status), users(email,full_name,badge_title,active_membership,membership_key,membership_title)';
@@ -567,16 +647,18 @@
       }
       const {data,error}=await query;
       if(!error && data){
-        state.products=data;
-        const cats=[...new Set(data.map(p=>p.category).filter(Boolean))];
-        state.stats.products=data.filter(isVisibleProduct).length;
+        const products=withDemoCatalog(data);
+        state.products=products;
+        const cats=[...new Set(products.map(p=>p.category).filter(Boolean))];
+        state.stats.products=products.filter(isVisibleProduct).length;
         state.stats.categories=cats.length || 0;
-        state.stats.sellers=[...new Set(data.filter(isVisibleProduct).map(p=>p.user_id||p.seller_id).filter(Boolean))].length || 0;
+        state.stats.sellers=[...new Set(products.filter(isVisibleProduct).map(p=>p.user_id||p.seller_id).filter(Boolean))].length || 0;
         try{ const {count}=await sb.from('orders').select('*',{count:'exact',head:true}); state.stats.orders=count||0; }catch(e){}
         return;
       }
     }
-    state.products=JSON.parse(localStorage.hp_products||'[]');
+    const localProducts=JSON.parse(localStorage.hp_products||'[]');
+    state.products=withDemoCatalog(localProducts);
     state.stats.products=state.products.length;
     state.stats.categories=[...new Set(state.products.map(p=>p.category).filter(Boolean))].length;
     state.stats.sellers=[...new Set(state.products.map(p=>p.user_id||p.seller_id).filter(Boolean))].length;
@@ -675,7 +757,24 @@
     const update=()=>{ const el=document.getElementById('agriFactText'); if(el){ localStorage.hp_fact_index=String((Number(localStorage.hp_fact_index||0)+1)%AGRI_FACTS.length); localStorage.hp_fact_ts=String(Date.now()); el.textContent=currentAgriFact(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,30); } };
     window.__hpFactTimer=setInterval(update,5*60*1000);
   }
-  function carouselSlides(){ return (state.siteSlides&&state.siteSlides.length?state.siteSlides:fallbackSlides()).filter(s=>s!==null).slice(0,6); }
+  function normalizeSlide(sl={}){
+    const text=`${sl.title||''} ${sl.subtitle||''}`.toLowerCase();
+    if(text.includes('free sellers get 5 listings') || text.includes('reduce platform fees') || text.includes('lower seller commission')){
+      return {...sl,title:'Launch seller plans from ₹19',subtitle:'Free users get 10 listings, paid plans add boosts and badges, and seller commission stays 1% during launch.',cta_text:'View Plans',cta_route:'membership'};
+    }
+    if(text.includes('seller payouts after platform commission')){
+      return {...sl,subtitle:'Post your stock, build trust, earn ranks and receive organized payouts with a simple 1% seller commission during launch.'};
+    }
+    return sl;
+  }
+  function carouselSlides(){
+    const seen=new Set();
+    return (state.siteSlides&&state.siteSlides.length?state.siteSlides:fallbackSlides())
+      .filter(s=>s!==null)
+      .map(normalizeSlide)
+      .filter(s=>{ const key=`${s.title||''}|${s.subtitle||''}`; if(seen.has(key)) return false; seen.add(key); return true; })
+      .slice(0,6);
+  }
   function homeCarousel(){
     const approved=visibleProducts();
     const boosted=approved.filter(p=>p.is_boosted).slice(0,8);
@@ -690,13 +789,17 @@
     ];
     return sections.map(([title,items,subtitle])=> items&&items.length ? `<section class="product-carousel-section"><div class="section-head"><h2>${title}</h2><p class="muted">${subtitle}</p></div><div class="product-row-carousel">${items.map(productCard).join('')}</div></section>` : '').join('');
   }
+  function featureCarousel(){
+    const slides=carouselSlides();
+    return `<section class="home-carousel-section"><div class="section-head"><h2>Marketplace highlights</h2><p class="muted">Quick rotating cards for buying, selling, plans and verified listings.</p></div><div class="home-carousel">${slides.map(s=>`<article class="carousel-slide"><img src="${esc(s.image_url||'./harvester-logo-full.jpg')}" onerror="this.src='./harvester-logo-full.jpg'" alt="${esc(s.title||'Marketplace update')}"><div><span class="eyebrow">Harvester Parts</span><h3>${esc(s.title||'Marketplace update')}</h3><p>${esc(s.subtitle||'Verified agriculture machinery and spare-part trading.')}</p><button class="primary" data-route="${esc(normalizeRouteName(s.cta_route||'market'))}">${esc(s.cta_text||'Open')}</button></div></article>`).join('')}</div></section>`;
+  }
 
   function home(){
     const cats=AGRI_CATEGORIES;
     const categoryCount = state.stats.categories || cats.length;
     const sellerCount = state.stats.sellers || 0;
     const liveProducts = visibleProducts();
-    return `<section class="hp92-hero"><video class="hp92-hero-bg" autoplay muted loop playsinline preload="metadata" poster="./harvester-logo-full.jpg"><source src="./hero-bg.mp4" type="video/mp4"></video><div class="hp92-hero-shade"></div><div class="hp92-hero-copy"><span class="eyebrow">Professional agri marketplace</span><h1>Trade farm machinery and spare parts in one verified market.</h1><p>Farmers, dealers, agencies, workshops and machine owners can buy or sell new and used equipment while the platform manages seller approval, checkout, commission and payouts.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="secondary" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">Seller Plans</button></div><div class="hp92-trust-row"><span>Verified sellers</span><span>New + used stock</span><span>Buyer fee + seller commission</span><span>Payout controls</span></div></div><div class="hp92-hero-panel"><div class="hp92-panel-top"><img src="./logo-512.png" alt="Harvester Parts"><div><b>Harvester Parts</b><span>Live marketplace console</span></div></div><div class="hp92-market-visual" aria-hidden="true"><div class="hp92-radar"><span></span><span></span><span></span></div><div class="hp92-activity-list"><i></i><i></i><i></i><i></i></div><div class="hp92-route-line"></div></div><div class="hp92-metric-grid"><div><b data-count="${state.stats.products||state.products.length}">0</b><span>Live listings</span></div><div><b data-count="${categoryCount}">0</b><span>Categories</span></div><div><b data-count="${sellerCount}">0</b><span>Sellers</span></div><div><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section><section class="hp92-role-grid"><article><span>Buyers</span><h2>Find machines and spare parts faster.</h2><p>Search by category, model, brand, condition and location. Cart, checkout and seller chat stay inside the website.</p></article><article><span>Sellers</span><h2>List after seller verification.</h2><p>Dealers, agencies, farmers and owners can upload product photos, price, condition and compatibility for admin-reviewed listings.</p></article><article><span>Owner revenue</span><h2>Commission system already fits the business.</h2><p>Seller platform fee, buyer protection fee, membership plans, ledger balances and payout requests support your marketplace earnings.</p></article></section>${homeCarousel()}${agriFactCard()}<section><div class="section-head"><h2>Shop by farming need</h2><p class="muted">Clear categories for machinery, implements, repair parts and workshop inventory.</p></div><div class="agri-category-grid compact">${cats.slice(0,8).map(categoryCard).join('')}</div></section><section><div class="section-head"><h2>Fresh listings</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${liveProducts.slice(0,6).map(productCard).join('')||empty('No live products yet.')}</div></section>`;
+    return `<section class="hp92-hero"><video class="hp92-hero-bg" autoplay muted loop playsinline preload="metadata" poster="./harvester-logo-full.jpg"><source src="./hero-bg.mp4" type="video/mp4"></video><div class="hp92-hero-shade"></div><div class="hp92-hero-copy"><span class="eyebrow">Professional agri marketplace</span><h1>Buy and sell agricultural machinery, implements and spare parts faster.</h1><p>Harvester Parts is a verified marketplace for farmers, dealers, agencies, workshops and machine owners to trade new and used farm equipment with simple search, seller approval, secure checkout, 1% buyer fee, 1% seller commission and organized payouts.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="secondary" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">Seller Plans</button></div><div class="hp92-trust-row"><span>Verified sellers</span><span>New + used stock</span><span>1% buyer fee</span><span>1% seller commission</span></div></div><div class="hp92-hero-panel"><div class="hp92-panel-top"><img src="./logo-512.png" alt="Harvester Parts"><div><b>Harvester Parts</b><span>Live marketplace console</span></div></div><div class="hp92-market-visual" aria-hidden="true"><div class="hp92-radar"><span></span><span></span><span></span></div><div class="hp92-activity-list"><i></i><i></i><i></i><i></i></div><div class="hp92-route-line"></div></div><div class="hp92-metric-grid"><div><b data-count="${state.stats.products||state.products.length}">0</b><span>Live listings</span></div><div><b data-count="${categoryCount}">0</b><span>Categories</span></div><div><b data-count="${sellerCount}">0</b><span>Sellers</span></div><div><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section>${agriFactCard()}${featureCarousel()}<section class="hp92-role-grid"><article><span>Buyer area</span><h2>Find machines and spare parts faster.</h2><p>Search by category, model, brand, condition and location. Cart, checkout and seller chat stay inside the website.</p></article><article><span>Seller tools</span><h2>List after seller verification.</h2><p>Dealers, agencies, farmers and owners can upload product photos, price, condition and compatibility for admin-reviewed listings.</p></article><article><span>Owner revenue</span><h2>Simple commission system for launch.</h2><p>Both buyer-side platform fee and seller-side commission are set to 1% for demo and live marketplace flows.</p></article></section>${homeCarousel()}<section><div class="section-head"><h2>Shop by farming need</h2><p class="muted">Clear categories for machinery, implements, repair parts and workshop inventory.</p></div><div class="agri-category-grid compact">${cats.slice(0,8).map(categoryCard).join('')}</div></section><section><div class="section-head"><h2>Fresh listings</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${liveProducts.slice(0,6).map(productCard).join('')||empty('No live products yet.')}</div></section>`;
   }
 
   
@@ -704,8 +807,9 @@
     const marketProducts=visibleProducts();
     const categories=[...new Set([...marketProducts.map(p=>p.category).filter(Boolean), ...AGRI_CATEGORIES.map(c=>c.title)])];
     const selected=sessionStorage.hp_market_category||'';
-    const shown=selected?marketProducts.filter(p=>String(p.category||'').toLowerCase().includes(selected.toLowerCase()) || String(p.title||'').toLowerCase().includes(selected.toLowerCase())):marketProducts;
-    return `<section class="page-card market-head-card hp92-market-head"><div><span class="eyebrow">Marketplace</span><h1>Search verified farm listings.</h1><p class="muted">Browse machines, implements and spare parts with category, condition and price controls.</p></div><button class="primary" data-route="sell">List Product</button><div class="market-tools"><input id="searchInput" placeholder="Search parts, brand, model"><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="all">All listings</option><option value="condition_new">New</option><option value="condition_used">Used</option><option value="price_low">Price low to high</option><option value="price_high">Price high to low</option></select></div></section><section class="grid hp92-market-grid" id="marketGrid">${shown.map(productCard).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
+    const type=sessionStorage.hp_market_type||'all';
+    const shown=marketProducts.filter(p=>matchesProductType(p,type) && (!selected || String(p.category||'').toLowerCase().includes(selected.toLowerCase()) || String(p.title||'').toLowerCase().includes(selected.toLowerCase())));
+    return `<section class="page-card market-head-card hp92-market-head"><div><span class="eyebrow">Buyer marketplace</span><h1>Search verified farm machines and spare parts.</h1><p class="muted">Use fast suggestions, product type, category, condition and price filters to find the right farm item quickly.</p></div><button class="primary" data-route="sell">List Product</button><div class="market-tools"><select id="typeFilter"><option value="all" ${type==='all'?'selected':''}>All products</option><option value="machine" ${type==='machine'?'selected':''}>Machinery</option><option value="spare" ${type==='spare'?'selected':''}>Spare parts</option></select><div class="search-wrap"><input id="searchInput" autocomplete="off" placeholder="Search tractor, harvester, bearing, belt or model"><div id="searchSuggest" class="search-suggest"></div></div><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="all">All listings</option><option value="condition_new">New</option><option value="condition_used">Used</option><option value="price_low">Price low to high</option><option value="price_high">Price high to low</option></select></div></section><section class="grid hp92-market-grid" id="marketGrid">${shown.map(productCard).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
   }
   
   function productPage(id){
@@ -828,8 +932,13 @@
     if(!state.user)return route('login');
     if(!state.cart.length)return toast('Cart is empty');
     const fd=new FormData(form); const totals=getTotals(fd.get('shipping'));
+    const paidId=form.dataset.razorpayPaid || '';
+    if(hasRazorpayKey() && !paidId){
+      await openRazorpayPayment({amount:totals.total,description:'Harvester Parts order',prefill:{name:fd.get('name')||'',contact:fd.get('phone')||'',email:state.user.email||''},handler:async(resp)=>{ form.dataset.razorpayPaid=resp.razorpay_payment_id||'razorpay_paid'; await placeOrder(form); }});
+      return;
+    }
     const payoutDue=sevenBusinessDaysFrom();
-    const order={buyer_id:state.user.id,user_id:state.user.id,amount:totals.total,shipping_amount:totals.shipping,platform_fee:totals.pf,status:'pending',buyer_name:fd.get('name'),buyer_phone:fd.get('phone'),address:fd.get('address'),pincode:fd.get('pincode'),seller_payout_total:0,platform_commission_total:0,payout_status:'pending',expected_payout_at:payoutDue.toISOString()};
+    const order={buyer_id:state.user.id,user_id:state.user.id,amount:totals.total,shipping_amount:totals.shipping,platform_fee:totals.pf,status:paidId?'paid':'pending',payment_id:paidId||'manual_pending',buyer_name:fd.get('name'),buyer_phone:fd.get('phone'),address:fd.get('address'),pincode:fd.get('pincode'),seller_payout_total:0,platform_commission_total:0,payout_status:'pending',expected_payout_at:payoutDue.toISOString()};
     const itemRows=[]; const ledgerRows=[];
     let sellerPayoutTotal=0, commissionTotal=0;
     state.cart.forEach(i=>{
@@ -844,8 +953,8 @@
     if(sb){
       let inserted=null;
       let res=await sb.from('orders').insert(order).select().single();
-      if(res.error && /seller_payout_total|platform_commission_total|payout_status|expected_payout_at/i.test(String(res.error.message||''))){
-        const fallback={...order}; ['seller_payout_total','platform_commission_total','payout_status','expected_payout_at'].forEach(k=>delete fallback[k]);
+      if(res.error && /seller_payout_total|platform_commission_total|payout_status|expected_payout_at|payment_id/i.test(String(res.error.message||''))){
+        const fallback={...order}; ['seller_payout_total','platform_commission_total','payout_status','expected_payout_at','payment_id'].forEach(k=>delete fallback[k]);
         res=await sb.from('orders').insert(fallback).select().single();
       }
       if(res.error) return toast(res.error.message);
@@ -863,7 +972,7 @@
         if(!lg.error){ await refreshSellerBalancesFromLedger(ledgers); }
       }
     }
-    localStorage.hp_last_order=orderId; state.cart=[]; saveCart(); toast('Order placed successfully.'); route('orders');
+    localStorage.hp_last_order=orderId; state.cart=[]; saveCart(); toast(paidId?'Payment successful. Order placed.':'Order saved. Razorpay was not available for this payment.'); route('orders');
   }
   function changeQty(id,delta){ const it=state.cart.find(i=>String(i.id)===String(id)); if(!it)return; it.qty+=delta; if(it.qty<=0)state.cart=state.cart.filter(i=>String(i.id)!==String(id)); saveCart(); render(); }
   function removeCart(id){ state.cart=state.cart.filter(i=>String(i.id)!==String(id)); saveCart(); render(); }
@@ -878,7 +987,7 @@
   function stateOptions(selected=''){
     return `<option value="">Select State</option>` + INDIA_STATES.map(st=>`<option value="${esc(st)}" ${String(selected)===st?'selected':''}>${esc(st)}</option>`).join('');
   }
-  function formDraft(key){ try{return JSON.parse(sessionStorage.getItem('hp_'+key)||'{}')}catch(e){return {}} }
+  function formDraft(key){ try{return JSON.parse(localStorage.getItem('hp_'+key)||sessionStorage.getItem('hp_'+key)||'{}')}catch(e){return {}} }
   function bindFormDraft(formId,key){
     const form=document.getElementById(formId); if(!form) return;
     const saved=formDraft(key);
@@ -893,9 +1002,10 @@
   function saveFormDraft(form,key){
     const data={};
     [...form.elements].forEach(el=>{ if(el.name && el.type!=='file' && el.type!=='password'){ if(el.type==='radio'){ if(el.checked) data[el.name]=el.value; } else data[el.name]=el.value; }});
+    localStorage.setItem('hp_'+key, JSON.stringify(data));
     sessionStorage.setItem('hp_'+key, JSON.stringify(data));
   }
-  function clearFormDraft(key){ sessionStorage.removeItem('hp_'+key); }
+  function clearFormDraft(key){ sessionStorage.removeItem('hp_'+key); localStorage.removeItem('hp_'+key); }
   function isUserEditing(){ const el=document.activeElement; return !!el && ['INPUT','TEXTAREA','SELECT'].includes(el.tagName); }
   function shouldHoldRender(){ return isUserEditing() || !!document.querySelector('#sellForm,#sellerVerifyForm,#loginForm,#profileForm'); }
 
@@ -907,7 +1017,7 @@
 
   function membershipMiniCard(){
     const plan=activePlan();
-    return `<div class="page-card membership-mini-card"><div class="section-head compact"><h2>Membership</h2><span class="badge ${plan?'owner':''}">${plan?'Active':'Free'}</span></div>${plan?`<div class="mini-plan-banner"><b>${esc(plan.title)}</b><span>${esc(plan.banner)} • expires ${membershipExpiryText()||'soon'}</span></div><div class="rank-ways"><div><b>${plan.boost}</b><span>boost days</span></div><div><b>${limitLabel(plan.listings)}</b><span>listing limit</span></div><div><b>${plan.reward}</b><span>reward pts</span></div><div><b>${money(plan.price)}</b><span>value</span></div></div>`:`<p class="muted">Free plan gives 5 listings. Upgrade from ₹49 for more listings and lower seller platform fee.</p>`}<button class="primary" data-route="membership">${plan?'Upgrade Plan':'Seller Plans'}</button></div>`;
+    return `<div class="page-card membership-mini-card"><div class="section-head compact"><h2>Membership</h2><span class="badge ${plan?'owner':''}">${plan?'Active':'Free'}</span></div>${plan?`<div class="mini-plan-banner"><b>${esc(plan.title)}</b><span>${esc(plan.banner)} • expires ${membershipExpiryText()||'soon'}</span></div><div class="rank-ways"><div><b>${plan.boost}</b><span>boost days</span></div><div><b>${limitLabel(plan.listings)}</b><span>listing limit</span></div><div><b>${plan.reward}</b><span>reward pts</span></div><div><b>${money(plan.price)}</b><span>value</span></div></div>`:`<p class="muted">Free launch plan gives 10 listings and 1% seller commission. Upgrade from ₹19 for more listings, boosts and badges.</p>`}<button class="primary" data-route="membership">${plan?'Upgrade Plan':'Seller Plans'}</button><button class="ghost" data-route="rewards">Badges & titles</button></div>`;
   }
   function accountPage(){
     if(!state.user)return loginPage();
@@ -1113,11 +1223,12 @@
       <div class="admin-owner-row"><img src="./logo-192.png" alt=""><div><span class="badge owner">ADMIN CONTROL CENTER</span><h1>Platform Owner Dashboard</h1><p data-no-translate>${esc(state.user.email||'')}</p></div></div>
       <div class="admin-quick-actions"><button class="primary" data-route="sell">List Product</button><button class="secondary" data-route="market">View Marketplace</button><button class="ghost" data-route="orders">Orders</button></div>
     </section>
+    <section class="page-card admin-nav-strip"><button onclick="document.getElementById('sellerApprovalList')?.scrollIntoView({behavior:'smooth',block:'start'})">Seller approvals</button><button onclick="document.getElementById('approvedProductsList')?.scrollIntoView({behavior:'smooth',block:'start'})">Products</button><button onclick="document.getElementById('adminOrdersList')?.scrollIntoView({behavior:'smooth',block:'start'})">Orders</button><button onclick="document.getElementById('adminMoneyList')?.scrollIntoView({behavior:'smooth',block:'start'})">Money & payouts</button><button onclick="document.getElementById('adminRanksList')?.scrollIntoView({behavior:'smooth',block:'start'})">Badges</button><button onclick="document.getElementById('adminMembershipList')?.scrollIntoView({behavior:'smooth',block:'start'})">Plans</button></section>
     ${adminIdentityPanel()}${adminNotificationsPanel()}${adminCarouselPanel()}
     <section class="admin-kpi-grid">
       <div class="admin-kpi"><small>Total GMV</small><b>${adminMoney(gross)}</b><span>All checkout value</span></div>
       <div class="admin-kpi"><small>Paid Revenue</small><b>${adminMoney(paid)}</b><span>Paid / shipped / delivered</span></div>
-      <div class="admin-kpi"><small>Platform Fees</small><b>${adminMoney(platform)}</b><span>Buyer assurance fees</span></div>
+      <div class="admin-kpi"><small>Platform Fees</small><b>${adminMoney(platform)}</b><span>1% buyer fee plus 1% seller commission tracking</span></div>
       <div class="admin-kpi"><small>Pending Sellers</small><b>${pendingSellers.length}</b><span>Need document review</span></div>
       <div class="admin-kpi"><small>Live Products</small><b>${products.filter(isVisibleProduct).length}</b><span>Monitor and remove unsafe items</span></div>
       <div class="admin-kpi"><small>Safety Reports</small><b>${reports.filter(r=>r.status==='open').length}</b><span>Open reports</span></div>
@@ -1150,7 +1261,7 @@
     <section class="admin-columns">
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Ranks & badges</h2><span class="badge owner">Ranks and rewards</span></div><div id="adminRanksList">${adminRanksList()}</div></div>
       <div class="page-card admin-panel"><div class="section-head compact"><h2>Events & rewards</h2><span class="badge">Ready</span></div><div id="adminEventsList">${adminEventsList()}</div></div>
-    </section><section class="page-card admin-panel"><div class="section-head compact"><h2>Membership purchases</h2><span class="badge owner">₹49 to ₹5999</span></div><div id="adminMembershipList">${adminMembershipList(memberships)}</div></section>`;
+    </section><section class="page-card admin-panel"><div class="section-head compact"><h2>Membership purchases</h2><span class="badge owner">Rs. 19 to Rs. 499</span></div><div id="adminMembershipList">${adminMembershipList(memberships)}</div></section>`;
   }
 
   function adminRanksList(){
@@ -1350,17 +1461,17 @@
       staticFile:'terms.html',
       sections:[
         ['1. Introduction',`These Terms & Conditions govern access to and use of Harvester Parts, including the website, marketplace, accounts, seller verification, product listings, plans, payments, support, messages, rewards, badges, banners and admin-reviewed services. By using the platform, creating an account, posting a listing, placing an order or buying a membership, you agree to these Terms.`],
-        ['2. Marketplace Role',`Harvester Parts operates as an online marketplace and platform service for agricultural machinery, harvester parts, tractor parts, farm implements and related inventory. Sellers are responsible for the accuracy, ownership, legality, condition, pricing and availability of their listed products. Buyers are responsible for checking product details, compatibility, delivery terms and order information before payment. Harvester Parts may review, approve, reject, hide, ban or remove listings to protect marketplace quality.`],
+        ['2. Marketplace Role',`Harvester Parts operates as an online marketplace and facilitator for agricultural machinery, harvester parts, tractor parts, farm implements and related inventory. Harvester Parts is not the seller, manufacturer, owner, mechanic, surveyor, insurer or transport provider for seller-listed items unless expressly stated in writing. Sellers are responsible for the accuracy, ownership, legality, condition, pricing, availability and delivery readiness of their listings. Buyers are responsible for inspecting, verifying compatibility, checking documents, confirming freight and deciding whether the product is suitable before payment or acceptance. Harvester Parts may review, approve, reject, hide, ban or remove listings to protect marketplace quality, but such review is not a product guarantee.`],
         ['3. Accounts and Eligibility',`Users must provide accurate details and keep login credentials secure. Users may use email, Google login or phone OTP when enabled. A user must not create false accounts, impersonate any person, misuse another person’s documents or submit fake seller information. Harvester Parts may restrict or suspend accounts for fraud, suspicious activity, abuse, non-payment, repeated disputes, policy violation or legal risk.`],
         ['4. Seller Verification',`Only approved sellers can publish products. Seller approval may require business details, contact details, shop or stock photos, Aadhaar or other verification documents, bank or UPI payout information and any additional information requested by admin. Approval does not create employment, partnership, franchise or agency. Admin may approve, reject, ban, restore or re-check a seller at any time for buyer safety and platform compliance.`],
         ['5. Listings and Product Information',`Every listing must be accurate and must include correct title, category, product type, model, brand, price, condition, images and availability. Sellers must not mislead buyers with fake images, hidden defects, false compatibility, copied listings, stolen products or unrealistic offers. Harvester Parts may edit visibility, reject, ban, archive or request changes to any listing.`],
-        ['6. Orders and Payments',`When checkout is used, buyer payment is collected by the platform through the available payment method such as Razorpay or approved manual confirmation. The platform may hold the order amount for processing, fraud checks, dispute handling and seller payout calculation. Seller payout is calculated after deducting platform commission, membership-based seller fee, refunds, chargebacks, penalties, shipping adjustments or other applicable deductions.`],
-        ['7. Seller Commission and Payouts',`Seller commission depends on the active plan at the time of sale. Free sellers receive standard listing access and standard seller platform commission. Paid plans can reduce commission and increase listing limits. Seller balance shown in the account is an estimated payable amount and may change if the order is cancelled, refunded, disputed, charged back, adjusted or found to violate policy.`],
+        ['6. Orders and Payments',`When checkout is used, buyer payment is collected through the available payment method such as Razorpay or approved manual confirmation. During launch, checkout shows a 1% buyer platform fee and seller payout calculation uses a 1% seller commission by default for demo and live flows. The platform may hold order amounts for processing, fraud checks, dispute handling, refund review and seller payout calculation. Seller payout is calculated after deducting seller commission, refunds, chargebacks, penalties, shipping adjustments or other applicable deductions.`],
+        ['7. Seller Commission and Payouts',`The standard seller commission is 1% during the launch period unless a later notice or written agreement says otherwise. Membership plans currently increase listing limits, boosts and profile rewards while keeping seller commission simple at 1%. Seller balance shown in the account is an estimated payable amount and may change if the order is cancelled, refunded, disputed, charged back, adjusted or found to violate policy.`],
         ['8. Membership Plans and Rewards',`Membership plans may provide listing limits, fee discounts, boost days, badges, banners, titles, reward points or visibility benefits. Plans are digital platform services and begin when activated. Plan benefits are not guaranteed sales, leads or profit. Harvester Parts may update plan names, pricing, benefits, ranking rules, reward rules and event rules with notice on the platform.`],
         ['9. Badges, Titles, Banners and Ranks',`Badges, titles, banners, ranks and points are platform identity features. They are not financial assets and cannot be sold, transferred, redeemed for cash or used as proof of business quality outside the platform. Founder/admin identity may be unique and controlled by the platform owner. Users may lose badges, ranks or benefits if their account violates policy.`],
         ['10. User Conduct',`Users must communicate respectfully, avoid spam, avoid bypassing platform checkout when order protection is used, avoid sharing prohibited content, avoid harassment, avoid fraudulent claims and avoid any activity that harms buyers, sellers, admin, payment processors or the platform. Harvester Parts may moderate chat and support messages for safety, fraud prevention and policy enforcement.`],
-        ['11. No Guarantee',`Harvester Parts does not guarantee uninterrupted service, guaranteed buyer leads, product quality, product availability, delivery time, seller profit, resale value or compatibility of any part with any machine. Marketplace content is provided by sellers and users. Buyers should verify critical details before purchase.`],
-        ['12. Limitation of Liability',`To the maximum extent permitted by law, Harvester Parts is not liable for indirect, incidental, special, consequential or punitive loss, loss of profit, downtime, loss of business, compatibility error, third-party courier delay, seller misrepresentation, payment gateway downtime or user misuse. Nothing in these Terms limits liability where it cannot legally be limited.`],
+        ['11. No Guarantee',`Harvester Parts does not guarantee uninterrupted service, guaranteed buyer leads, product quality, product authenticity, ownership, product availability, delivery time, seller profit, resale value or compatibility of any part with any machine. Marketplace content is mainly provided by sellers and users. Buyers should verify critical details, ownership documents, invoice details, compatibility, condition and freight before purchase or acceptance.`],
+        ['12. Limitation of Liability',`To the maximum extent permitted by law, Harvester Parts is not liable for indirect, incidental, special, consequential or punitive loss, loss of profit, downtime, loss of business, compatibility error, wrong fitment, third-party courier delay, seller misrepresentation, buyer-side inspection failure, payment gateway downtime or user misuse. The platform's role is limited to providing marketplace tools, payment flow, support records and policy review. Nothing in these Terms limits liability where it cannot legally be limited.`],
         ['13. Changes to Terms',`Harvester Parts may update these Terms to improve the platform, meet legal requirements, support new features or update payment/payout rules. Continued use of the platform after updates means acceptance of the updated Terms.`],
         ['14. Contact',`For support, disputes, seller verification, payment help or legal notices, contact ${LEGAL_SUPPORT_EMAIL} or use the Contact/Support page. Business identity details should be updated before full public launch if your final entity, GSTIN or registered office changes.`]
       ]
@@ -1392,7 +1503,7 @@
         ['3. Eligible Refund Cases',`Refunds may be approved when the seller cannot supply the item, the order is cancelled by Harvester Parts, the buyer is charged but order creation fails, the wrong item is delivered, the product is materially different from the approved listing, or a dispute review confirms refund eligibility.`],
         ['4. Non-Refundable or Limited Refund Cases',`Refund may be rejected or reduced for buyer change of mind after dispatch, wrong machine compatibility selected by buyer, damage after delivery, missing original packaging where relevant, used/installed parts, altered items, custom-procured parts, false claims, delayed complaint after acceptance or cases where seller listing was accurate.`],
         ['5. Refund Timelines',`Approved refunds are usually initiated through the payment gateway to the original payment method. Normal gateway/bank timelines may take several working days after initiation. Exact timing depends on Razorpay, banks, card networks, UPI providers and payment method.`],
-        ['6. Platform Fees and Deductions',`Payment gateway charges, platform protection fee, shipping, loading, inspection, return shipping, cancellation charges, chargebacks or bank fees may be deducted where applicable and legally allowed. Seller payout and seller balance are adjusted if refund or chargeback is created.`],
+        ['6. Platform Fees and Deductions',`During launch, checkout may include a 1% buyer platform fee and seller payout may include a 1% seller commission. Payment gateway charges, shipping, loading, inspection, return shipping, cancellation charges, chargebacks or bank fees may also be deducted where applicable and legally allowed. Seller payout and seller balance are adjusted if a refund or chargeback is created.`],
         ['7. How to Request Refund',`Open Support/Contact with order ID, product name, reason, photos/videos where relevant and contact details. Harvester Parts may request seller response, courier proof, inspection proof or extra details before final decision.`]
       ]
     },
@@ -1436,9 +1547,9 @@
       subtitle:'Rules for buying, checkout, inspection and dispute support.',
       staticFile:'buyer-policy.html',
       sections:[
-        ['1. Buyer Responsibility',`Buyers must review product details, part compatibility, model, brand, condition, price, shipping cost and delivery terms before ordering. For machinery and spare parts, compatibility should be confirmed before payment when critical.`],
-        ['2. Safe Buying',`Use platform checkout and support channels for order protection. Do not share OTP, banking passwords or unnecessary personal documents with sellers. Report suspicious listings or payment requests outside official checkout.`],
-        ['3. Disputes',`Buyers must raise disputes quickly with evidence such as photos, videos, delivery proof, order ID and chat history. Harvester Parts may contact seller and decide next steps based on available evidence and policy.`]
+        ['1. Buyer Responsibility',`Buyers must review product details, part compatibility, model, brand, ownership, invoice/document availability, condition, price, shipping cost, loading/unloading needs and delivery terms before ordering. For used machinery, spare parts and compatibility-critical items, buyers should inspect directly, ask for photos/videos and confirm fitment before payment or acceptance.`],
+        ['2. Safe Buying',`Use platform checkout and support channels wherever order records and payment references are required. Do not share OTP, banking passwords or unnecessary personal documents with sellers. If a buyer chooses to pay, inspect, collect or settle outside the platform, that buyer accepts the added risk and Harvester Parts may have limited ability to help.`],
+        ['3. Disputes',`Buyers must raise disputes quickly with evidence such as photos, videos, delivery proof, order ID and chat history. Harvester Parts may contact seller and decide next steps based on available evidence and policy, but it is not responsible for losses caused by false seller information, buyer's failure to inspect, off-platform payment or incompatible product selection except where liability cannot legally be limited.`]
       ]
     },
     'payout-policy':{
@@ -1447,7 +1558,7 @@
       staticFile:'seller-payout-policy.html',
       sections:[
         ['1. Platform Collection',`For protected checkout, buyer payment is collected by Harvester Parts/payment gateway first. The platform then calculates seller payable balance after seller platform commission, membership fee rate, refunds, chargebacks, shipping adjustments, penalties and any applicable deductions.`],
-        ['2. Seller Balance Example',`If a seller lists an item for ₹30,00,000 and has no paid plan, the standard 3.00% seller platform fee is ₹90,000. Estimated seller balance becomes ₹29,10,000 before any additional adjustments. Higher membership plans may reduce seller commission if active at the time of sale.`],
+        ['2. Seller Balance Example',`If a seller lists an item for Rs. 1,000 during launch, the standard 1% seller platform commission is Rs. 10. Estimated seller balance becomes Rs. 990 before any shipping, refund, chargeback or policy adjustment. Higher membership plans currently improve limits and visibility while keeping the commission simple at 1%.`],
         ['3. Payout Method',`Sellers must choose payout by UPI or bank account and submit accurate details. For UPI, seller must provide valid UPI ID and account holder name. For bank transfer, seller must provide account holder name, bank name, account number and IFSC. Wrong payout details may delay or fail transfer.`],
         ['4. Payout Timeline',`Seller payouts are targeted within 7 business days after payment/order confirmation, subject to delivery status, dispute window, fraud checks, bank holidays, payment gateway settlement, compliance review and any buyer complaint. High-value orders may require additional confirmation before payout.`],
         ['5. Admin Controls',`Admin can view money-in, platform commission, seller balances, payout requests, seller bank/UPI details and mark payouts as pending, processing, paid or rejected. Manual payout records are operational records and should match actual bank/UPI transfers.`],
@@ -1459,9 +1570,9 @@
       subtitle:'Platform fee, seller commission, membership discounts and transaction cost information.',
       staticFile:'fees-commission-policy.html',
       sections:[
-        ['1. Buyer Charges',`Buyer checkout may include product subtotal, shipping/logistics charges and platform protection/service fee where shown. Final payable amount is displayed before order placement.`],
-        ['2. Seller Commission',`Seller commission is deducted from seller payout. The free plan standard rate is 3.00%. Paid plans may reduce seller commission down to the rate shown on the plan page. Rates can change for future transactions after platform notice.`],
-        ['3. Membership Fees',`Membership fees are paid for digital platform benefits such as listing limits, visibility, rank benefits, banners, badges, titles and lower seller commission. Membership purchase does not guarantee sales or profit.`]
+        ['1. Buyer Charges',`Buyer checkout may include product subtotal, shipping/logistics charges and a 1% buyer platform fee where shown. Final payable amount is displayed before order placement.`],
+        ['2. Seller Commission',`Seller commission is deducted from seller payout. During launch, the default seller commission is 1% for demo and live marketplace flows. Rates can change for future transactions after platform notice, but the active rate should be shown before checkout or payout calculation.`],
+        ['3. Membership Fees',`Membership fees are paid for digital platform benefits such as listing limits, visibility, rank benefits, banners, badges, titles, boosts and rewards. Membership purchase does not guarantee sales, leads or profit.`]
       ]
     },
     'prohibited-policy':{
@@ -1513,7 +1624,7 @@
   }
 
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
-  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
+  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='rewards')html=rewardsPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
   function bindPage(){
     $$('#app input, #app textarea, #app select').forEach(el=>el.addEventListener('click',e=>e.stopPropagation()));
     $('#loginForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); withLoading(e.target,()=>login(fd.get('email'),fd.get('password')),'Logging in...');});
@@ -1538,7 +1649,11 @@
     $('#adminIdentityForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveAdminIdentity(e.target),'Saving admin identity...')});
     $('#carouselSlideForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveCarouselSlide(e.target),'Saving carousel...')});
     $('#requestPayoutBtn')?.addEventListener('click',e=>{e.preventDefault();requestPayout();});
-    $('#searchInput')?.addEventListener('input',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
+    $('#searchInput')?.addEventListener('input',filterMarket);
+    $('#searchInput')?.addEventListener('focus',updateSearchSuggestions);
+    $('#searchInput')?.addEventListener('blur',()=>setTimeout(()=>$('#searchSuggest')?.classList.remove('show'),140));
+    $('#searchSuggest')?.addEventListener('click',e=>{ const b=e.target.closest('[data-suggest]'); if(!b)return; const input=$('#searchInput'); if(input){ input.value=b.dataset.suggest; input.blur(); $('#searchSuggest')?.classList.remove('show'); filterMarket(); } });
+    $('#typeFilter')?.addEventListener('change',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
   }
   function bindSellTypeChooser(){
     const form=$('#sellForm'); if(!form) return;
@@ -1559,6 +1674,32 @@
     form.querySelectorAll('input[name="sell_type"]').forEach(r=>r.addEventListener('change',()=>setType(r.value)));
     setType(draft.sell_type || form.querySelector('input[name="sell_type"]:checked')?.value || 'machine', draft.category || '');
   }
+  function matchesProductType(p,type='all'){
+    if(type==='all') return true;
+    const category=String(p.category||'').toLowerCase();
+    const sellType=String(p.sell_type||'').toLowerCase();
+    const cat=AGRI_CATEGORIES.find(c=>c.title.toLowerCase()===category);
+    if(type==='machine') return sellType==='machine' || cat?.group==='Machines';
+    if(type==='spare') return sellType==='spare' || cat?.group==='Spare Parts';
+    return true;
+  }
+  function suggestionItems(query=''){
+    const q=String(query||'').trim().toLowerCase();
+    if(!q) return [];
+    const names=[...visibleProducts().flatMap(p=>[p.title,p.category,p.brand,p.model].filter(Boolean)), ...AGRI_CATEGORIES.map(c=>c.title)];
+    return [...new Set(names.map(x=>String(x).trim()).filter(Boolean))]
+      .filter(x=>x.toLowerCase().startsWith(q))
+      .sort((a,b)=>a.localeCompare(b))
+      .slice(0,9);
+  }
+  function updateSearchSuggestions(){
+    const input=$('#searchInput'), wrap=$('#searchSuggest');
+    if(!input||!wrap) return;
+    if(document.activeElement!==input){ wrap.classList.remove('show'); return; }
+    const items=suggestionItems(input.value);
+    wrap.innerHTML=items.map(x=>`<button type="button" data-suggest="${esc(x)}">${esc(x)}</button>`).join('');
+    wrap.classList.toggle('show', items.length>0);
+  }
   function openGallery(id,index=0){
     const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return;
     const imgs=productImages(p); window.__hpGallery={id:String(id),index:Number(index)||0,imgs};
@@ -1570,16 +1711,18 @@
 
   function filterMarket(){
     const q=($('#searchInput')?.value||'').toLowerCase();
+    const type=$('#typeFilter')?.value||'all'; sessionStorage.hp_market_type=type;
     const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat;
     const sort=$('#sortFilter')?.value||'all';
-    let arr=visibleProducts().filter(p=>(!q||[p.title,p.category,p.brand,p.model,p.condition].join(' ').toLowerCase().includes(q))&&(!cat||String(p.category||'').toLowerCase().includes(String(cat).toLowerCase()) || String(p.title||'').toLowerCase().includes(String(cat).toLowerCase())));
+    let arr=visibleProducts().filter(p=>matchesProductType(p,type)&&(!q||[p.title,p.category,p.brand,p.model,p.condition].join(' ').toLowerCase().includes(q))&&(!cat||String(p.category||'').toLowerCase().includes(String(cat).toLowerCase()) || String(p.title||'').toLowerCase().includes(String(cat).toLowerCase())));
     if(sort==='condition_new') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='new');
     if(sort==='condition_used') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='used');
     if(sort==='price_low') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
     if(sort==='price_high') arr.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
     const grid=$('#marketGrid'); if(grid){ grid.innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,20); }
+    updateSearchSuggestions();
   }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,openGallery,closeGallery,stepGallery};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,equipBadge,openGallery,closeGallery,stepGallery};
   document.addEventListener('DOMContentLoaded',init);
 })();

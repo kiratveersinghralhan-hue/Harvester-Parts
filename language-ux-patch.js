@@ -1311,6 +1311,66 @@
   };
   Object.keys(EXTRA_V92).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V92[l]); });
 
+  const EXTRA_V94 = {
+    hi:{
+      'Buyer Marketplace':'खरीदार बाजार',
+      'Farm Categories':'कृषि श्रेणियां',
+      'Seller Tools':'विक्रेता टूल्स',
+      'Seller Plans':'विक्रेता प्लान',
+      'Rewards':'रिवार्ड्स',
+      'Buyer Area':'खरीदार क्षेत्र',
+      'List Machinery or Spare Part':'मशीनरी या स्पेयर पार्ट लिस्ट करें',
+      'Badges & Titles':'बैज और टाइटल',
+      'Order History':'ऑर्डर इतिहास',
+      'Search verified farm machines and spare parts.':'सत्यापित कृषि मशीनें और स्पेयर पार्ट खोजें।',
+      'Use fast suggestions, product type, category, condition and price filters to find the right farm item quickly.':'सही कृषि सामान जल्दी खोजने के लिए सुझाव, प्रकार, श्रेणी, हालत और कीमत फिल्टर का उपयोग करें।',
+      'All products':'सभी उत्पाद',
+      'Machinery':'मशीनरी',
+      'Spare parts':'स्पेयर पार्ट्स',
+      'Search tractor, harvester, bearing, belt or model':'ट्रैक्टर, हार्वेस्टर, बेयरिंग, बेल्ट या मॉडल खोजें',
+      'Marketplace highlights':'मार्केटप्लेस हाइलाइट्स',
+      'Quick rotating cards for buying, selling, plans and verified listings.':'खरीद, बिक्री, प्लान और सत्यापित लिस्टिंग के छोटे हाइलाइट कार्ड।',
+      '1% buyer fee':'1% खरीदार शुल्क',
+      '1% seller commission':'1% विक्रेता कमीशन',
+      'Low-cost seller plans for more listings, badges and visibility.':'अधिक लिस्टिंग, बैज और विजिबिलिटी के लिए कम कीमत वाले विक्रेता प्लान।',
+      'Choose your plan':'अपना प्लान चुनें',
+      'View Badges':'बैज देखें',
+      'Manage badges and titles':'बैज और टाइटल मैनेज करें',
+      'Your marketplace identity, rewards and equipped badge.':'आपकी मार्केटप्लेस पहचान, रिवार्ड्स और चुना हुआ बैज।',
+      'Seller approvals':'विक्रेता मंजूरी',
+      'Money & payouts':'पैसा और पेआउट'
+    },
+    pa:{
+      'Buyer Marketplace':'ਖਰੀਦਦਾਰ ਮਾਰਕੀਟ',
+      'Farm Categories':'ਖੇਤੀ ਸ਼੍ਰੇਣੀਆਂ',
+      'Seller Tools':'ਵੇਚਣ ਵਾਲੇ ਟੂਲ',
+      'Seller Plans':'ਵੇਚਣ ਵਾਲੇ ਪਲਾਨ',
+      'Rewards':'ਰਿਵਾਰਡ',
+      'Buyer Area':'ਖਰੀਦਦਾਰ ਖੇਤਰ',
+      'List Machinery or Spare Part':'ਮਸ਼ੀਨਰੀ ਜਾਂ ਸਪੇਅਰ ਪਾਰਟ ਲਿਸਟ ਕਰੋ',
+      'Badges & Titles':'ਬੈਜ ਅਤੇ ਟਾਈਟਲ',
+      'Order History':'ਆਰਡਰ ਇਤਿਹਾਸ',
+      'Search verified farm machines and spare parts.':'ਤਸਦੀਕਸ਼ੁਦਾ ਖੇਤੀ ਮਸ਼ੀਨਾਂ ਅਤੇ ਸਪੇਅਰ ਪਾਰਟ ਖੋਜੋ।',
+      'Use fast suggestions, product type, category, condition and price filters to find the right farm item quickly.':'ਸਹੀ ਖੇਤੀ ਆਈਟਮ ਜਲਦੀ ਲੱਭਣ ਲਈ ਸੁਝਾਅ, ਕਿਸਮ, ਸ਼੍ਰੇਣੀ, ਹਾਲਤ ਅਤੇ ਕੀਮਤ ਫਿਲਟਰ ਵਰਤੋ।',
+      'All products':'ਸਾਰੇ ਉਤਪਾਦ',
+      'Machinery':'ਮਸ਼ੀਨਰੀ',
+      'Spare parts':'ਸਪੇਅਰ ਪਾਰਟ',
+      'Search tractor, harvester, bearing, belt or model':'ਟਰੈਕਟਰ, ਹਾਰਵੈਸਟਰ, ਬੇਅਰਿੰਗ, ਬੈਲਟ ਜਾਂ ਮਾਡਲ ਖੋਜੋ',
+      'Marketplace highlights':'ਮਾਰਕੀਟਪਲੇਸ ਹਾਈਲਾਈਟਸ',
+      'Quick rotating cards for buying, selling, plans and verified listings.':'ਖਰੀਦ, ਵੇਚ, ਪਲਾਨ ਅਤੇ ਤਸਦੀਕਸ਼ੁਦਾ ਲਿਸਟਿੰਗ ਲਈ ਛੋਟੇ ਹਾਈਲਾਈਟ ਕਾਰਡ।',
+      '1% buyer fee':'1% ਖਰੀਦਦਾਰ ਫੀਸ',
+      '1% seller commission':'1% ਵੇਚਣ ਵਾਲਾ ਕਮਿਸ਼ਨ',
+      'Low-cost seller plans for more listings, badges and visibility.':'ਵੱਧ ਲਿਸਟਿੰਗ, ਬੈਜ ਅਤੇ ਵਿਜ਼ਿਬਿਲਟੀ ਲਈ ਘੱਟ ਕੀਮਤ ਵਾਲੇ ਵੇਚਣ ਵਾਲੇ ਪਲਾਨ।',
+      'Choose your plan':'ਆਪਣਾ ਪਲਾਨ ਚੁਣੋ',
+      'View Badges':'ਬੈਜ ਵੇਖੋ',
+      'Manage badges and titles':'ਬੈਜ ਅਤੇ ਟਾਈਟਲ ਮੈਨੇਜ ਕਰੋ',
+      'Your marketplace identity, rewards and equipped badge.':'ਤੁਹਾਡੀ ਮਾਰਕੀਟਪਲੇਸ ਪਹਿਚਾਣ, ਰਿਵਾਰਡ ਅਤੇ ਲਗਾਇਆ ਹੋਇਆ ਬੈਜ।',
+      'Seller approvals':'ਵੇਚਣ ਵਾਲੇ ਮਨਜ਼ੂਰੀਆਂ',
+      'Money & payouts':'ਪੈਸਾ ਅਤੇ ਪੇਆਉਟ'
+    }
+  };
+  Object.keys(EXTRA_V94).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V94[l]); });
+
   const SKIP_SELECTOR = 'script,style,textarea,.language-grid,[data-no-translate]';
   const textOriginal = new WeakMap();
   const norm = s => String(s || '').replace(/\s+/g, ' ').trim();
