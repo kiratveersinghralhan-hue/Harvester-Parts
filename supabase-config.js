@@ -9,8 +9,9 @@ window.HP_CONFIG = {
   ADMIN_ALERT_EMAIL: "kiratveersinghralhan@gmail.com",
   // Optional: paste a Supabase Edge Function / email webhook URL to send real email alerts.
   ADMIN_ALERT_WEBHOOK: "https://rpsiddurmwtwvpnwzclo.supabase.co/functions/v1/admin-alert",
-  SUPPORT_EMAIL: "ralhanstore985@gmail.com",
+  SUPPORT_EMAIL: "support@harvesterparts.in",
   SHOW_DEMO_CATALOG: false,
+  LIVE_FINANCE_START: "2026-05-24T00:00:00+05:30",
   CURRENCY: "INR",
   ENABLE_PHONE_OTP: false
 };
