@@ -8,7 +8,7 @@ window.HP_CONFIG = {
   ADMIN_EMAIL: "kiratveersinghralhan@gmail.com",
   ADMIN_ALERT_EMAIL: "kiratveersinghralhan@gmail.com",
   // Optional: paste a Supabase Edge Function / email webhook URL to send real email alerts.
-  ADMIN_ALERT_WEBHOOK: "",
+  ADMIN_ALERT_WEBHOOK: "https://rpsiddurmwtwvpnwzclo.supabase.co/functions/v1/admin-alert",
   SUPPORT_EMAIL: "ralhanstore985@gmail.com",
   SHOW_DEMO_CATALOG: false,
   CURRENCY: "INR",
