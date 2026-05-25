@@ -1370,6 +1370,156 @@
     }
   };
   Object.keys(EXTRA_V94).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V94[l]); });
+  const EXTRA_V101 = {
+    hi: {
+      'Seller verification required':'सेलर वेरिफिकेशन जरूरी है',
+      'Become a verified Harvester Parts seller.':'Harvester Parts पर verified seller बनें।',
+      'Business details':'बिजनेस विवरण',
+      'Pickup address':'पिकअप पता',
+      'Document upload':'दस्तावेज अपलोड',
+      'Guided product listing.':'गाइडेड प्रोडक्ट लिस्टिंग।',
+      'What do you want to sell?':'आप क्या बेचना चाहते हैं?',
+      'Who should fill the listing?':'लिस्टिंग कौन भरेगा?',
+      'List it myself':'मैं खुद लिस्ट करूंगा',
+      'Company will fill':'कंपनी लिस्टिंग भरेगी',
+      'Spare part identity':'स्पेयर पार्ट पहचान',
+      'OEM / part number (required)':'OEM / पार्ट नंबर (जरूरी)',
+      'Compatible machine or model (required)':'कम्पैटिबल मशीन या मॉडल (जरूरी)',
+      'Dimensions and specifications':'डाइमेंशन और स्पेसिफिकेशन',
+      'Specification':'स्पेसिफिकेशन',
+      'Value':'वैल्यू',
+      'Unit':'यूनिट',
+      'Note':'नोट',
+      'Payout method':'पेआउट तरीका',
+      'Bank account':'बैंक अकाउंट',
+      'UPI ID, e.g. name@upi':'UPI ID, जैसे name@upi'
+    },
+    pa: {
+      'Seller verification required':'ਸੈਲਰ ਵੈਰੀਫਿਕੇਸ਼ਨ ਜ਼ਰੂਰੀ ਹੈ',
+      'Become a verified Harvester Parts seller.':'Harvester Parts ਤੇ verified seller ਬਣੋ।',
+      'Business details':'ਬਿਜ਼ਨਸ ਵੇਰਵੇ',
+      'Pickup address':'ਪਿਕਅੱਪ ਪਤਾ',
+      'Document upload':'ਦਸਤਾਵੇਜ਼ ਅਪਲੋਡ',
+      'Guided product listing.':'ਗਾਈਡਡ ਪ੍ਰੋਡਕਟ ਲਿਸਟਿੰਗ।',
+      'What do you want to sell?':'ਤੁਸੀਂ ਕੀ ਵੇਚਣਾ ਚਾਹੁੰਦੇ ਹੋ?',
+      'Who should fill the listing?':'ਲਿਸਟਿੰਗ ਕੌਣ ਭਰੇਗਾ?',
+      'List it myself':'ਮੈਂ ਆਪ ਲਿਸਟ ਕਰਾਂਗਾ',
+      'Company will fill':'ਕੰਪਨੀ ਲਿਸਟਿੰਗ ਭਰੇਗੀ',
+      'Spare part identity':'ਸਪੇਅਰ ਪਾਰਟ ਪਛਾਣ',
+      'OEM / part number (required)':'OEM / ਪਾਰਟ ਨੰਬਰ (ਜ਼ਰੂਰੀ)',
+      'Compatible machine or model (required)':'ਕੰਪੈਟਿਬਲ ਮਸ਼ੀਨ ਜਾਂ ਮਾਡਲ (ਜ਼ਰੂਰੀ)',
+      'Dimensions and specifications':'ਡਾਇਮੈਂਸ਼ਨ ਅਤੇ ਸਪੈਸਿਫਿਕੇਸ਼ਨ',
+      'Specification':'ਸਪੈਸਿਫਿਕੇਸ਼ਨ',
+      'Value':'ਵੈਲਯੂ',
+      'Unit':'ਯੂਨਿਟ',
+      'Note':'ਨੋਟ',
+      'Payout method':'ਪੇਆਉਟ ਤਰੀਕਾ',
+      'Bank account':'ਬੈਂਕ ਅਕਾਊਂਟ',
+      'UPI ID, e.g. name@upi':'UPI ID, ਜਿਵੇਂ name@upi'
+    }
+  };
+  Object.keys(EXTRA_V101).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V101[l]); });
+
+  const EXTRA_V105 = {
+    hi: {
+      'Spare part dimensions':'स्पेयर पार्ट माप',
+      'Machinery dimensions':'मशीनरी माप',
+      'Part number, compatibility and exact mm/cm dimensions help buyers match the correct spare part.':'पार्ट नंबर, अनुकूलता और सही mm/cm माप खरीदारों को सही स्पेयर पार्ट मिलाने में मदद करते हैं।',
+      'Add transport size, working width, HP or capacity so heavy machinery buyers can plan pickup and delivery.':'ट्रांसपोर्ट साइज, काम की चौड़ाई, HP या क्षमता जोड़ें ताकि मशीनरी खरीदार पिकअप और डिलीवरी प्लान कर सकें।',
+      'Use mm/cm where possible':'जहां संभव हो mm/cm उपयोग करें',
+      'Professional listing request':'प्रोफेशनल लिस्टिंग अनुरोध',
+      'Pay ₹19 for this item. Send basic details now; our team will prepare the exact final listing.':'इस आइटम के लिए ₹19 भुगतान करें। अभी बेसिक विवरण भेजें; हमारी टीम सही अंतिम लिस्टिंग तैयार करेगी।',
+      'Pay ₹19 and send request':'₹19 भुगतान करें और अनुरोध भेजें',
+      'Spare part request':'स्पेयर पार्ट अनुरोध',
+      'Machinery request':'मशीनरी अनुरोध',
+      'Choose item type above':'ऊपर आइटम प्रकार चुनें',
+      'Self listing: spare part':'खुद लिस्टिंग: स्पेयर पार्ट',
+      'Self listing: machinery':'खुद लिस्टिंग: मशीनरी',
+      'Enter value':'वैल्यू डालें'
+    },
+    pa: {
+      'Spare part dimensions':'ਸਪੇਅਰ ਪਾਰਟ ਮਾਪ',
+      'Machinery dimensions':'ਮਸ਼ੀਨਰੀ ਮਾਪ',
+      'Part number, compatibility and exact mm/cm dimensions help buyers match the correct spare part.':'ਪਾਰਟ ਨੰਬਰ, ਮਿਲਾਣ ਅਤੇ ਸਹੀ mm/cm ਮਾਪ ਖਰੀਦਦਾਰਾਂ ਨੂੰ ਸਹੀ ਸਪੇਅਰ ਪਾਰਟ ਮਿਲਾਉਣ ਵਿੱਚ ਮਦਦ ਕਰਦੇ ਹਨ।',
+      'Add transport size, working width, HP or capacity so heavy machinery buyers can plan pickup and delivery.':'ਟ੍ਰਾਂਸਪੋਰਟ ਸਾਈਜ਼, ਕੰਮ ਵਾਲੀ ਚੌੜਾਈ, HP ਜਾਂ ਸਮਰੱਥਾ ਜੋੜੋ ਤਾਂ ਜੋ ਮਸ਼ੀਨਰੀ ਖਰੀਦਦਾਰ ਪਿਕਅਪ ਅਤੇ ਡਿਲਿਵਰੀ ਯੋਜਨਾ ਬਣਾ ਸਕਣ।',
+      'Use mm/cm where possible':'ਜਿੱਥੇ ਹੋ ਸਕੇ mm/cm ਵਰਤੋ',
+      'Professional listing request':'ਪ੍ਰੋਫੈਸ਼ਨਲ ਲਿਸਟਿੰਗ ਬੇਨਤੀ',
+      'Pay ₹19 for this item. Send basic details now; our team will prepare the exact final listing.':'ਇਸ ਆਈਟਮ ਲਈ ₹19 ਭਰੋ। ਹੁਣ ਬੁਨਿਆਦੀ ਵੇਰਵੇ ਭੇਜੋ; ਸਾਡੀ ਟੀਮ ਸਹੀ ਅੰਤਿਮ ਲਿਸਟਿੰਗ ਤਿਆਰ ਕਰੇਗੀ।',
+      'Pay ₹19 and send request':'₹19 ਭਰੋ ਅਤੇ ਬੇਨਤੀ ਭੇਜੋ',
+      'Spare part request':'ਸਪੇਅਰ ਪਾਰਟ ਬੇਨਤੀ',
+      'Machinery request':'ਮਸ਼ੀਨਰੀ ਬੇਨਤੀ',
+      'Choose item type above':'ਉੱਪਰ ਆਈਟਮ ਕਿਸਮ ਚੁਣੋ',
+      'Self listing: spare part':'ਆਪ ਲਿਸਟਿੰਗ: ਸਪੇਅਰ ਪਾਰਟ',
+      'Self listing: machinery':'ਆਪ ਲਿਸਟਿੰਗ: ਮਸ਼ੀਨਰੀ',
+      'Enter value':'ਵੈਲਯੂ ਭਰੋ'
+    },
+    ta: {
+      'Spare part dimensions':'உதிரி பாக அளவுகள்',
+      'Machinery dimensions':'இயந்திர அளவுகள்',
+      'Use mm/cm where possible':'சாத்தியமெனில் mm/cm பயன்படுத்தவும்',
+      'Professional listing request':'தொழில்முறை பட்டியல் கோரிக்கை',
+      'Pay ₹19 and send request':'₹19 செலுத்தி கோரிக்கையை அனுப்பவும்',
+      'Spare part request':'உதிரி பாக கோரிக்கை',
+      'Machinery request':'இயந்திர கோரிக்கை',
+      'Choose item type above':'மேலே பொருள் வகையை தேர்ந்தெடுக்கவும்',
+      'Self listing: spare part':'சுய பட்டியல்: உதிரி பாகம்',
+      'Self listing: machinery':'சுய பட்டியல்: இயந்திரம்',
+      'Enter value':'மதிப்பை உள்ளிடவும்'
+    },
+    te: {
+      'Spare part dimensions':'స్పేర్ పార్ట్ కొలతలు',
+      'Machinery dimensions':'యంత్రాల కొలతలు',
+      'Use mm/cm where possible':'సాధ్యమైన చోట mm/cm ఉపయోగించండి',
+      'Professional listing request':'ప్రొఫెషనల్ లిస్టింగ్ అభ్యర్థన',
+      'Pay ₹19 and send request':'₹19 చెల్లించి అభ్యర్థన పంపండి',
+      'Spare part request':'స్పేర్ పార్ట్ అభ్యర్థన',
+      'Machinery request':'యంత్రాల అభ్యర్థన',
+      'Choose item type above':'పైగా వస్తువు రకం ఎంచుకోండి',
+      'Self listing: spare part':'స్వయంగా లిస్టింగ్: స్పేర్ పార్ట్',
+      'Self listing: machinery':'స్వయంగా లిస్టింగ్: యంత్రం',
+      'Enter value':'విలువ నమోదు చేయండి'
+    },
+    bn: {
+      'Spare part dimensions':'স্পেয়ার পার্টের মাপ',
+      'Machinery dimensions':'মেশিনারির মাপ',
+      'Use mm/cm where possible':'সম্ভব হলে mm/cm ব্যবহার করুন',
+      'Professional listing request':'প্রফেশনাল লিস্টিং অনুরোধ',
+      'Pay ₹19 and send request':'₹19 পেমেন্ট করে অনুরোধ পাঠান',
+      'Spare part request':'স্পেয়ার পার্ট অনুরোধ',
+      'Machinery request':'মেশিনারি অনুরোধ',
+      'Choose item type above':'উপরে আইটেমের ধরন বাছুন',
+      'Self listing: spare part':'নিজে লিস্টিং: স্পেয়ার পার্ট',
+      'Self listing: machinery':'নিজে লিস্টিং: মেশিনারি',
+      'Enter value':'মান লিখুন'
+    },
+    mr: {
+      'Spare part dimensions':'स्पेअर पार्ट माप',
+      'Machinery dimensions':'मशिनरी माप',
+      'Use mm/cm where possible':'शक्य असल्यास mm/cm वापरा',
+      'Professional listing request':'प्रोफेशनल लिस्टिंग विनंती',
+      'Pay ₹19 and send request':'₹19 भरा आणि विनंती पाठवा',
+      'Spare part request':'स्पेअर पार्ट विनंती',
+      'Machinery request':'मशिनरी विनंती',
+      'Choose item type above':'वर आयटम प्रकार निवडा',
+      'Self listing: spare part':'स्वतः लिस्टिंग: स्पेअर पार्ट',
+      'Self listing: machinery':'स्वतः लिस्टिंग: मशिनरी',
+      'Enter value':'मूल्य भरा'
+    },
+    gu: {
+      'Spare part dimensions':'સ્પેર પાર્ટ માપ',
+      'Machinery dimensions':'મશીનરી માપ',
+      'Use mm/cm where possible':'શક્ય હોય ત્યાં mm/cm વાપરો',
+      'Professional listing request':'પ્રોફેશનલ લિસ્ટિંગ વિનંતી',
+      'Pay ₹19 and send request':'₹19 ચૂકવો અને વિનંતી મોકલો',
+      'Spare part request':'સ્પેર પાર્ટ વિનંતી',
+      'Machinery request':'મશીનરી વિનંતી',
+      'Choose item type above':'ઉપર વસ્તુનો પ્રકાર પસંદ કરો',
+      'Self listing: spare part':'પોતે લિસ્ટિંગ: સ્પેર પાર્ટ',
+      'Self listing: machinery':'પોતે લિસ્ટિંગ: મશીનરી',
+      'Enter value':'વેલ્યુ દાખલ કરો'
+    }
+  };
+  Object.keys(EXTRA_V105).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V105[l]); });
 
   const SKIP_SELECTOR = 'script,style,textarea,.language-grid,[data-no-translate]';
   const textOriginal = new WeakMap();
@@ -1421,6 +1571,34 @@
       });
     });
   }
+  function restoreKnownEnglish(root=document.body) {
+    if (!root || shouldSkip(root)) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode(node) {
+      if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+      if (shouldSkip(node)) return NodeFilter.FILTER_REJECT;
+      return NodeFilter.FILTER_ACCEPT;
+    }});
+    const nodes=[]; while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(node => {
+      const raw = node.parentElement?.dataset?.rawText;
+      if (raw) {
+        node.nodeValue = raw;
+        textOriginal.set(node, raw);
+        return;
+      }
+      if (textOriginal.has(node)) node.nodeValue = textOriginal.get(node);
+      else textOriginal.set(node, node.nodeValue);
+    });
+    const selector = 'input[placeholder],textarea[placeholder],button[title],a[title],img[alt]';
+    const items = root.matches && root.matches(selector) ? [root] : Array.from(root.querySelectorAll ? root.querySelectorAll(selector) : []);
+    items.forEach(el => {
+      ['placeholder','title','alt'].forEach(attr => {
+        const key = `hpOrig${attr.charAt(0).toUpperCase()+attr.slice(1)}`;
+        if (el.dataset?.[key]) el.setAttribute(attr, el.dataset[key]);
+        else if (el.hasAttribute(attr)) el.dataset[key] = el.getAttribute(attr) || '';
+      });
+    });
+  }
   function fixMenuHeader() {
     const name = document.getElementById('menuName');
     const role = document.getElementById('menuRole');
@@ -1431,6 +1609,11 @@
   }
   function apply() {
     document.documentElement.lang = lang();
+    restoreKnownEnglish(document.body);
+    if (lang() === 'en') {
+      fixMenuHeader();
+      return;
+    }
     translateTextNodes(document.body);
     translateAttributes(document.body);
     fixMenuHeader();

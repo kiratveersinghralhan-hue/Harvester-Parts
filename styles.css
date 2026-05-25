@@ -1937,6 +1937,300 @@ body.menu-open #menuButton.hamb{
     align-items:flex-start!important;
   }
 }
+
+/* v101 seller verification, conditional forms, catalogue specs and intro */
+.hidden-fields{
+  display:none!important;
+}
+.seller-verify-page{
+  display:grid!important;
+  gap:16px!important;
+}
+.seller-verify-hero{
+  background:#fff!important;
+  color:#142219!important;
+}
+.seller-verify-hero h1{
+  max-width:850px!important;
+  margin:12px 0!important;
+}
+.seller-verify-hero p{
+  max-width:760px!important;
+  color:#53665b!important;
+}
+.verify-step-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:10px!important;
+  margin-top:18px!important;
+}
+.verify-step-grid div{
+  display:flex!important;
+  gap:10px!important;
+  align-items:center!important;
+  padding:12px!important;
+  border:1px solid #d9e6dc!important;
+  border-radius:14px!important;
+  background:#f7fbf8!important;
+}
+.verify-step-grid b{
+  display:grid!important;
+  place-items:center!important;
+  width:30px!important;
+  height:30px!important;
+  border-radius:9px!important;
+  background:#145b36!important;
+  color:#fff!important;
+}
+.verify-step-grid span{
+  color:#142219!important;
+  font-weight:900!important;
+}
+.seller-verify-layout{
+  display:grid!important;
+  grid-template-columns:minmax(240px,320px) minmax(0,1fr)!important;
+  gap:16px!important;
+  align-items:start!important;
+}
+.verify-info-panel,.seller-verify-form{
+  background:#fff!important;
+  color:#142219!important;
+}
+.verify-info-panel h2,.verify-form-section h2{
+  margin:0 0 10px!important;
+  color:#142219!important;
+}
+.verify-check-list{
+  display:grid!important;
+  gap:10px!important;
+  margin:14px 0!important;
+}
+.verify-check-list span{
+  display:flex!important;
+  gap:9px!important;
+  align-items:flex-start!important;
+  color:#142219!important;
+  font-weight:850!important;
+}
+.verify-check-list span:before{
+  content:""!important;
+  width:9px!important;
+  height:9px!important;
+  margin-top:6px!important;
+  flex:0 0 9px!important;
+  border-radius:50%!important;
+  background:#145b36!important;
+}
+.verify-form-section{
+  display:grid!important;
+  gap:10px!important;
+  padding:16px!important;
+  border:1px solid #d9e6dc!important;
+  border-radius:16px!important;
+  background:#fbfdfb!important;
+}
+.seller-verify-form{
+  grid-template-columns:1fr!important;
+  gap:14px!important;
+}
+.seller-verify-form textarea{
+  min-height:88px!important;
+}
+.doc-upload-grid .file-label b{
+  color:#142219!important;
+}
+.doc-upload-grid .file-label span{
+  color:#53665b!important;
+  font-size:13px!important;
+}
+.seller-step-flow .self-listing-fields.hidden-fields,
+.seller-step-flow .assisted-listing-fields.hidden-fields,
+.seller-step-flow .machine-fields.hidden-fields,
+.seller-step-flow .spare-fields.hidden-fields,
+.payout-form .hidden-fields{
+  display:none!important;
+}
+.seller-step-flow .self-listing-fields:not(.hidden-fields),
+.seller-step-flow .assisted-listing-fields:not(.hidden-fields){
+  display:grid!important;
+  gap:14px!important;
+  animation:panelReveal .24s ease both!important;
+}
+@keyframes panelReveal{
+  from{opacity:0;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+.spec-table-card{
+  border:1px solid #d9e6dc!important;
+  border-radius:16px!important;
+  background:#fbfdfb!important;
+  overflow:hidden!important;
+}
+.spec-table-head{
+  display:flex!important;
+  align-items:flex-start!important;
+  justify-content:space-between!important;
+  gap:12px!important;
+  padding:16px!important;
+  border-bottom:1px solid #d9e6dc!important;
+}
+.spec-table-head h3{
+  margin:0 0 4px!important;
+  color:#142219!important;
+}
+.spec-table-head p{
+  margin:0!important;
+  color:#53665b!important;
+}
+.spec-table-head>span{
+  flex:0 0 auto!important;
+  padding:7px 10px!important;
+  border-radius:999px!important;
+  background:#eaf5ed!important;
+  color:#145b36!important;
+  font-weight:950!important;
+  font-size:12px!important;
+}
+.spec-table-wrap{
+  overflow-x:auto!important;
+}
+.listing-spec-table{
+  width:100%!important;
+  min-width:720px!important;
+  border-collapse:collapse!important;
+}
+.listing-spec-table th,.listing-spec-table td{
+  padding:10px!important;
+  border-bottom:1px solid #e1ece4!important;
+  text-align:left!important;
+  vertical-align:middle!important;
+}
+.listing-spec-table thead th{
+  background:#f1f7f3!important;
+  color:#145b36!important;
+  font-size:13px!important;
+  text-transform:uppercase!important;
+  letter-spacing:.04em!important;
+}
+.listing-spec-table tbody th{
+  color:#142219!important;
+  width:190px!important;
+}
+.listing-spec-table input,.listing-spec-table select{
+  min-width:120px!important;
+  border-radius:10px!important;
+  padding:10px!important;
+}
+.required-dot{
+  display:inline-flex!important;
+  margin-left:7px!important;
+  padding:3px 7px!important;
+  border-radius:999px!important;
+  background:#fff3cd!important;
+  color:#7a4a00!important;
+  font-size:11px!important;
+  font-weight:950!important;
+}
+.payout-form{
+  gap:12px!important;
+}
+.payout-upi-fields,.payout-bank-fields{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:12px!important;
+  padding:14px!important;
+  border:1px solid #d9e6dc!important;
+  border-radius:16px!important;
+  background:#fbfdfb!important;
+}
+.payout-upi-fields{
+  grid-template-columns:1fr!important;
+}
+.intro{
+  background:#06110c!important;
+  overflow:hidden!important;
+}
+.intro-card{
+  width:min(620px,92vw)!important;
+  padding:26px 20px!important;
+  border-radius:0!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  text-align:center!important;
+}
+.intro-mark-wrap{
+  position:relative!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+}
+.intro-wordmark{
+  width:min(620px,92vw)!important;
+  height:auto!important;
+}
+.intro-wordmark text{
+  font-family:Georgia,"Times New Roman",serif!important;
+  font-size:70px!important;
+  font-weight:900!important;
+  letter-spacing:2px!important;
+  fill:transparent!important;
+  stroke:#f3d17c!important;
+  stroke-width:1.8!important;
+  stroke-linejoin:round!important;
+  stroke-dasharray:900!important;
+  stroke-dashoffset:900!important;
+  animation:introDraw 1.45s ease forwards, introFill .5s ease 1.25s forwards!important;
+}
+.intro-wordmark text:nth-child(2){
+  animation-delay:.18s,1.42s!important;
+}
+.intro-shine{
+  position:absolute!important;
+  inset:0!important;
+  transform:translateX(-120%) skewX(-16deg)!important;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.72),transparent)!important;
+  animation:introShine 1.05s ease 1.35s both!important;
+}
+.intro-card small{
+  display:block!important;
+  margin-top:8px!important;
+  color:#dbe8de!important;
+  font-weight:850!important;
+}
+.intro.hide .intro-card{
+  animation:introOut .42s ease both!important;
+}
+@keyframes introDraw{to{stroke-dashoffset:0}}
+@keyframes introFill{to{fill:#fff7df;filter:drop-shadow(0 0 18px rgba(243,209,124,.34))}}
+@keyframes introShine{to{transform:translateX(125%) skewX(-16deg)}}
+@media(max-width:900px){
+  .seller-verify-layout{
+    grid-template-columns:1fr!important;
+  }
+  .verify-step-grid{
+    grid-template-columns:1fr!important;
+  }
+  .payout-bank-fields{
+    grid-template-columns:1fr!important;
+  }
+}
+@media(max-width:560px){
+  .spec-table-head{
+    display:grid!important;
+  }
+  .listing-spec-table{
+    min-width:640px!important;
+  }
+  .intro-card{
+    width:96vw!important;
+    padding:18px 10px!important;
+  }
+  .intro-wordmark text{
+    font-size:66px!important;
+    letter-spacing:1px!important;
+  }
+}
 @media(max-width:380px){
   .brand span{font-size:14px!important}
   .header-actions .icon-btn{min-width:50px!important}
@@ -2540,4 +2834,26 @@ body.menu-open #menuButton.hamb{
   .lightbox-count{
     bottom:14px!important;
   }
+}
+
+/* v105 modal checkbox contrast */
+.modal-card .check-row,
+.language-card .check-row{
+  color:#142219!important;
+  display:grid!important;
+  grid-template-columns:24px minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:12px!important;
+}
+.modal-card .check-row span,
+.language-card .check-row span{
+  color:#142219!important;
+  opacity:1!important;
+  display:block!important;
+  font-weight:850!important;
+}
+.modal-card .check-row input[type="checkbox"],
+.language-card .check-row input[type="checkbox"]{
+  border-color:#d9b15f!important;
+  background:#fff!important;
 }

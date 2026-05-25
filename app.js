@@ -44,7 +44,7 @@
   const ADMIN_ALERT_EMAIL = cfg.ADMIN_ALERT_EMAIL || ADMIN_EMAIL;
   const ASSISTED_LISTING_FEE = 19;
   const ROAD_TRANSPORT_RATE_PER_KM = 60;
-  const LAUNCH_CLEAN_VERSION = 'v100';
+  const LAUNCH_CLEAN_VERSION = 'v104';
   const LIVE_FINANCE_START = new Date(cfg.LIVE_FINANCE_START || '2026-05-24T00:00:00+05:30').getTime();
   const COMMISSION_SLABS = [
     {upto:5000, rate:0.035, label:'3.5% under Rs. 5,000'},
@@ -451,7 +451,8 @@
 
   async function init(){
     if(localStorage.hp_launch_clean_version !== LAUNCH_CLEAN_VERSION){
-      ['hp_products','hp_cart','hp_wishlist','hp_last_order','hp_checkout_coupon','hp_fact_ts','hp_fact_index'].forEach(k=>localStorage.removeItem(k));
+      ['hp_products','hp_cart','hp_wishlist','hp_last_order','hp_checkout_coupon','hp_fact_ts','hp_fact_index','hp_sellFormDraft'].forEach(k=>localStorage.removeItem(k));
+      sessionStorage.removeItem('hp_sellFormDraft');
       localStorage.hp_launch_clean_version = LAUNCH_CLEAN_VERSION;
     }
     setTimeout(()=>$('#intro')?.classList.add('hide'),900);
@@ -488,8 +489,8 @@
     $('#authButton')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
     $('#menuLoginBtn')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
     $('#logoutBtn')?.addEventListener('click',logout);
-    $$('#languageModal [data-lang]').forEach(b=>b.addEventListener('click',()=>{ state.lang=b.dataset.lang; localStorage.hp_lang=state.lang; localStorage.hp_lang_seen='1'; if($('#dontShowLang')?.checked) localStorage.hp_lang_done='1'; $('#languageModal')?.classList.remove('show'); applyLang(); render(); scheduleInstallPrompt(700); }));
-    $('#languageSelect')?.addEventListener('change',e=>{state.lang=e.target.value;localStorage.hp_lang=state.lang;applyLang(); render();});
+    $$('#languageModal [data-lang]').forEach(b=>b.addEventListener('click',()=>{ state.lang=b.dataset.lang; localStorage.hp_lang=state.lang; localStorage.hp_lang_seen='1'; if($('#dontShowLang')?.checked) localStorage.hp_lang_done='1'; $('#languageModal')?.classList.remove('show'); render(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,80); scheduleInstallPrompt(700); }));
+    $('#languageSelect')?.addEventListener('change',e=>{state.lang=e.target.value;localStorage.hp_lang=state.lang; render(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,80);});
     window.addEventListener('hashchange',()=>{ const [r,id]=parseRoute(); state.route=r||'home'; state.currentProduct=id||null; closeMenu(); render(); });
     $('#scrollTop')?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
   }
@@ -979,12 +980,12 @@
   }
   function payoutAccountCard(){
     const a=state.finance.payoutAccount||{}; const method=a.payout_method||'upi';
-    return `<div class="page-card payout-card"><div class="section-head compact"><h2>Payout method</h2><span class="badge">${esc(payoutMethodLabel(a))}</span></div><p class="muted">Choose where admin should send your seller payout: UPI or bank account.</p><form id="payoutAccountForm" class="form payout-form"><select name="payout_method"><option value="upi" ${method==='upi'?'selected':''}>UPI</option><option value="bank" ${method==='bank'?'selected':''}>Bank account</option></select><input name="account_holder_name" placeholder="Account holder name" value="${esc(a.account_holder_name||state.profile?.full_name||'')}"><input name="upi_id" placeholder="UPI ID, e.g. name@upi" value="${esc(a.upi_id||'')}"><input name="bank_name" placeholder="Bank name" value="${esc(a.bank_name||'')}"><input name="account_number" placeholder="Account number" value="${esc(a.account_number||'')}"><input name="ifsc" placeholder="IFSC code" value="${esc(a.ifsc||'')}"><button class="primary">Save payout details</button></form></div>`;
+    return `<div class="page-card payout-card"><div class="section-head compact"><h2>Payout method</h2><span class="badge">${esc(payoutMethodLabel(a))}</span></div><p class="muted">Choose one payout method. Only the required boxes for that method will be shown.</p><form id="payoutAccountForm" class="form payout-form"><select name="payout_method"><option value="upi" ${method==='upi'?'selected':''}>UPI</option><option value="bank" ${method==='bank'?'selected':''}>Bank account</option></select><div class="payout-upi-fields"><input name="upi_id" placeholder="UPI ID, e.g. name@upi" value="${esc(a.upi_id||'')}"></div><div class="payout-bank-fields"><input name="account_holder_name" placeholder="Account holder name" value="${esc(a.account_holder_name||state.profile?.full_name||'')}"><input name="bank_name" placeholder="Bank name" value="${esc(a.bank_name||'')}"><input name="account_number" placeholder="Account number" value="${esc(a.account_number||'')}"><input name="ifsc" placeholder="IFSC code" value="${esc(a.ifsc||'')}"></div><button class="primary">Save payout details</button></form></div>`;
   }
   async function savePayoutAccount(form){
     if(!state.user||!sb) return toast('Please login first. If this continues, contact support.');
     const fd=new FormData(form); const method=fd.get('payout_method');
-    const payload={user_id:state.user.id,payout_method:method,account_holder_name:fd.get('account_holder_name'),upi_id:fd.get('upi_id'),bank_name:fd.get('bank_name'),account_number:fd.get('account_number'),ifsc:String(fd.get('ifsc')||'').toUpperCase(),updated_at:new Date().toISOString()};
+    const payload={user_id:state.user.id,payout_method:method,account_holder_name:method==='bank'?fd.get('account_holder_name'):'',upi_id:method==='upi'?fd.get('upi_id'):'',bank_name:method==='bank'?fd.get('bank_name'):'',account_number:method==='bank'?fd.get('account_number'):'',ifsc:method==='bank'?String(fd.get('ifsc')||'').toUpperCase():'',updated_at:new Date().toISOString()};
     if(method==='upi' && !payload.upi_id) return toast('Enter UPI ID');
     if(method==='bank' && (!payload.account_number || !payload.ifsc || !payload.account_holder_name)) return toast('Enter bank account holder, account number and IFSC');
     const {error}=await sb.from('seller_payout_accounts').upsert(payload,{onConflict:'user_id'});
@@ -1098,6 +1099,7 @@
     const saved=formDraft(key);
     [...form.elements].forEach(el=>{
       if(!el.name || el.type==='file' || el.type==='password') return;
+      if(el.closest('.hidden-fields')) return;
       if(saved[el.name] !== undefined && !el.value) el.value = saved[el.name];
       if((el.type==='radio'||el.type==='checkbox') && saved[el.name] !== undefined) el.checked = String(saved[el.name]) === String(el.value);
     });
@@ -1106,7 +1108,7 @@
   }
   function saveFormDraft(form,key){
     const data={};
-    [...form.elements].forEach(el=>{ if(el.name && el.type!=='file' && el.type!=='password'){ if(el.type==='radio'){ if(el.checked) data[el.name]=el.value; } else data[el.name]=el.value; }});
+    [...form.elements].forEach(el=>{ if(el.name && el.type!=='file' && el.type!=='password' && !el.disabled && !el.closest('.hidden-fields')){ if(el.type==='radio'){ if(el.checked) data[el.name]=el.value; } else data[el.name]=el.value; }});
     localStorage.setItem('hp_'+key, JSON.stringify(data));
     sessionStorage.setItem('hp_'+key, JSON.stringify(data));
   }
@@ -1148,12 +1150,12 @@
     const st=(state.seller?.status||state.seller?.verification_status||'not_submitted').toLowerCase();
     if(st==='approved') return '';
     if(st==='pending' || st==='provisional') return `<section class="page-card sell-gate"><span class="eyebrow">Verification under review</span><h1>Your seller request is ${st}.</h1><p class="muted">You can list products after admin approval. We review seller details to keep buyers safe.</p><button class="ghost" data-route="support">Need help?</button></section>`;
-    if(st==='rejected') return `<section class="page-card sell-gate"><span class="eyebrow">Verification rejected</span><h1>Please update your seller details.</h1><p class="muted">Your previous request needs correction. Submit again with correct information and clear documents.</p>${sellerVerificationForm()}</section>`;
-    return `<section class="page-card sell-gate"><span class="eyebrow">Seller verification required</span><h1>Get verified before selling machinery or spare parts.</h1><p class="muted">For buyer safety, only approved sellers can post products. Submit your business/contact details first.</p>${sellerVerificationForm()}</section>`;
+    const rejected=st==='rejected';
+    return `<section class="seller-verify-page"><div class="page-card seller-verify-hero"><span class="eyebrow">${rejected?'Verification rejected':'Seller verification required'}</span><h1>${rejected?'Update your seller details.':'Become a verified Harvester Parts seller.'}</h1><p class="muted">${rejected?'Your previous request needs correction. Submit clear business, address and document details again.':'Submit one clean verification request before listing machinery or spare parts. This protects buyers and keeps the marketplace trustworthy.'}</p><div class="verify-step-grid"><div><b>1</b><span>Business details</span></div><div><b>2</b><span>Pickup address</span></div><div><b>3</b><span>Documents</span></div></div></div><div class="seller-verify-layout"><aside class="page-card verify-info-panel"><h2>What you need</h2><div class="verify-check-list"><span>Seller or business name</span><span>Phone number</span><span>State, district, city and pincode</span><span>Aadhaar front and back</span><span>Shop, stock or product photo</span></div><p class="muted">Only admin can view verification files. After approval, the listing tools will unlock.</p></aside>${sellerVerificationForm()}</div></section>`;
   }
   function sellerVerificationForm(){
     const d=formDraft('sellerVerifyDraft');
-    return `<form id="sellerVerifyForm" class="form seller-verify-form"><input name="business_name" value="${esc(d.business_name||'')}" placeholder="Business / seller name" required><input name="phone" value="${esc(d.phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number" inputmode="tel" autocomplete="tel" required><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6" required><textarea name="address" placeholder="Pickup / shop address">${esc(d.address||'')}</textarea><div class="doc-upload-grid"><label class="file-label">Aadhaar front photo<input name="aadhaar_front" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Aadhaar back photo<input name="aadhaar_back" type="file" accept="image/*,application/pdf" required></label><label class="file-label">Shop / stock photo<input name="shop_photo" type="file" accept="image/*,application/pdf"></label></div><div class="notice tiny-note">Upload clear document photos. Only admin can view seller verification files.</div><button class="primary">Submit Seller Verification</button></form>`;
+    return `<form id="sellerVerifyForm" class="page-card form seller-verify-form"><div class="verify-form-section"><h2>Business details</h2><div class="sell-form-grid"><input name="business_name" value="${esc(d.business_name||'')}" placeholder="Business / seller name" required><input name="phone" value="${esc(d.phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number" inputmode="tel" autocomplete="tel" required></div></div><div class="verify-form-section"><h2>Pickup address</h2><div class="sell-form-grid"><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6" required></div><textarea name="address" placeholder="Full pickup / shop address">${esc(d.address||'')}</textarea></div><div class="verify-form-section"><h2>Document upload</h2><div class="doc-upload-grid"><label class="file-label"><b>Aadhaar front</b><span>Image or PDF</span><input name="aadhaar_front" type="file" accept="image/*,application/pdf" required></label><label class="file-label"><b>Aadhaar back</b><span>Image or PDF</span><input name="aadhaar_back" type="file" accept="image/*,application/pdf" required></label><label class="file-label"><b>Shop / stock photo</b><span>Optional but recommended</span><input name="shop_photo" type="file" accept="image/*,application/pdf"></label></div></div><div class="notice tiny-note">Use clear photos. Verification is reviewed manually before seller tools unlock.</div><button class="primary">Submit Seller Verification</button></form>`;
   }
   function sellPage(){
     if(!state.user)return loginPage();
@@ -1164,16 +1166,48 @@
     const chosenType=['machine','spare'].includes(d.sell_type) ? d.sell_type : '';
     const chosenMode=['self','assisted'].includes(d.listing_service) ? d.listing_service : '';
     const categoryType=chosenType || 'machine';
-    const machineChecked=chosenType==='machine'?'checked':'';
-    const spareChecked=chosenType==='spare'?'checked':'';
-    const selfChecked=chosenMode==='self'?'checked':'';
-    const assistedChecked=chosenMode==='assisted'?'checked':'';
-    const selfHidden=chosenMode==='self'?'':'hidden-fields';
-    const assistedHidden=chosenMode==='assisted'?'':'hidden-fields';
-    const hintHidden=(chosenType&&chosenMode)?'hidden-fields':'';
     const condition=d.condition||'Used';
     const assistCondition=d.assist_condition||'Used';
-    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>List machinery or spare parts in a guided flow.</h1><p class="muted">First choose what you are selling, then choose whether you want to fill the listing yourself or send a small professional listing request to Harvester Parts.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card seller-flow-card"><form id="sellForm" class="form sell-form seller-step-flow"><div class="seller-step-block"><div class="seller-step-title"><span>1</span><div><h2>What do you want to sell?</h2><p class="muted">Pick one type so the page shows the correct details.</p></div></div><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card ${chosenType==='machine'?'active':''}" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" ${machineChecked}><span class="sell-dot"></span><span><b>Machinery</b><small>Combine, tractor, trolley, seed drill, reaper or farm implement</small></span></label><label class="sell-type-card ${chosenType==='spare'?'active':''}" data-sell-card="spare"><input type="radio" name="sell_type" value="spare" ${spareChecked}><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, filters, gears or exact fitment parts</small></span></label></div></div><div class="seller-step-block listing-step ${chosenType?'':'step-muted'}"><div class="seller-step-title"><span>2</span><div><h2>How should this listing be made?</h2><p class="muted">Use self listing for full control, or let our team prepare the final details for a small fee.</p></div></div><div class="listing-mode-grid" role="radiogroup" aria-label="Listing method"><label class="listing-mode-card ${chosenMode==='self'?'active':''}" data-listing-mode="self"><input type="radio" name="listing_service" value="self" ${selfChecked}><b>List it myself</b><span>Free. Add product name, model, photos, specifications, price and location yourself.</span></label><label class="listing-mode-card ${chosenMode==='assisted'?'active':''}" data-listing-mode="assisted"><input type="radio" name="listing_service" value="assisted" ${assistedChecked}><b>Send to company</b><span>${money(ASSISTED_LISTING_FEE)} per item. Share basics now and we prepare the precise listing.</span></label></div></div><div class="form-choice-hint request-note ${hintHidden}"><b>Next step</b><p>Choose the item type and listing method above. The correct form will open after both choices are selected.</p></div><div class="self-listing-fields ${selfHidden}"><div class="assisted-pack"><b>Self listing form</b><span>Add clear details so buyers can search, compare and contact you confidently.</span></div><div class="sell-form-grid"><select name="condition"><option value="New" ${condition==='New'?'selected':''}>New</option><option value="Used" ${condition==='Used'?'selected':''}>Used</option><option value="Refurbished" ${condition==='Refurbished'?'selected':''}>Refurbished</option><option value="Factory Stock" ${condition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name"><input name="price" value="${esc(formatINRInput(d.price)||'')}" inputmode="numeric" placeholder="Listing price, e.g. 1,25,000"><select name="category" id="sellCategorySelect">${categoryOptionsFor(categoryType)}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / company"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"></div><div class="sell-dynamic-section machine-fields ${chosenType==='spare'?'hidden-fields':''}"><h3>Machinery details</h3><div class="sell-form-grid"><input name="machine_year" value="${esc(d.machine_year||'')}" placeholder="Year / hours used, if known"><input name="engine_hp" value="${esc(d.engine_hp||'')}" placeholder="HP / capacity / attachment details"><input name="machine_delivery_note" value="${esc(d.machine_delivery_note||'')}" placeholder="Seller delivery, buyer pickup or road transport note"></div></div><div class="sell-dynamic-section spare-fields ${chosenType==='spare'?'':'hidden-fields'}"><h3>Spare part details</h3><div class="sell-form-grid"><input name="part_number" value="${esc(d.part_number||'')}" placeholder="Part number / code"><input name="compatible_machine" value="${esc(d.compatible_machine||'')}" placeholder="Compatible machine, brand or model"><input name="dimensions" value="${esc(d.dimensions||'')}" placeholder="Dimensions L x W x H, size or belt/bearing number"><input name="material" value="${esc(d.material||'')}" placeholder="Material / grade / teeth / blade size"></div></div><div class="sell-form-grid"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state">${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District"><input name="city" value="${esc(d.city||'')}" placeholder="City / village"><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6"></div><textarea name="description" placeholder="Describe condition, exact location, compatibility, dimensions and delivery details">${esc(d.description||'')}</textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to preview your slab commission and payout.</div><button class="primary">Publish Listing</button></div><div class="assisted-listing-fields ${assistedHidden}"><div class="assisted-pack"><b>Professional listing request</b><span>Pay ${money(ASSISTED_LISTING_FEE)} for this item. Send basics now; our team will prepare the final title, details and specifications before listing.</span></div><input type="hidden" name="assist_item_type" value="${esc(chosenType)}"><div class="assist-type-pill">${chosenType==='spare'?'Spare part request':chosenType==='machine'?'Machinery request':'Choose item type above'}</div><div class="sell-form-grid"><input name="assist_name" value="${esc(d.assist_name||state.profile?.full_name||'')}" placeholder="Your name"><input name="assist_phone" value="${esc(d.assist_phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number"><select name="assist_condition"><option ${assistCondition==='Used'?'selected':''}>Used</option><option ${assistCondition==='New'?'selected':''}>New</option><option ${assistCondition==='Refurbished'?'selected':''}>Refurbished</option><option ${assistCondition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="assist_title" value="${esc(d.assist_title||'')}" placeholder="Machine / part name"><input name="assist_qty" value="${esc(d.assist_qty||'1')}" inputmode="numeric" placeholder="Quantity"><input name="assist_expected_price" value="${esc(formatINRInput(d.assist_expected_price)||'')}" inputmode="numeric" placeholder="Expected selling price"><input name="assist_location" value="${esc(d.assist_location||'')}" placeholder="City / village and pincode"><input class="spare-fields ${chosenType==='spare'?'':'hidden-fields'}" name="assist_part_number" value="${esc(d.assist_part_number||'')}" placeholder="Part number / code, if spare part"></div><textarea name="assist_note" placeholder="Add any note: brand, model, photos available, size, compatibility, condition, pickup or delivery requirement">${esc(d.assist_note||'')}</textarea><button class="primary">Pay ${money(ASSISTED_LISTING_FEE)} and send request</button></div></form></section>${sellerListingsPanel()}`;
+    const unitOptions=(selected='', units=['mm','cm','m','inch','ft'])=>{ const list=[...units]; if(selected && !list.includes(selected)) list.unshift(selected); return list.map(u=>`<option value="${u}" ${String(selected||'')===u?'selected':''}>${u}</option>`).join(''); };
+    const specRow=(label,valueName,unitName,defaultUnit,note='',required=false,units=null)=>{
+      const savedValue=d[valueName]||'';
+      const selectedUnit=savedValue ? (d[unitName]||defaultUnit) : defaultUnit;
+      const savedNote=savedValue ? (d[valueName+'_note']||'') : '';
+      return `<tr><th>${esc(label)}${required?'<span class="required-dot">Required</span>':''}</th><td><input name="${valueName}" value="${esc(savedValue)}" placeholder="Enter value"></td><td><select name="${unitName}">${unitOptions(selectedUnit, units||['mm','cm','m','inch','ft'])}</select></td><td><input name="${valueName}_note" value="${esc(savedNote)}" placeholder="${esc(note||'Optional note')}"></td></tr>`;
+    };
+    const specTableHtml=(kind,rows,hint)=>`<div class="spec-table-card ${kind}-fields ${chosenType===kind?'':'hidden-fields'}"><div class="spec-table-head"><div><h3>${kind==='spare'?'Spare part dimensions':'Machinery dimensions'}</h3><p class="muted">${hint}</p></div><span>Use mm/cm where possible</span></div><div class="spec-table-wrap"><table class="listing-spec-table"><thead><tr><th>Specification</th><th>Value</th><th>Unit</th><th>Note</th></tr></thead><tbody>${rows.join('')}</tbody></table></div></div>`;
+    const spareSpecRows=[
+      specRow('Length / belt length','dim_length','dim_length_unit','mm','overall length or belt length'),
+      specRow('Width','dim_width','dim_width_unit','mm','belt, blade or body width'),
+      specRow('Height','dim_height','dim_height_unit','mm','overall height'),
+      specRow('Outer diameter','dim_outer_dia','dim_outer_dia_unit','mm','bearing, bush, pulley or seal OD'),
+      specRow('Inner diameter','dim_inner_dia','dim_inner_dia_unit','mm','bearing, bush or seal ID'),
+      specRow('Thickness / pitch','dim_thickness','dim_thickness_unit','mm','thickness, pitch or tooth size')
+    ];
+    const machineSpecRows=[
+      specRow('Overall length','dim_length','dim_length_unit','ft','transport length'),
+      specRow('Overall width','dim_width','dim_width_unit','ft','transport width'),
+      specRow('Overall height','dim_height','dim_height_unit','ft','transport height'),
+      specRow('Working width','working_width','working_width_unit','ft','cutting, tillage or sowing width'),
+      specRow('Capacity / HP','engine_hp','engine_hp_unit','HP','engine HP, rows, tank or load capacity',false,['HP','rows','litre','kg','ton']),
+      specRow('Tyre / attachment size','attachment_size','attachment_size_unit','inch','tyre, blade, roller or attachment size')
+    ];
+    const dimensionTable=specTableHtml('spare',spareSpecRows,'Part number, compatibility and exact mm/cm dimensions help buyers match the correct spare part.') + specTableHtml('machine',machineSpecRows,'Add transport size, working width, HP or capacity so heavy machinery buyers can plan pickup and delivery.');
+    const typeCards=`<div class="seller-step-block"><div class="seller-step-title"><span>1</span><div><h2>What do you want to sell?</h2><p class="muted">Choose first. The page will show only the matching form.</p></div></div><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card ${chosenType==='machine'?'active':''}" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" ${chosenType==='machine'?'checked':''}><span class="sell-dot"></span><span><b>Machinery</b><small>Combine, tractor, trolley, seed drill, reaper or farm implement</small></span></label><label class="sell-type-card ${chosenType==='spare'?'active':''}" data-sell-card="spare"><input type="radio" name="sell_type" value="spare" ${chosenType==='spare'?'checked':''}><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, filters, gears or fitment parts</small></span></label></div></div>`;
+    const modeCards=`<div class="seller-step-block listing-step ${chosenType?'':'step-muted'}"><div class="seller-step-title"><span>2</span><div><h2>Who should fill the listing?</h2><p class="muted">After choosing this, only one form stays visible.</p></div></div><div class="listing-mode-grid" role="radiogroup" aria-label="Listing method"><label class="listing-mode-card ${chosenMode==='self'?'active':''}" data-listing-mode="self"><input type="radio" name="listing_service" value="self" ${chosenMode==='self'?'checked':''}><b>List it myself</b><span>Free. Add full product details, dimensions, price, photos and location.</span></label><label class="listing-mode-card ${chosenMode==='assisted'?'active':''}" data-listing-mode="assisted"><input type="radio" name="listing_service" value="assisted" ${chosenMode==='assisted'?'checked':''}><b>Company will fill</b><span>${money(ASSISTED_LISTING_FEE)} per item. Send basics and our team prepares the final listing.</span></label></div></div>`;
+    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Guided product listing.</h1><p class="muted">Select machinery or spare part, then choose self listing or professional listing. Non-selected forms stay hidden.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card seller-flow-card"><form id="sellForm" class="form sell-form seller-step-flow">${typeCards}${modeCards}<div class="form-choice-hint request-note ${chosenType&&chosenMode?'hidden-fields':''}"><b>Next step</b><p>Choose both options above. The matching form will open directly below.</p></div><div class="self-listing-fields ${chosenMode==='self'&&chosenType?'':'hidden-fields'}"><div class="assisted-pack"><b id="selfListingTitle">${chosenType==='spare'?'Self listing: spare part':'Self listing: machinery'}</b><span id="selfListingHint">${chosenType==='spare'?'Use OEM/part number and table dimensions for exact matching.':'Add machine details, dimensions and delivery notes for heavy equipment.'}</span></div><div class="sell-form-grid"><select name="condition"><option value="New" ${condition==='New'?'selected':''}>New</option><option value="Used" ${condition==='Used'?'selected':''}>Used</option><option value="Refurbished" ${condition==='Refurbished'?'selected':''}>Refurbished</option><option value="Factory Stock" ${condition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name" required><input name="price" value="${esc(formatINRInput(d.price)||'')}" inputmode="numeric" placeholder="Listing price, e.g. 1,25,000" required><select name="category" id="sellCategorySelect">${categoryOptionsFor(categoryType)}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / company"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"></div><div class="sell-dynamic-section machine-fields ${chosenType==='spare'?'hidden-fields':''}"><h3>Machinery details</h3><div class="sell-form-grid"><input name="machine_year" value="${esc(d.machine_year||'')}" placeholder="Year / hours used, if known"><input name="machine_capacity" value="${esc(d.machine_capacity||'')}" placeholder="Rows, tank, load or working capacity"><input name="machine_delivery_note" value="${esc(d.machine_delivery_note||'')}" placeholder="Seller delivery, buyer pickup or road transport note"></div></div><div class="sell-dynamic-section spare-fields ${chosenType==='spare'?'':'hidden-fields'}"><h3>Spare part identity</h3><div class="sell-form-grid"><input class="spare-self-required" name="part_number" value="${esc(d.part_number||'')}" placeholder="OEM / part number (required)"><input class="spare-self-required" name="compatible_machine" value="${esc(d.compatible_machine||'')}" placeholder="Compatible machine or model (required)"><input name="sku_code" value="${esc(d.sku_code||'')}" placeholder="Seller SKU / alternate number"><input name="material" value="${esc(d.material||'')}" placeholder="Material / grade / teeth / blade size"></div></div>${dimensionTable}<div class="sell-form-grid"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state">${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District"><input name="city" value="${esc(d.city||'')}" placeholder="City / village"><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6"></div><textarea name="description" placeholder="Condition, exact location, fitment notes, defects, warranty, delivery and negotiation notes">${esc(d.description||'')}</textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to preview your slab commission and payout.</div><button class="primary">Publish Listing</button></div><div class="assisted-listing-fields ${chosenMode==='assisted'&&chosenType?'':'hidden-fields'}"><div class="assisted-pack"><b>Professional listing request</b><span>Pay ${money(ASSISTED_LISTING_FEE)} for this item. Send basic details now; our team will prepare the exact final listing.</span></div><input type="hidden" name="assist_item_type" value="${esc(chosenType)}"><div class="assist-type-pill">${chosenType==='spare'?'Spare part request':chosenType==='machine'?'Machinery request':'Choose item type above'}</div><div class="sell-form-grid"><input name="assist_name" value="${esc(d.assist_name||state.profile?.full_name||'')}" placeholder="Your name"><input name="assist_phone" value="${esc(d.assist_phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number"><select name="assist_condition"><option ${assistCondition==='Used'?'selected':''}>Used</option><option ${assistCondition==='New'?'selected':''}>New</option><option ${assistCondition==='Refurbished'?'selected':''}>Refurbished</option><option ${assistCondition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="assist_title" value="${esc(d.assist_title||'')}" placeholder="Machine / part name"><input name="assist_qty" value="${esc(d.assist_qty||'1')}" inputmode="numeric" placeholder="Quantity"><input name="assist_expected_price" value="${esc(formatINRInput(d.assist_expected_price)||'')}" inputmode="numeric" placeholder="Expected selling price"><input name="assist_location" value="${esc(d.assist_location||'')}" placeholder="City / village and pincode"><input class="assist-spare-required spare-fields ${chosenType==='spare'?'':'hidden-fields'}" name="assist_part_number" value="${esc(d.assist_part_number||'')}" placeholder="OEM / part number (required for spare part)"></div><textarea name="assist_note" placeholder="Add any note: brand, model, photos available, size, compatibility, condition, pickup or delivery requirement">${esc(d.assist_note||'')}</textarea><button class="primary">Pay ${money(ASSISTED_LISTING_FEE)} and send request</button></div></form></section>${sellerListingsPanel()}`;
+  }
+
+  function listingSpecSummary(fd,type){
+    const rows=type==='spare'
+      ? [['Length / belt length','dim_length','dim_length_unit'],['Width','dim_width','dim_width_unit'],['Height','dim_height','dim_height_unit'],['Outer diameter','dim_outer_dia','dim_outer_dia_unit'],['Inner diameter','dim_inner_dia','dim_inner_dia_unit'],['Thickness / pitch','dim_thickness','dim_thickness_unit']]
+      : [['Overall length','dim_length','dim_length_unit'],['Overall width','dim_width','dim_width_unit'],['Overall height','dim_height','dim_height_unit'],['Working width','working_width','working_width_unit'],['Capacity / HP','engine_hp','engine_hp_unit'],['Tyre / attachment size','attachment_size','attachment_size_unit']];
+    return rows.map(([label,valueName,unitName])=>{
+      const value=String(fd.get(valueName)||'').trim();
+      if(!value) return '';
+      const note=String(fd.get(valueName+'_note')||'').trim();
+      return `${label}: ${value} ${fd.get(unitName)||''}${note?` (${note})`:''}`.trim();
+    }).filter(Boolean);
   }
 
   function sellerListingsPanel(){
@@ -1206,6 +1240,7 @@
     const title=String(fd.get('assist_title')||'').trim();
     if(!itemType) return toast('Choose machinery or spare part first.');
     if(!title) return toast('Enter machine or part name');
+    if(itemType==='spare' && !String(fd.get('assist_part_number')||'').trim()) return toast('Enter OEM or part number for the spare part.');
     const saveRequest=async(paymentId='manual_pending')=>{
       const payload={user_id:state.user.id,name:fd.get('assist_name')||state.profile?.full_name||'',phone:fd.get('assist_phone')||state.profile?.phone||'',item_type:itemType,condition:fd.get('assist_condition')||'Used',title,quantity:parsePrice(fd.get('assist_qty'))||1,part_number:fd.get('assist_part_number')||'',expected_price:parsePrice(fd.get('assist_expected_price')),location:fd.get('assist_location')||'',note:fd.get('assist_note')||'',assisted_fee:ASSISTED_LISTING_FEE,payment_id:paymentId,status:paymentId==='manual_pending'?'payment_pending':'paid_request'};
       await sendAdminNotice('assisted_listing_request','Paid assisted listing request', `${payload.name||state.user.email||'Seller'} requested professional listing help for ${payload.title}`, payload);
@@ -1231,6 +1266,9 @@
     if(used>=limit){ toast(`Your ${activePlan()?.name||'Free'} plan allows ${limitLabel(limit)} listings. Upgrade to list more.`); setTimeout(()=>route('membership'),700); return; }
     const title=String(fd.get('title')||'').trim();
     if(!title) return toast('Enter product name');
+    if(sellType==='spare' && !String(fd.get('part_number')||'').trim()) return toast('Enter OEM or part number for the spare part.');
+    if(sellType==='spare' && !String(fd.get('compatible_machine')||'').trim()) return toast('Enter compatible machine or model.');
+    if(sellType==='spare' && !listingSpecSummary(fd,'spare').length) return toast('Add at least one size or dimension row for the spare part.');
     const price=parsePrice(fd.get('price'));
     if(!price || price<1) return toast('Enter a valid listing price');
     let image_urls=[]; const files=[...(fd.getAll('images')||[])].filter(f=>f&&f.name);
@@ -1243,8 +1281,9 @@
       }
     }
     const detailLines=[
-      sellType==='machine' && `Machinery details: Year/hours ${fd.get('machine_year')||'not added'}, HP/capacity ${fd.get('engine_hp')||'not added'}, delivery note ${fd.get('machine_delivery_note')||'not added'}`,
-      sellType==='spare' && `Spare part details: part number ${fd.get('part_number')||'not added'}, compatible machine ${fd.get('compatible_machine')||'not added'}, dimensions/size ${fd.get('dimensions')||'not added'}, material/grade ${fd.get('material')||'not added'}`,
+      sellType==='machine' && `Machinery details: Year/hours ${fd.get('machine_year')||'not added'}, capacity ${fd.get('machine_capacity')||'not added'}, delivery note ${fd.get('machine_delivery_note')||'not added'}`,
+      sellType==='spare' && `Spare part details: OEM/part number ${fd.get('part_number')||'not added'}, compatible machine ${fd.get('compatible_machine')||'not added'}, seller SKU ${fd.get('sku_code')||'not added'}, material/grade ${fd.get('material')||'not added'}`,
+      listingSpecSummary(fd,sellType).length && `Specification table:\n${listingSpecSummary(fd,sellType).join('\n')}`,
       fd.get('pincode') && `Pickup pincode: ${fd.get('pincode')}`,
       fd.get('listing_service')==='assisted' && `Assisted listing requested: ${money(ASSISTED_LISTING_FEE)} per item.`
     ].filter(Boolean);
@@ -1941,6 +1980,7 @@
     $('#supportBotForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); const ans=$('#supportBotAnswer'); if(ans){ ans.textContent=supportBotReply(fd.get('topic'),fd.get('question')); ans.classList.add('active'); }});
     $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); withLoading(btn.closest('.membership-card')||btn,()=>purchaseMembership(btn.dataset.planKey),'Opening plan...'); }));
     $('#payoutAccountForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>savePayoutAccount(e.target),'Saving payout...')});
+    bindPayoutMethodChooser();
     $('#adminIdentityForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveAdminIdentity(e.target),'Saving admin identity...')});
     $$('.adminListingForm').forEach(form=>form.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitAdminListingForUser(e.target),'Creating listing...')}));
     $$('.adminListingForm input[name="price"]').forEach(input=>input.addEventListener('input',e=>{ e.target.value=formatINRInput(e.target.value); try{e.target.setSelectionRange(e.target.value.length,e.target.value.length)}catch(_e){} }));
@@ -1953,6 +1993,21 @@
     $('#typeFilter')?.addEventListener('change',filterMarket); $('#categoryFilter')?.addEventListener('change',filterMarket); $('#sortFilter')?.addEventListener('change',filterMarket);
     bindPhotoLightbox();
   }
+  function bindPayoutMethodChooser(){
+    const form=$('#payoutAccountForm'); if(!form) return;
+    const select=form.querySelector('select[name="payout_method"]');
+    const sync=()=>{
+      const method=select?.value || 'upi';
+      const upi=form.querySelector('.payout-upi-fields');
+      const bank=form.querySelector('.payout-bank-fields');
+      upi?.classList.toggle('hidden-fields', method!=='upi');
+      bank?.classList.toggle('hidden-fields', method!=='bank');
+      upi?.querySelectorAll('input,select,textarea').forEach(el=>{ el.disabled=method!=='upi'; el.required=method==='upi'; });
+      bank?.querySelectorAll('input,select,textarea').forEach(el=>{ el.disabled=method!=='bank'; el.required=method==='bank'; });
+    };
+    select?.addEventListener('change',sync);
+    sync();
+  }
   function syncSellerFormVisibility(form){
     if(!form) return;
     const type=form.querySelector('input[name="sell_type"]:checked')?.value || '';
@@ -1961,8 +2016,10 @@
     const assistedWrap=form.querySelector('.assisted-listing-fields');
     const hint=form.querySelector('.form-choice-hint');
     const listingStep=form.querySelector('.listing-step');
-    selfWrap?.classList.toggle('hidden-fields', mode!=='self');
-    assistedWrap?.classList.toggle('hidden-fields', mode!=='assisted');
+    const showSelf=mode==='self' && !!type;
+    const showAssisted=mode==='assisted' && !!type;
+    selfWrap?.classList.toggle('hidden-fields', !showSelf);
+    assistedWrap?.classList.toggle('hidden-fields', !showAssisted);
     hint?.classList.toggle('hidden-fields', !!(type&&mode));
     listingStep?.classList.toggle('step-muted', !type);
     form.querySelectorAll('.machine-fields').forEach(el=>el.classList.toggle('hidden-fields', type!=='machine'));
@@ -1971,9 +2028,17 @@
     if(assistType) assistType.value=type;
     const pill=form.querySelector('.assist-type-pill');
     if(pill) pill.textContent=type==='spare'?'Spare part request':type==='machine'?'Machinery request':'Choose item type above';
+    const selfTitle=form.querySelector('#selfListingTitle');
+    const selfHint=form.querySelector('#selfListingHint');
+    if(selfTitle) selfTitle.textContent=type==='spare'?'Self listing: spare part':type==='machine'?'Self listing: machinery':'Self listing';
+    if(selfHint) selfHint.textContent=type==='spare'?'Use OEM/part number and table dimensions for exact matching.':'Add machine details, dimensions and delivery notes for heavy equipment.';
     const setDisabled=(wrap,disabled)=>wrap?.querySelectorAll('input,select,textarea,button').forEach(el=>{ el.disabled=disabled; });
-    setDisabled(selfWrap, mode!=='self');
-    setDisabled(assistedWrap, mode!=='assisted');
+    setDisabled(selfWrap, !showSelf);
+    setDisabled(assistedWrap, !showAssisted);
+    form.querySelectorAll('.self-listing-fields .machine-fields input,.self-listing-fields .machine-fields select,.self-listing-fields .machine-fields textarea').forEach(el=>{ el.disabled = !showSelf || type!=='machine'; });
+    form.querySelectorAll('.self-listing-fields .spare-fields input,.self-listing-fields .spare-fields select,.self-listing-fields .spare-fields textarea').forEach(el=>{ el.disabled = !showSelf || type!=='spare'; });
+    form.querySelectorAll('.spare-self-required').forEach(el=>{ el.required = mode==='self' && type==='spare'; });
+    form.querySelectorAll('.assist-spare-required').forEach(el=>{ el.required = mode==='assisted' && type==='spare'; el.disabled = mode!=='assisted' || type!=='spare'; });
   }
   function bindListingModeChooser(){
     const form=$('#sellForm'); if(!form) return;
