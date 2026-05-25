@@ -1521,6 +1521,31 @@
   };
   Object.keys(EXTRA_V105).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V105[l]); });
 
+  const EXTRA_V108_MENU = {
+    hi: {
+      'Home':'होम','Buyer Marketplace':'खरीदार बाज़ार','Farm Categories':'कृषि श्रेणियां','Seller Tools':'विक्रेता टूल्स','Seller Plans':'विक्रेता प्लान','Rewards':'रिवॉर्ड्स','Buyer Area':'खरीदार क्षेत्र','List Machinery or Spare Part':'मशीनरी या स्पेयर पार्ट लिस्ट करें','Badges & Titles':'बैज और टाइटल','Order History':'ऑर्डर इतिहास','Messages':'संदेश','Account':'खाता','My Account':'मेरा खाता','Admin':'एडमिन','Admin Panel':'एडमिन पैनल','Company':'कंपनी','Legal':'कानूनी','How it works':'यह कैसे काम करता है','Support':'सहायता','About Us':'हमारे बारे में','Contact Us':'संपर्क करें','Legal Centre':'कानूनी केंद्र','Terms & Conditions':'नियम और शर्तें','Privacy Policy':'गोपनीयता नीति','Refund & Cancellation':'रिफंड और कैंसिलेशन','Shipping & Delivery':'शिपिंग और डिलीवरी','Razorpay Payment Policy':'Razorpay भुगतान नीति','Seller Payout Policy':'विक्रेता भुगतान नीति','Grievance Redressal':'शिकायत निवारण','Cart':'कार्ट','Checkout':'चेकआउट','Buyer':'खरीदार','Plans':'प्लान','Language':'भाषा','Login / Signup':'लॉगिन / साइनअप','Login':'लॉगिन','Logout':'लॉगआउट','Power every harvest with trust.':'हर फसल को भरोसे की ताकत दें।'
+    },
+    pa: {
+      'Home':'ਹੋਮ','Buyer Marketplace':'ਖਰੀਦਦਾਰ ਮਾਰਕੀਟ','Farm Categories':'ਖੇਤੀ ਸ਼੍ਰੇਣੀਆਂ','Seller Tools':'ਵੇਚਣ ਵਾਲੇ ਟੂਲ','Seller Plans':'ਵੇਚਣ ਵਾਲੇ ਪਲਾਨ','Rewards':'ਰਿਵਾਰਡ','Buyer Area':'ਖਰੀਦਦਾਰ ਖੇਤਰ','List Machinery or Spare Part':'ਮਸ਼ੀਨਰੀ ਜਾਂ ਸਪੇਅਰ ਪਾਰਟ ਲਿਸਟ ਕਰੋ','Badges & Titles':'ਬੈਜ ਅਤੇ ਟਾਈਟਲ','Order History':'ਆਰਡਰ ਇਤਿਹਾਸ','Messages':'ਸੁਨੇਹੇ','Account':'ਖਾਤਾ','My Account':'ਮੇਰਾ ਖਾਤਾ','Admin':'ਐਡਮਿਨ','Admin Panel':'ਐਡਮਿਨ ਪੈਨਲ','Company':'ਕੰਪਨੀ','Legal':'ਕਾਨੂੰਨੀ','How it works':'ਇਹ ਕਿਵੇਂ ਕੰਮ ਕਰਦਾ ਹੈ','Support':'ਸਹਾਇਤਾ','About Us':'ਸਾਡੇ ਬਾਰੇ','Contact Us':'ਸੰਪਰਕ ਕਰੋ','Legal Centre':'ਕਾਨੂੰਨੀ ਕੇਂਦਰ','Terms & Conditions':'ਨਿਯਮ ਅਤੇ ਸ਼ਰਤਾਂ','Privacy Policy':'ਗੋਪਨੀਯਤਾ ਨੀਤੀ','Refund & Cancellation':'ਰਿਫੰਡ ਅਤੇ ਰੱਦਗੀ','Shipping & Delivery':'ਸ਼ਿਪਿੰਗ ਅਤੇ ਡਿਲਿਵਰੀ','Razorpay Payment Policy':'Razorpay ਭੁਗਤਾਨ ਨੀਤੀ','Seller Payout Policy':'ਵਿਕਰੇਤਾ ਪੇਆਉਟ ਨੀਤੀ','Grievance Redressal':'ਸ਼ਿਕਾਇਤ ਨਿਵਾਰਨ','Cart':'ਕਾਰਟ','Checkout':'ਚੈੱਕਆਉਟ','Buyer':'ਖਰੀਦਦਾਰ','Plans':'ਪਲਾਨ','Language':'ਭਾਸ਼ਾ','Login / Signup':'ਲਾਗਇਨ / ਸਾਈਨਅੱਪ','Login':'ਲਾਗਇਨ','Logout':'ਲਾਗਆਉਟ','Power every harvest with trust.':'ਹਰ ਫਸਲ ਨੂੰ ਭਰੋਸੇ ਦੀ ਤਾਕਤ ਦਿਓ।'
+    },
+    ta: {
+      'Home':'முகப்பு','Buyer Marketplace':'வாங்குபவர் சந்தை','Farm Categories':'விவசாய வகைகள்','Seller Tools':'விற்பவர் கருவிகள்','Seller Plans':'விற்பவர் திட்டங்கள்','Rewards':'வெகுமதிகள்','Buyer Area':'வாங்குபவர் பகுதி','List Machinery or Spare Part':'இயந்திரம் அல்லது உதிரி பாகம் பட்டியலிடுங்கள்','Badges & Titles':'பேட்ஜ்கள் மற்றும் பட்டங்கள்','Order History':'ஆர்டர் வரலாறு','Messages':'செய்திகள்','Account':'கணக்கு','My Account':'என் கணக்கு','Admin':'நிர்வாகி','Admin Panel':'நிர்வாக பலகம்','Company':'நிறுவனம்','Legal':'சட்டம்','How it works':'இது எப்படி செயல்படுகிறது','Support':'உதவி','About Us':'எங்களை பற்றி','Contact Us':'தொடர்பு கொள்ளுங்கள்','Legal Centre':'சட்ட மையம்','Terms & Conditions':'விதிமுறைகள் மற்றும் நிபந்தனைகள்','Privacy Policy':'தனியுரிமை கொள்கை','Refund & Cancellation':'திருப்பிச் செலுத்தல் மற்றும் ரத்து','Shipping & Delivery':'அனுப்புதல் மற்றும் டெலிவரி','Razorpay Payment Policy':'Razorpay கட்டண கொள்கை','Seller Payout Policy':'விற்பவர் பணப்பரிமாற்ற கொள்கை','Grievance Redressal':'புகார் தீர்வு','Cart':'கார்ட்','Checkout':'செக் அவுட்','Buyer':'வாங்குபவர்','Plans':'திட்டங்கள்','Language':'மொழி','Login / Signup':'உள்நுழை / பதிவு','Login':'உள்நுழை','Logout':'வெளியேறு','Power every harvest with trust.':'ஒவ்வொரு அறுவடைக்கும் நம்பிக்கையின் சக்தி.'
+    },
+    te: {
+      'Home':'హోమ్','Buyer Marketplace':'కొనుగోలుదారు మార్కెట్','Farm Categories':'వ్యవసాయ వర్గాలు','Seller Tools':'విక్రేత సాధనాలు','Seller Plans':'విక్రేత ప్లాన్లు','Rewards':'రివార్డులు','Buyer Area':'కొనుగోలుదారు ప్రాంతం','List Machinery or Spare Part':'యంత్రం లేదా స్పేర్ పార్ట్ లిస్ట్ చేయండి','Badges & Titles':'బ్యాడ్జులు మరియు టైటిల్స్','Order History':'ఆర్డర్ చరిత్ర','Messages':'సందేశాలు','Account':'ఖాతా','My Account':'నా ఖాతా','Admin':'అడ్మిన్','Admin Panel':'అడ్మిన్ ప్యానెల్','Company':'కంపెనీ','Legal':'చట్టపరమైన','How it works':'ఇది ఎలా పనిచేస్తుంది','Support':'సహాయం','About Us':'మా గురించి','Contact Us':'మమ్మల్ని సంప్రదించండి','Legal Centre':'చట్ట కేంద్రం','Terms & Conditions':'నిబంధనలు మరియు షరతులు','Privacy Policy':'గోప్యతా విధానం','Refund & Cancellation':'రీఫండ్ మరియు రద్దు','Shipping & Delivery':'షిప్పింగ్ మరియు డెలివరీ','Razorpay Payment Policy':'Razorpay చెల్లింపు విధానం','Seller Payout Policy':'విక్రేత పేఅవుట్ విధానం','Grievance Redressal':'ఫిర్యాదు పరిష్కారం','Cart':'కార్ట్','Checkout':'చెకౌట్','Buyer':'కొనుగోలుదారు','Plans':'ప్లాన్లు','Language':'భాష','Login / Signup':'లాగిన్ / సైన్ అప్','Login':'లాగిన్','Logout':'లాగౌట్','Power every harvest with trust.':'ప్రతి పంటకు నమ్మకంతో శక్తి ఇవ్వండి.'
+    },
+    bn: {
+      'Home':'হোম','Buyer Marketplace':'ক্রেতা মার্কেট','Farm Categories':'কৃষি বিভাগ','Seller Tools':'বিক্রেতা টুলস','Seller Plans':'বিক্রেতা প্ল্যান','Rewards':'রিওয়ার্ড','Buyer Area':'ক্রেতা এলাকা','List Machinery or Spare Part':'মেশিনারি বা স্পেয়ার পার্ট তালিকাভুক্ত করুন','Badges & Titles':'ব্যাজ ও টাইটেল','Order History':'অর্ডার ইতিহাস','Messages':'বার্তা','Account':'অ্যাকাউন্ট','My Account':'আমার অ্যাকাউন্ট','Admin':'অ্যাডমিন','Admin Panel':'অ্যাডমিন প্যানেল','Company':'কোম্পানি','Legal':'আইনি','How it works':'এটি কীভাবে কাজ করে','Support':'সহায়তা','About Us':'আমাদের সম্পর্কে','Contact Us':'যোগাযোগ করুন','Legal Centre':'আইনি কেন্দ্র','Terms & Conditions':'শর্তাবলী','Privacy Policy':'গোপনীয়তা নীতি','Refund & Cancellation':'রিফান্ড ও বাতিলকরণ','Shipping & Delivery':'শিপিং ও ডেলিভারি','Razorpay Payment Policy':'Razorpay পেমেন্ট নীতি','Seller Payout Policy':'বিক্রেতা পেআউট নীতি','Grievance Redressal':'অভিযোগ নিষ্পত্তি','Cart':'কার্ট','Checkout':'চেকআউট','Buyer':'ক্রেতা','Plans':'প্ল্যান','Language':'ভাষা','Login / Signup':'লগইন / সাইনআপ','Login':'লগইন','Logout':'লগআউট','Power every harvest with trust.':'প্রতিটি ফসলকে বিশ্বাসের শক্তি দিন।'
+    },
+    mr: {
+      'Home':'होम','Buyer Marketplace':'खरेदीदार बाजार','Farm Categories':'कृषी श्रेणी','Seller Tools':'विक्रेता साधने','Seller Plans':'विक्रेता प्लॅन','Rewards':'रिवॉर्ड्स','Buyer Area':'खरेदीदार क्षेत्र','List Machinery or Spare Part':'मशिनरी किंवा स्पेअर पार्ट लिस्ट करा','Badges & Titles':'बॅज आणि टायटल','Order History':'ऑर्डर इतिहास','Messages':'संदेश','Account':'खाते','My Account':'माझे खाते','Admin':'अॅडमिन','Admin Panel':'अॅडमिन पॅनेल','Company':'कंपनी','Legal':'कायदेशीर','How it works':'हे कसे काम करते','Support':'मदत','About Us':'आमच्याबद्दल','Contact Us':'संपर्क करा','Legal Centre':'कायदेशीर केंद्र','Terms & Conditions':'नियम आणि अटी','Privacy Policy':'गोपनीयता धोरण','Refund & Cancellation':'रिफंड आणि रद्द करणे','Shipping & Delivery':'शिपिंग आणि डिलिव्हरी','Razorpay Payment Policy':'Razorpay पेमेंट धोरण','Seller Payout Policy':'विक्रेता पेआउट धोरण','Grievance Redressal':'तक्रार निवारण','Cart':'कार्ट','Checkout':'चेकआउट','Buyer':'खरेदीदार','Plans':'प्लॅन','Language':'भाषा','Login / Signup':'लॉगिन / साइनअप','Login':'लॉगिन','Logout':'लॉगआउट','Power every harvest with trust.':'प्रत्येक कापणीला विश्वासाची ताकद द्या.'
+    },
+    gu: {
+      'Home':'હોમ','Buyer Marketplace':'ખરીદદાર બજાર','Farm Categories':'કૃષિ શ્રેણીઓ','Seller Tools':'વેચનાર સાધનો','Seller Plans':'વેચનાર પ્લાન','Rewards':'રિવોર્ડ્સ','Buyer Area':'ખરીદદાર વિસ્તાર','List Machinery or Spare Part':'મશીનરી અથવા સ્પેર પાર્ટ લિસ્ટ કરો','Badges & Titles':'બેજ અને ટાઇટલ','Order History':'ઓર્ડર ઇતિહાસ','Messages':'સંદેશા','Account':'ખાતું','My Account':'મારું ખાતું','Admin':'એડમિન','Admin Panel':'એડમિન પેનલ','Company':'કંપની','Legal':'કાયદાકીય','How it works':'આ કેવી રીતે કામ કરે છે','Support':'મદદ','About Us':'અમારા વિશે','Contact Us':'સંપર્ક કરો','Legal Centre':'કાયદાકીય કેન્દ્ર','Terms & Conditions':'નિયમો અને શરતો','Privacy Policy':'ગોપનીયતા નીતિ','Refund & Cancellation':'રિફંડ અને રદ','Shipping & Delivery':'શિપિંગ અને ડિલિવરી','Razorpay Payment Policy':'Razorpay ચુકવણી નીતિ','Seller Payout Policy':'વેચનાર પેઆઉટ નીતિ','Grievance Redressal':'ફરિયાદ નિવારણ','Cart':'કાર્ટ','Checkout':'ચેકઆઉટ','Buyer':'ખરીદદાર','Plans':'પ્લાન','Language':'ભાષા','Login / Signup':'લોગિન / સાઇનઅપ','Login':'લોગિન','Logout':'લોગઆઉટ','Power every harvest with trust.':'દરેક પાકને વિશ્વાસની શક્તિ આપો.'
+    }
+  };
+  Object.keys(EXTRA_V108_MENU).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V108_MENU[l]); });
+
   const SKIP_SELECTOR = 'script,style,textarea,.language-grid,[data-no-translate]';
   const textOriginal = new WeakMap();
   const norm = s => String(s || '').replace(/\s+/g, ' ').trim();
@@ -1607,8 +1632,46 @@
       role.style.display = 'block';
     }
   }
+  function syncShellLabels(resetText=false) {
+    const top = {home:'Home', market:'Buyer Marketplace', categories:'Farm Categories', sell:'Seller Tools', membership:'Seller Plans', rewards:'Rewards', support:'Support', admin:'Admin'};
+    const side = {
+      home:'Home', market:'Buyer Marketplace', categories:'Farm Categories', cart:'Cart', checkout:'Checkout',
+      sell:'List Machinery or Spare Part', membership:'Seller Plans', rewards:'Badges & Titles', orders:'Order History', messages:'Messages',
+      account:'My Account', admin:'Admin Panel', how:'How it works', support:'Support', about:'About Us', contact:'Contact Us',
+      legal:'Legal Centre', terms:'Terms & Conditions', privacy:'Privacy Policy', refund:'Refund & Cancellation',
+      shipping:'Shipping & Delivery', razorpay:'Razorpay Payment Policy', 'payout-policy':'Seller Payout Policy', grievance:'Grievance Redressal'
+    };
+    const bottom = {home:'Home', market:'Buyer', sell:'+', membership:'Plans', account:'Account'};
+    document.querySelectorAll('.nav-tabs button[data-route], .side-menu button[data-route], .bottom-nav button[data-route]').forEach(btn => {
+      if (btn.classList.contains('sell-fab')) {
+        btn.dataset.rawText = '+';
+        if (resetText && btn.textContent !== '+') btn.textContent = '+';
+        return;
+      }
+      const route = btn.dataset.route || '';
+      let raw = top[route] || btn.dataset.rawText || btn.textContent.trim();
+      if (btn.closest('.side-menu')) raw = side[route] || raw;
+      if (btn.closest('.bottom-nav')) raw = bottom[route] || raw;
+      btn.dataset.rawText = raw;
+      if (resetText && btn.textContent !== raw) btn.textContent = raw;
+    });
+    const groups = ['Buyer Area','Seller Tools','Account','Company','Legal'];
+    document.querySelectorAll('.menu-group-label').forEach((el,i) => {
+      const raw = groups[i] || el.dataset.rawText || el.textContent.trim();
+      el.dataset.rawText = raw;
+      if (resetText && el.textContent !== raw) el.textContent = raw;
+    });
+    const fixed = [['menuLoginBtn','Login / Signup'],['logoutBtn','Logout']];
+    fixed.forEach(([id,raw]) => {
+      const el = document.getElementById(id);
+      if (el) { el.dataset.rawText = raw; if (resetText && el.textContent !== raw) el.textContent = raw; }
+    });
+    const label = document.querySelector('.menu-lang label');
+    if (label) { label.dataset.rawText = 'Language'; if (resetText && label.textContent !== 'Language') label.textContent = 'Language'; }
+  }
   function apply() {
     document.documentElement.lang = lang();
+    syncShellLabels(lang() === 'en');
     restoreKnownEnglish(document.body);
     if (lang() === 'en') {
       fixMenuHeader();

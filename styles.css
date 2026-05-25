@@ -3110,3 +3110,204 @@ body.menu-open #menuButton.hamb{
     fill:#fff7df!important;
   }
 }
+
+/* v110 final brand intro, seller form selection and mobile polish */
+.intro{
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+  background:
+    radial-gradient(circle at 50% 35%,rgba(232,190,91,.26),transparent 28%),
+    linear-gradient(135deg,#06130c 0%,#0d3220 46%,#07140f 100%)!important;
+}
+.intro:before{
+  content:""!important;
+  position:absolute!important;
+  inset:-30% -18%!important;
+  background:
+    linear-gradient(110deg,transparent 0 40%,rgba(255,255,255,.16) 46%,transparent 52%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 56px)!important;
+  animation:hpIntroSweep 1.9s ease-in-out both!important;
+}
+.intro-brand-only{
+  position:relative!important;
+  z-index:1!important;
+  display:grid!important;
+  justify-items:center!important;
+  gap:14px!important;
+  width:min(520px,calc(100vw - 34px))!important;
+  padding:28px 18px!important;
+  text-align:center!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  transform-origin:center!important;
+  animation:hpIntroBrandIn .7s cubic-bezier(.2,.8,.2,1) both!important;
+}
+.intro-logo{
+  width:92px!important;
+  height:92px!important;
+  padding:8px!important;
+  object-fit:contain!important;
+  border-radius:22px!important;
+  background:#fff!important;
+  box-shadow:0 18px 54px rgba(0,0,0,.32),0 0 0 1px rgba(232,190,91,.4)!important;
+  animation:hpIntroLogoPop .78s cubic-bezier(.2,.8,.2,1) both!important;
+}
+.intro-company-name{
+  display:block!important;
+  color:#fff8de!important;
+  font-size:clamp(38px,11vw,74px)!important;
+  line-height:.95!important;
+  font-weight:950!important;
+  letter-spacing:0!important;
+  text-shadow:0 10px 34px rgba(0,0,0,.4)!important;
+  animation:hpIntroNameGlow 1.15s ease both!important;
+}
+.intro-brand-only small{
+  display:block!important;
+  margin:0!important;
+  max-width:28ch!important;
+  color:#f4d98a!important;
+  font-size:clamp(14px,3.8vw,18px)!important;
+  line-height:1.35!important;
+  font-weight:850!important;
+  letter-spacing:0!important;
+  animation:hpIntroSlogan .75s ease .32s both!important;
+}
+.intro-video,.intro-veil,.intro-shell,.intro-mark-wrap,.intro-wordmark,.intro-shine,.intro-stats,.intro-scan,.intro-flow,.intro-motion,.intro-line{
+  display:none!important;
+}
+.intro.hide .intro-brand-only{
+  animation:hpIntroBrandOut .44s ease both!important;
+}
+@keyframes hpIntroBrandIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes hpIntroLogoPop{from{opacity:0;transform:scale(.72) rotate(-4deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes hpIntroNameGlow{0%{opacity:0;filter:blur(8px)}60%{opacity:1;filter:blur(0);text-shadow:0 0 26px rgba(232,190,91,.55),0 10px 34px rgba(0,0,0,.4)}100%{opacity:1;filter:blur(0);text-shadow:0 10px 34px rgba(0,0,0,.4)}}
+@keyframes hpIntroSlogan{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes hpIntroSweep{from{transform:translateX(-16%);opacity:.55}to{transform:translateX(16%);opacity:1}}
+@keyframes hpIntroBrandOut{to{opacity:0;transform:translateY(-14px) scale(.98)}}
+
+.sell-type-card,
+.listing-mode-card{
+  position:relative!important;
+  cursor:pointer!important;
+  border:1px solid rgba(20,91,54,.22)!important;
+  background:#ffffff!important;
+  color:#173523!important;
+  transition:transform .2s ease,border-color .2s ease,box-shadow .2s ease,background .2s ease!important;
+}
+.sell-type-card:hover,
+.listing-mode-card:hover{
+  transform:translateY(-1px)!important;
+  border-color:#2e8b57!important;
+  box-shadow:0 16px 36px rgba(10,65,35,.12)!important;
+}
+.sell-type-card.active,
+.listing-mode-card.active{
+  border-color:#145b36!important;
+  background:linear-gradient(135deg,#f7fff9,#e9f8ee)!important;
+  box-shadow:0 18px 44px rgba(20,91,54,.17)!important;
+}
+.sell-type-card input[type="radio"],
+.listing-mode-card input[type="radio"]{
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  display:inline-grid!important;
+  place-items:center!important;
+  width:20px!important;
+  min-width:20px!important;
+  height:20px!important;
+  margin:2px 0 0!important;
+  padding:0!important;
+  border:2px solid #7f9989!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+.sell-type-card input[type="radio"]:checked,
+.listing-mode-card input[type="radio"]:checked{
+  border:2px solid #145b36!important;
+  background:radial-gradient(circle at center,#145b36 0 42%,#fff 46% 100%)!important;
+}
+.sell-type-card.active:after,
+.listing-mode-card.active:after{
+  content:"Selected"!important;
+  position:absolute!important;
+  top:10px!important;
+  right:10px!important;
+  padding:4px 8px!important;
+  border-radius:999px!important;
+  background:#145b36!important;
+  color:#fff!important;
+  font-size:11px!important;
+  font-weight:900!important;
+}
+.sell-type-card .sell-dot{
+  display:none!important;
+}
+.sell-type-card b,
+.listing-mode-card b{
+  color:#102c1d!important;
+}
+.sell-type-card small,
+.listing-mode-card span{
+  color:#496657!important;
+}
+.seller-flow-card,
+.seller-step-flow,
+.seller-step-block,
+.self-listing-fields,
+.assisted-listing-fields{
+  max-width:100%!important;
+  overflow:hidden!important;
+}
+.seller-step-title h2{
+  letter-spacing:0!important;
+}
+.assisted-listing-fields input,
+.self-listing-fields input,
+.self-listing-fields textarea,
+.assisted-listing-fields textarea{
+  color:#102c1d!important;
+}
+@media(max-width:720px){
+  .intro-logo{width:78px!important;height:78px!important;border-radius:18px!important}
+  .intro-brand-only{gap:12px!important;padding:22px 14px!important}
+  .sell-type-card,
+  .listing-mode-card{
+    padding:16px 14px!important;
+  }
+  .sell-type-card.active:after,
+  .listing-mode-card.active:after{
+    position:static!important;
+    justify-self:start!important;
+    margin-top:8px!important;
+    grid-column:1 / -1!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  .intro:before,
+  .intro-brand-only,
+  .intro-logo,
+  .intro-company-name,
+  .intro-brand-only small{
+    animation:none!important;
+  }
+}
+#app .sell-type-card input[type="radio"],
+#app .listing-mode-card input[type="radio"]{
+  width:20px!important;
+  min-width:20px!important;
+  height:20px!important;
+  min-height:20px!important;
+  border:2px solid #7f9989!important;
+  border-radius:50%!important;
+  background:#fff!important;
+  box-shadow:none!important;
+}
+#app .sell-type-card input[type="radio"]:checked,
+#app .listing-mode-card input[type="radio"]:checked{
+  border:2px solid #145b36!important;
+  background:radial-gradient(circle at center,#145b36 0 42%,#fff 46% 100%)!important;
+}
