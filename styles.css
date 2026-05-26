@@ -3297,6 +3297,10 @@ body.menu-open #menuButton.hamb{
 }
 #app .sell-type-card input[type="radio"],
 #app .listing-mode-card input[type="radio"]{
+  position:static!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  flex:0 0 20px!important;
   width:20px!important;
   min-width:20px!important;
   height:20px!important;
@@ -3310,4 +3314,51 @@ body.menu-open #menuButton.hamb{
 #app .listing-mode-card input[type="radio"]:checked{
   border:2px solid #145b36!important;
   background:radial-gradient(circle at center,#145b36 0 42%,#fff 46% 100%)!important;
+}
+
+/* v111 seller choice alignment polish */
+#app .seller-flow-card .sell-type-grid{
+  align-items:stretch!important;
+}
+#app .seller-flow-card .sell-type-card{
+  display:grid!important;
+  grid-template-columns:24px minmax(0,1fr)!important;
+  align-items:flex-start!important;
+  gap:12px!important;
+  min-height:128px!important;
+  padding:18px!important;
+}
+#app .seller-flow-card .sell-type-card input[type="radio"]{
+  grid-column:1!important;
+  grid-row:1!important;
+  align-self:start!important;
+  justify-self:start!important;
+  margin-top:3px!important;
+}
+#app .seller-flow-card .sell-type-card>span:not(.sell-dot){
+  grid-column:2!important;
+  min-width:0!important;
+  display:block!important;
+  padding-right:74px!important;
+}
+#app .seller-flow-card .sell-type-card b,
+#app .seller-flow-card .sell-type-card small{
+  display:block!important;
+  white-space:normal!important;
+  word-break:normal!important;
+  overflow-wrap:normal!important;
+  hyphens:none!important;
+  line-height:1.32!important;
+}
+#app .seller-flow-card .sell-type-card small{
+  margin-top:7px!important;
+}
+@media(max-width:720px){
+  #app .seller-flow-card .sell-type-card{
+    grid-template-columns:24px minmax(0,1fr)!important;
+    min-height:0!important;
+  }
+  #app .seller-flow-card .sell-type-card>span:not(.sell-dot){
+    padding-right:0!important;
+  }
 }
