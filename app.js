@@ -4,7 +4,7 @@
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
   const PHONE_OTP_ENABLED = cfg.ENABLE_PHONE_OTP === true || String(cfg.ENABLE_PHONE_OTP || '').toLowerCase() === 'true';
-  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], messages:[], unreadMessages:0, factIndex:0, route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[],notifications:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
+  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], messages:[], unreadMessages:0, factIndex:0, route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[],notifications:[],analytics:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
   const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','rewards','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
   function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',badges:'rewards',rewards:'rewards',order:'orders',message:'messages',parts:'market',browse:'market',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','disputes':'dispute-policy','grievance-redressal':'grievance'}[r] || r); }
   const $ = s => document.querySelector(s);
@@ -44,7 +44,7 @@
   const ADMIN_ALERT_EMAIL = cfg.ADMIN_ALERT_EMAIL || ADMIN_EMAIL;
   const ASSISTED_LISTING_FEE = 19;
   const ROAD_TRANSPORT_RATE_PER_KM = 60;
-  const LAUNCH_CLEAN_VERSION = 'v111';
+  const LAUNCH_CLEAN_VERSION = 'v112';
   const LIVE_FINANCE_START = new Date(cfg.LIVE_FINANCE_START || '2026-05-24T00:00:00+05:30').getTime();
   const COMMISSION_SLABS = [
     {upto:5000, rate:0.035, label:'3.5% under Rs. 5,000'},
@@ -419,6 +419,15 @@
   function formatINRInput(v){ const raw=String(v||'').replace(/[^\d]/g,''); return raw ? Number(raw).toLocaleString('en-IN') : ''; }
   function placeholder(cat='parts'){ return './harvester-logo-full.jpg'; }
   function productImage(p){ return productImages(p)[0] || placeholder(p.category); }
+  function isVideoUrl(url=''){ return /^(data:video\/|blob:)/i.test(String(url||'')) || /\.(mp4|webm|ogg|ogv|mov|m4v)(\?|#|$)/i.test(String(url||'')); }
+  function isImageUrl(url=''){ return /^(data:image\/|blob:)/i.test(String(url||'')) || /\.(png|jpe?g|webp|gif|avif|svg|bmp)(\?|#|$)/i.test(String(url||'')); }
+  function mediaMarkup(src,alt='Product media',cls=''){
+    const safe=esc(src||'');
+    if(isVideoUrl(src)) return `<video class="${esc(cls)}" src="${safe}" muted playsinline controls preload="metadata" poster="./harvester-logo-full.jpg"></video>`;
+    if(src && (isImageUrl(src) || !isVideoUrl(src))) return `<img class="${esc(cls)}" src="${safe}" onerror="this.src='${placeholder()}'" alt="${esc(alt)}">`;
+    return `<img class="${esc(cls)}" src="${placeholder()}" alt="${esc(alt)}">`;
+  }
+  function productMedia(p,cls=''){ return mediaMarkup(productImage(p),p?.title||'Product media',cls); }
   function productImages(p){
     const arr=[];
     if(Array.isArray(p?.image_urls)) arr.push(...p.image_urls.filter(Boolean));
@@ -429,6 +438,25 @@
     if(p?.image) arr.push(p.image);
     const clean=[...new Set(arr.map(x=>String(x||'').trim()).filter(Boolean))];
     return clean.length ? clean : [placeholder(p?.category)];
+  }
+  function saleUnitLabel(value='piece'){
+    const map={piece:'piece',box:'box',set:'set',kit:'kit',pair:'pair',dozen:'dozen',kg:'kg',quintal:'quintal',lot:'lot',acre:'acre',machine:'machine'};
+    return map[String(value||'').toLowerCase()] || String(value||'piece');
+  }
+  function productSaleUnit(p={}){
+    const direct=p.sale_unit || p.unit || p.price_unit;
+    if(direct) return saleUnitLabel(direct);
+    const match=String(p.description||'').match(/Sale unit:\s*([^\n]+)/i);
+    return saleUnitLabel(match?.[1] || (matchesProductType(p,'machine')?'machine':'piece'));
+  }
+  function fileToDataUrl(file){
+    return new Promise(resolve=>{
+      if(!file || !file.name) return resolve('');
+      const reader=new FileReader();
+      reader.onload=()=>resolve(String(reader.result||''));
+      reader.onerror=()=>resolve('');
+      reader.readAsDataURL(file);
+    });
   }
   function platformFee(subtotal){ subtotal=Number(subtotal||0); if(!subtotal) return 0; return Math.round(subtotal * commissionRateForAmount(subtotal)); }
   function sellerFee(price, planKey){ price=Number(price||0); if(!price)return 0; return Math.round(price*commissionRateForAmount(price)); }
@@ -466,18 +494,20 @@
     sessionStorage.removeItem('hp_sellFormDraft');
     setTimeout(()=>$('#intro')?.classList.add('hide'),2450);
     const langModal = $('#languageModal');
-    if(localStorage.hp_lang_done==='1') langModal?.classList.remove('show');
-    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadSiteContent(); await loadFinanceData(); await loadMessages(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime();
-    if(localStorage.hp_lang_done==='1' || !langModal?.classList.contains('show')) scheduleInstallPrompt(1200);
+    const languageChosen = localStorage.hp_lang_done==='1' || localStorage.hp_lang_seen==='1' || !!localStorage.hp_lang;
+    langModal?.classList.toggle('show', !languageChosen);
+    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadSiteContent(); await loadFinanceData(); await loadMessages(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime(); setupAnalytics();
+    if(languageChosen || !langModal?.classList.contains('show')) scheduleInstallPrompt(1200);
   }
   function scheduleInstallPrompt(delay=700){
-    if(localStorage.hp_install_done==='1' || sessionStorage.hp_install_prompt_seen==='1') return;
+    if(localStorage.hp_install_done==='1' || localStorage.hp_install_prompt_seen==='1' || sessionStorage.hp_install_prompt_seen==='1') return;
     clearTimeout(window.__hpInstallTimer);
     window.__hpInstallTimer=setTimeout(()=>{
       const langOpen = $('#languageModal')?.classList.contains('show');
       const installOpen = $('#installModal')?.classList.contains('show');
-      if(!langOpen && !installOpen && localStorage.hp_install_done!=='1' && sessionStorage.hp_install_prompt_seen!=='1'){
+      if(!langOpen && !installOpen && localStorage.hp_install_done!=='1' && localStorage.hp_install_prompt_seen!=='1' && sessionStorage.hp_install_prompt_seen!=='1'){
         sessionStorage.hp_install_prompt_seen='1';
+        localStorage.hp_install_prompt_seen='1';
         $('#installModal')?.classList.add('show');
       }
     }, delay);
@@ -496,14 +526,14 @@
         return;
       }
       const close=e.target.closest('[data-close-modal]');
-      if(close){ const id=close.dataset.closeModal; $('#'+id)?.classList.remove('show'); if(id==='installModal'){ sessionStorage.hp_install_prompt_seen='1'; if($('#dontShowInstall')?.checked) localStorage.hp_install_done='1'; } }
+      if(close){ const id=close.dataset.closeModal; $('#'+id)?.classList.remove('show'); if(id==='installModal'){ sessionStorage.hp_install_prompt_seen='1'; localStorage.hp_install_prompt_seen='1'; localStorage.hp_install_done='1'; } }
     });
     $('#menuButton')?.addEventListener('click',openMenu); $('#closeMenu')?.addEventListener('click',closeMenu); $('#backdrop')?.addEventListener('click',closeMenu);
     $('#authButton')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
     $('#menuLoginBtn')?.addEventListener('click',()=> state.user ? route('account') : route('login'));
     $('#logoutBtn')?.addEventListener('click',logout);
-    $$('#languageModal [data-lang]').forEach(b=>b.addEventListener('click',()=>{ state.lang=b.dataset.lang; localStorage.hp_lang=state.lang; localStorage.hp_lang_seen='1'; if($('#dontShowLang')?.checked) localStorage.hp_lang_done='1'; $('#languageModal')?.classList.remove('show'); render(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,80); scheduleInstallPrompt(700); }));
-    $('#languageSelect')?.addEventListener('change',e=>{state.lang=e.target.value;localStorage.hp_lang=state.lang; render(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,80);});
+    $$('#languageModal [data-lang]').forEach(b=>b.addEventListener('click',()=>{ state.lang=b.dataset.lang; localStorage.hp_lang=state.lang; localStorage.hp_lang_seen='1'; localStorage.hp_lang_done='1'; $('#languageModal')?.classList.remove('show'); render(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,80); scheduleInstallPrompt(700); }));
+    $('#languageSelect')?.addEventListener('change',e=>{state.lang=e.target.value;localStorage.hp_lang=state.lang;localStorage.hp_lang_seen='1';localStorage.hp_lang_done='1'; render(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,80);});
     window.addEventListener('hashchange',()=>{ const [r,id]=parseRoute(); state.route=r||'home'; state.currentProduct=id||null; closeMenu(); render(); });
     $('#scrollTop')?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
   }
@@ -750,6 +780,11 @@
     const boosted=p.is_boosted?'<span class="badge owner royal-seal">Sponsored</span>':'';
     return `<article class="product-card fade-up"><div class="product-img"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'" alt="${p.title||'Product'}"></div><div class="product-body"><div>${boosted} <span class="badge verified">Verified Farm Listing</span></div><h3>${p.title||'Agricultural Listing'}</h3><p class="muted">${p.category||'Spare Part'} • ${p.brand||'Harvester Parts'}</p><div class="price-row"><span class="price">${money(p.price)}</span><span class="chip">Confirmed before order</span></div><div class="actions"><button class="ghost" onclick="HP.route('product',{id:'${p.id}'})">Details</button><button class="secondary" onclick="HP.addToCart('${p.id}')">Add Cart</button><button class="primary wide" onclick="HP.buyNow('${p.id}')">Buy Now</button></div></div></article>`;
   }
+  function productCardNew(p){
+    const boosted=p.is_boosted?'<span class="badge owner royal-seal">Sponsored</span>':'';
+    const unit=productSaleUnit(p);
+    return `<article class="product-card fade-up"><div class="product-img">${productMedia(p)}</div><div class="product-body"><div>${boosted} <span class="badge verified">Verified Farm Listing</span></div><h3>${esc(p.title||'Agricultural Listing')}</h3><p class="muted">${esc(p.category||'Spare Part')} • ${esc(p.brand||'Harvester Parts')}</p><div class="price-row"><span class="price">${money(p.price)} <small>/ ${esc(unit)}</small></span><span class="chip">Confirmed before order</span></div><div class="actions"><button class="ghost" onclick="HP.route('product',{id:'${esc(p.id)}'})">Details</button><button class="secondary" onclick="HP.addToCart('${esc(p.id)}')">Add Cart</button><button class="primary wide" onclick="HP.buyNow('${esc(p.id)}')">Buy Now</button></div></div></article>`;
+  }
   const AGRI_CATEGORIES = [
     {group:'Machines', title:'Combine Harvester', desc:'New and used combine harvesters, feeder houses, threshing units and harvesting machines.', icon:'CH', filters:['Combine Harvester','Harvester','Combine']},
     {group:'Machines', title:'Tractor', desc:'2WD, 4WD, mini and used tractors with compatible spares.', icon:'TR', filters:['Tractor']},
@@ -769,6 +804,7 @@
     {group:'Machines', title:'Thresher', desc:'Wheat, paddy, maize and multi-crop threshers.', icon:'TH', filters:['Thresher']},
     {group:'Machines', title:'Trailer / Trolley', desc:'Farm trailers, trolleys and haulage equipment.', icon:'TL', filters:['Trailer','Trolley']},
     {group:'Machines', title:'Irrigation & Pumps', desc:'Pump sets, pipes, motors, sprinklers and irrigation kits.', icon:'IP', filters:['Irrigation','Pump','Water','Motor']},
+    {group:'Machines', title:'Other Machinery', desc:'Any agricultural machine, implement or equipment not listed above.', icon:'OM', filters:['Other Machinery','Other Machine','Other']},
     {group:'Spare Parts', title:'Belts & Chains', desc:'Drive belts, elevator chains, roller chains and transmission wear parts.', icon:'BC', filters:['Belts','Belt','Chains','Chain']},
     {group:'Spare Parts', title:'Bearings', desc:'Harvester, tractor and implement bearings for shafts, rollers and pulleys.', icon:'BR', filters:['Bearings','Bearing']},
     {group:'Spare Parts', title:'Blades & Cutter Parts', desc:'Cutter bars, knives, guards, fingers, sections and crop cutting assemblies.', icon:'BL', filters:['Cutter Parts','Blade','Blades','Knife']},
@@ -781,7 +817,8 @@
     {group:'Spare Parts', title:'Engine Parts', desc:'Pistons, rings, liners, gaskets, injectors and engine spares.', icon:'EN', filters:['Engine','Piston','Injector','Liner']},
     {group:'Spare Parts', title:'Clutch & Brake Parts', desc:'Clutch plates, brake shoes, master cylinders and related spares.', icon:'CB', filters:['Clutch','Brake']},
     {group:'Spare Parts', title:'Rubber Seals & Bushes', desc:'Oil seals, rubber bushes, gaskets, o-rings and sealing components.', icon:'RS', filters:['Rubber Seals','Seals','Bush','Gasket']},
-    {group:'Spare Parts', title:'Nuts, Bolts & Hardware', desc:'Fasteners, pins, clips and common farm machine hardware.', icon:'NB', filters:['Nut','Bolt','Hardware','Pin']}
+    {group:'Spare Parts', title:'Nuts, Bolts & Hardware', desc:'Fasteners, pins, clips and common farm machine hardware.', icon:'NB', filters:['Nut','Bolt','Hardware','Pin']},
+    {group:'Spare Parts', title:'Other Spare Part', desc:'Any spare part, repair item or farm machine component not listed above.', icon:'OS', filters:['Other Spare Part','Other Part','Other']}
   ];
   function categoryIconSvg(c){
     const t=String(c.title||'').toLowerCase();
@@ -796,7 +833,7 @@
     return `<article class="agri-category-card pro-cat fade-up" onclick="HP.route('market',{category:'${c.title}'})"><div class="cat-mark"><span class="cat-emoji" aria-hidden="true">${categoryIconSvg(c)}</span></div><div><small>${c.group}</small><h3>${c.title}</h3><p>${c.desc}</p><span>${count} active listings</span></div></article>`;
   }
   function categoriesBySellType(type){ return AGRI_CATEGORIES.filter(c => type==='machine' ? c.group==='Machines' : c.group==='Spare Parts'); }
-  function categoryOptionsFor(type){ return categoriesBySellType(type).map(c=>`<option value="${esc(c.title)}">${esc(c.title)}</option>`).join(''); }
+  function categoryOptionsFor(type,selected=''){ return categoriesBySellType(type).map(c=>`<option value="${esc(c.title)}" ${String(selected||'')===c.title?'selected':''}>${esc(c.title)}</option>`).join(''); }
 
 
 
@@ -868,7 +905,7 @@
       ['Top machinery and parts', highValue, 'High-value farm machinery, implements and spare parts.'],
       ['Popular products', popular, 'Products receiving more marketplace attention.']
     ];
-    return sections.map(([title,items,subtitle])=> items&&items.length ? `<section class="product-carousel-section"><div class="section-head"><h2>${title}</h2><p class="muted">${subtitle}</p></div><div class="product-row-carousel">${items.map(productCard).join('')}</div></section>` : '').join('');
+    return sections.map(([title,items,subtitle])=> items&&items.length ? `<section class="product-carousel-section"><div class="section-head"><h2>${title}</h2><p class="muted">${subtitle}</p></div><div class="product-row-carousel">${items.map(productCardNew).join('')}</div></section>` : '').join('');
   }
   function featureCarousel(){
     const slides=carouselSlides();
@@ -879,7 +916,7 @@
     const categoryCount = state.stats.categories || AGRI_CATEGORIES.length;
     const sellerCount = state.stats.sellers || 0;
     const liveProducts = visibleProducts();
-    return `<section class="hp92-hero"><div class="hp-live-bg" aria-hidden="true"><span class="hp-live-sweep"></span><span class="hp-live-row row-a"></span><span class="hp-live-row row-b"></span><span class="hp-live-row row-c"></span><div class="hp-live-card card-a"><b>Combine</b><small>seller verified</small></div><div class="hp-live-card card-b"><b>Spare part</b><small>OEM matched</small></div><div class="hp-live-card card-c"><b>Road delivery</b><small>route planned</small></div></div><div class="hp92-hero-shade"></div><div class="hp92-hero-copy"><span class="eyebrow">Farm trade made simple</span><h1>Buy and sell farm machines and spare parts without confusion.</h1><p>Harvester Parts connects farmers, dealers, workshops and machine owners with verified sellers, clean search, seller approval, secure checkout, delivery coordination and slab-based launch commission from 3.5% down to 1%.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="secondary" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">Seller Plans</button></div><div class="hp92-trust-row"><span>Verified sellers</span><span>New + used stock</span><span>Courier for spares</span><span>Road transport for machinery</span></div></div><div class="hp92-hero-panel"><div class="hp92-panel-top"><img src="./logo-512.png" alt="Harvester Parts"><div><b>Harvester Parts</b><span>Live marketplace console</span></div></div><div class="hp92-market-visual" aria-hidden="true"><div class="hp92-radar"><span></span><span></span><span></span></div><div class="hp92-activity-list"><i></i><i></i><i></i><i></i></div><div class="hp92-route-line"></div></div><div class="hp92-metric-grid"><div><b data-count="${liveProducts.length}">0</b><span>Live listings</span></div><div><b data-count="${categoryCount}">0</b><span>Categories</span></div><div><b data-count="${sellerCount}">0</b><span>Sellers</span></div><div><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section>${agriFactCard()}${featureCarousel()}<section class="hp92-role-grid"><article><span>Buyer area</span><h2>Find the right item quickly.</h2><p>Search by category, model, brand, condition and location. Cart, checkout and seller chat stay inside the website.</p></article><article><span>Seller tools</span><h2>List only after verification.</h2><p>Dealers, agencies, farmers and owners can upload details, dimensions, price, condition and compatibility for clean listings.</p></article><article><span>Owner revenue</span><h2>Small launch fees that scale with value.</h2><p>Commission starts higher on small orders and drops down to 1% for high-value machinery to keep serious deals attractive.</p></article></section>${homeCarousel()}<section><div class="section-head"><h2>Fresh listings</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${liveProducts.slice(0,6).map(productCard).join('')||empty('No live products yet.')}</div></section>`;
+    return `<section class="hp92-hero"><div class="hp-live-bg" aria-hidden="true"><span class="hp-live-sweep"></span><span class="hp-live-row row-a"></span><span class="hp-live-row row-b"></span><span class="hp-live-row row-c"></span><div class="hp-live-card card-a"><b>Combine</b><small>seller verified</small></div><div class="hp-live-card card-b"><b>Spare part</b><small>OEM matched</small></div><div class="hp-live-card card-c"><b>Road delivery</b><small>route planned</small></div></div><div class="hp92-hero-shade"></div><div class="hp92-hero-copy"><span class="eyebrow">Farm trade made simple</span><h1>Buy and sell farm machines and spare parts without confusion.</h1><p>Harvester Parts connects farmers, dealers, workshops and machine owners with verified sellers, clean search, seller approval, secure checkout, delivery coordination and slab-based launch commission from 3.5% down to 1%.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="secondary" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">Seller Plans</button></div></div><div class="hp92-hero-panel"><div class="hp92-panel-top"><img src="./logo-512.png" alt="Harvester Parts"><div><b>Harvester Parts</b><span>Live marketplace console</span></div></div><div class="hp92-market-visual" aria-hidden="true"><div class="hp92-radar"><span></span><span></span><span></span></div><div class="hp92-activity-list"><i></i><i></i><i></i><i></i></div><div class="hp92-route-line"></div></div><div class="hp92-metric-grid"><div><b data-count="${liveProducts.length}">0</b><span>Live listings</span></div><div><b data-count="${categoryCount}">0</b><span>Categories</span></div><div><b data-count="${sellerCount}">0</b><span>Sellers</span></div><div><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section>${agriFactCard()}${featureCarousel()}<section class="hp92-role-grid"><article><span>Buyer area</span><h2>Find the right item quickly.</h2><p>Search by category, model, brand, condition and location. Cart, checkout and seller chat stay inside the website.</p></article><article><span>Seller tools</span><h2>List only after verification.</h2><p>Dealers, agencies, farmers and owners can upload details, dimensions, price, condition and compatibility for clean listings.</p></article><article><span>Owner revenue</span><h2>Small launch fees that scale with value.</h2><p>Commission starts higher on small orders and drops down to 1% for high-value machinery to keep serious deals attractive.</p></article></section>${homeCarousel()}<section><div class="section-head"><h2>Fresh listings</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${liveProducts.slice(0,6).map(productCardNew).join('')||empty('No live products yet.')}</div></section>`;
   }
 
   
@@ -889,7 +926,7 @@
     const selected=sessionStorage.hp_market_category||'';
     const type=sessionStorage.hp_market_type||'all';
     const shown=marketProducts.filter(p=>matchesProductType(p,type) && (!selected || String(p.category||'').toLowerCase().includes(selected.toLowerCase()) || String(p.title||'').toLowerCase().includes(selected.toLowerCase())));
-    return `<section class="page-card market-head-card hp92-market-head"><div><span class="eyebrow">Buyer marketplace</span><h1>Search verified farm machines and spare parts.</h1><p class="muted">Use fast suggestions, product type, category, condition and price filters to find the right farm item quickly.</p></div><button class="primary" data-route="sell">List Product</button><div class="market-tools"><select id="typeFilter"><option value="all" ${type==='all'?'selected':''}>All products</option><option value="machine" ${type==='machine'?'selected':''}>Machinery</option><option value="spare" ${type==='spare'?'selected':''}>Spare parts</option></select><div class="search-wrap"><input id="searchInput" autocomplete="off" placeholder="Search tractor, harvester, bearing, belt or model"><div id="searchSuggest" class="search-suggest"></div></div><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="all">All listings</option><option value="condition_new">New</option><option value="condition_used">Used</option><option value="price_low">Price low to high</option><option value="price_high">Price high to low</option></select></div></section><section class="grid hp92-market-grid" id="marketGrid">${shown.map(productCard).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
+    return `<section class="page-card market-head-card hp92-market-head"><div><span class="eyebrow">Buyer marketplace</span><h1>Search verified farm machines and spare parts.</h1><p class="muted">Use fast suggestions, product type, category, condition and price filters to find the right farm item quickly.</p></div><button class="primary" data-route="sell">List Product</button><div class="market-tools"><select id="typeFilter"><option value="all" ${type==='all'?'selected':''}>All products</option><option value="machine" ${type==='machine'?'selected':''}>Machinery</option><option value="spare" ${type==='spare'?'selected':''}>Spare parts</option></select><div class="search-wrap"><input id="searchInput" autocomplete="off" placeholder="Search tractor, harvester, bearing, belt or model"><div id="searchSuggest" class="search-suggest"></div></div><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="all">All listings</option><option value="condition_new">New</option><option value="condition_used">Used</option><option value="price_low">Price low to high</option><option value="price_high">Price high to low</option></select></div></section><section class="grid hp92-market-grid" id="marketGrid">${shown.map(productCardNew).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
   }
   
   function productPage(id){
@@ -899,7 +936,7 @@
     const sellerName=p.sellers?.business_name || p.users?.full_name || p.users?.email || 'Verified seller';
     const loc=[p.city,p.district,p.state].filter(Boolean).join(', ') || 'Location shared by seller';
     const related=visibleProducts().filter(x=>String(x.id)!==String(p.id) && (String(x.category||'').toLowerCase()===String(p.category||'').toLowerCase() || String(x.sell_type||'')===String(p.sell_type||''))).slice(0,8);
-    return `<section class="product-page"><div class="gallery page-card product-gallery"><div class="main-product-photo" onclick="HP.openGallery('${esc(p.id)}',0)"><img src="${esc(imgs[0])}" onerror="this.src='${placeholder(p.category)}'" alt="${esc(p.title||'Product')}"><span class="photo-count">${imgs.length} photo${imgs.length>1?'s':''}</span></div>${imgs.length>1?`<div class="gallery-thumbs">${imgs.map((img,i)=>`<button onclick="HP.openGallery('${esc(p.id)}',${i})"><img src="${esc(img)}" onerror="this.src='${placeholder(p.category)}'"></button>`).join('')}</div>`:''}</div><aside class="detail-stack sticky-buy"><div class="page-card"><span class="badge verified">Verified Farm Listing</span><h1>${esc(p.title||'Agricultural Product')}</h1><p class="muted">${esc(p.category||'Spare Part')} • ${esc(p.brand||'Harvester Parts')} ${p.model?`• ${esc(p.model)}`:''}</p><div class="price">${money(p.price)}</div><p class="muted">Confirm final price, freight, dimensions and availability before payment.</p><div class="seller-mini-card"><b>${esc(sellerName)}</b><span>${esc(loc)}</span></div><div class="actions"><button class="primary" onclick="HP.buyNow('${esc(p.id)}')">Buy Now</button><button class="secondary" onclick="HP.addToCart('${esc(p.id)}')">Add to Cart</button><button class="ghost" onclick="HP.toggleWishlist('${esc(p.id)}')">Wishlist</button><button class="ghost" onclick="HP.route('messages',{id:'${esc(p.id)}'})">Message Seller</button></div></div><div class="summary-card buyer-only-card"><h3>Buyer assurance</h3><div class="summary-row"><span>Verified seller</span><b>Seller verified</b></div><div class="summary-row"><span>Payment</span><b>Secure checkout</b></div><div class="summary-row"><span>Delivery</span><b>${matchesProductType(p,'machine')?'Road / seller coordination':'Courier for spare parts'}</b></div></div></aside></section><section class="page-card"><h2>Product details</h2><p>${esc(p.description||'Agricultural machinery or spare part listing from a verified seller. Confirm compatibility, condition, dimensions and delivery details before final purchase.')}</p><div class="stats"><div class="stat"><b>${esc(p.condition||'Stock')}</b><span>Condition</span></div><div class="stat"><b>${esc(p.weight_kg||'—')} kg</b><span>Weight</span></div><div class="stat"><b>${esc(p.state||'India')}</b><span>Location</span></div><div class="stat"><b>${esc(p.views||0)}</b><span>Views</span></div></div></section>${related.length?`<section class="product-carousel-section related-products"><div class="section-head"><h2>Similar products</h2><p class="muted">Related listings from the same category, like Amazon or Flipkart style product discovery.</p></div><div class="product-row-carousel">${related.map(productCard).join('')}</div></section>`:''}<div id="photoLightbox" class="photo-lightbox" aria-hidden="true"><button class="lightbox-close" onclick="HP.closeGallery()">×</button><button class="lightbox-nav prev" onclick="HP.stepGallery(-1)">‹</button><img id="lightboxImage" src="${esc(imgs[0])}" alt="${esc(p.title||'Product photo')}"><button class="lightbox-nav next" onclick="HP.stepGallery(1)">›</button><div id="lightboxCount" class="lightbox-count">1 / ${imgs.length}</div></div>`;
+    return `<section class="product-page"><div class="gallery page-card product-gallery"><div class="main-product-photo" onclick="HP.openGallery('${esc(p.id)}',0)">${mediaMarkup(imgs[0],p.title||'Product')}<span class="photo-count">${imgs.length} media${imgs.length>1?' files':''}</span></div>${imgs.length>1?`<div class="gallery-thumbs">${imgs.map((img,i)=>`<button onclick="HP.openGallery('${esc(p.id)}',${i})">${mediaMarkup(img,p.title||'Product')}</button>`).join('')}</div>`:''}</div><aside class="detail-stack sticky-buy"><div class="page-card"><span class="badge verified">Verified Farm Listing</span><h1>${esc(p.title||'Agricultural Product')}</h1><p class="muted">${esc(p.category||'Spare Part')} • ${esc(p.brand||'Harvester Parts')} ${p.model?`• ${esc(p.model)}`:''}</p><div class="price">${money(p.price)} <small>/ ${esc(productSaleUnit(p))}</small></div><p class="muted">Confirm final price, freight, dimensions and availability before payment.</p><div class="seller-mini-card"><b>${esc(sellerName)}</b><span>${esc(loc)}</span></div><div class="actions"><button class="primary" onclick="HP.buyNow('${esc(p.id)}')">Buy Now</button><button class="secondary" onclick="HP.addToCart('${esc(p.id)}')">Add to Cart</button><button class="ghost" onclick="HP.toggleWishlist('${esc(p.id)}')">Wishlist</button><button class="ghost" onclick="HP.route('messages',{id:'${esc(p.id)}'})">Message Seller</button></div></div><div class="summary-card buyer-only-card"><h3>Buyer assurance</h3><div class="summary-row"><span>Verified seller</span><b>Seller verified</b></div><div class="summary-row"><span>Payment</span><b>Secure checkout</b></div><div class="summary-row"><span>Delivery</span><b>${matchesProductType(p,'machine')?'Road / seller coordination':'Courier for spare parts'}</b></div></div></aside></section><section class="page-card"><h2>Product details</h2><p>${esc(p.description||'Agricultural machinery or spare part listing from a verified seller. Confirm compatibility, condition, dimensions and delivery details before final purchase.')}</p><div class="stats"><div class="stat"><b>${esc(p.condition||'Stock')}</b><span>Condition</span></div><div class="stat"><b>${esc(p.weight_kg||'—')} kg</b><span>Weight</span></div><div class="stat"><b>${esc(p.state||'India')}</b><span>Location</span></div><div class="stat"><b>${esc(p.views||0)}</b><span>Views</span></div></div></section>${related.length?`<section class="product-carousel-section related-products"><div class="section-head"><h2>Similar products</h2><p class="muted">Related listings from the same category, like Amazon or Flipkart style product discovery.</p></div><div class="product-row-carousel">${related.map(productCardNew).join('')}</div></section>`:''}<div id="photoLightbox" class="photo-lightbox" aria-hidden="true"><button class="lightbox-close" onclick="HP.closeGallery()">×</button><button class="lightbox-nav prev" onclick="HP.stepGallery(-1)">‹</button><div id="lightboxMedia" class="lightbox-media">${mediaMarkup(imgs[0],p.title||'Product media')}</div><button class="lightbox-nav next" onclick="HP.stepGallery(1)">›</button><div id="lightboxCount" class="lightbox-count">1 / ${imgs.length}</div></div>`;
   }
   function categoriesPage(){
     const machines=AGRI_CATEGORIES.filter(c=>c.group==='Machines').map(categoryCard).join('');
@@ -1179,12 +1216,72 @@
     const d=formDraft('sellerVerifyDraft');
     return `<form id="sellerVerifyForm" class="page-card form seller-verify-form"><div class="verify-form-section"><h2>Business details</h2><div class="sell-form-grid"><input name="business_name" value="${esc(d.business_name||'')}" placeholder="Business / seller name" required><input name="phone" value="${esc(d.phone||state.profile?.phone||state.user?.phone||'')}" placeholder="Phone number" inputmode="tel" autocomplete="tel" required></div></div><div class="verify-form-section"><h2>Pickup address</h2><div class="sell-form-grid"><select name="state" required>${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District" required><input name="city" value="${esc(d.city||'')}" placeholder="City / village" required><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6" required></div><textarea name="address" placeholder="Full pickup / shop address">${esc(d.address||'')}</textarea></div><div class="verify-form-section"><h2>Document upload</h2><div class="doc-upload-grid"><label class="file-label"><b>Aadhaar front</b><span>Image or PDF</span><input name="aadhaar_front" type="file" accept="image/*,application/pdf" required></label><label class="file-label"><b>Aadhaar back</b><span>Image or PDF</span><input name="aadhaar_back" type="file" accept="image/*,application/pdf" required></label><label class="file-label"><b>Shop / stock photo</b><span>Optional but recommended</span><input name="shop_photo" type="file" accept="image/*,application/pdf"></label></div></div><div class="notice tiny-note">Use clear photos. Verification is reviewed manually before seller tools unlock.</div><button class="primary">Submit Seller Verification</button></form>`;
   }
+  function detailValue(text='',label=''){
+    const re=new RegExp(label.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*:\\s*([^\\n]+)','i');
+    return String(text||'').match(re)?.[1]?.trim() || '';
+  }
+  function productToSellDraft(p={}){
+    const description=String(p.description||'');
+    const isMachine=matchesProductType(p,'machine');
+    const draft={
+      edit_id:p.id||'',
+      sell_type:isMachine?'machine':'spare',
+      listing_service:'self',
+      condition:p.condition||'Used',
+      title:p.title||'',
+      price:p.price||'',
+      listing_qty:detailValue(description,'Quantity available') || p.quantity || p.qty || '1',
+      sale_unit:productSaleUnit(p),
+      category:p.category||'',
+      brand:p.brand||'',
+      model:p.model||'',
+      weight_kg:p.weight_kg||'',
+      state:p.state||'',
+      district:p.district||'',
+      city:p.city||'',
+      pincode:p.pincode||'',
+      description:description.replace(/(^|\n)(Quantity available|Sale unit|Pickup pincode|Machinery details|Spare part details|Specification table):[\s\S]*$/i,'').trim()
+    };
+    const spareLine=detailValue(description,'Spare part details');
+    const spareMatch=spareLine.match(/OEM\/part number (.*?), compatible machine (.*?), seller SKU (.*?), material\/grade (.*)$/i);
+    if(spareMatch){
+      draft.part_number=spareMatch[1]==='not added'?'':spareMatch[1];
+      draft.compatible_machine=spareMatch[2]==='not added'?'':spareMatch[2];
+      draft.sku_code=spareMatch[3]==='not added'?'':spareMatch[3];
+      draft.material=spareMatch[4]==='not added'?'':spareMatch[4];
+    }
+    const machineLine=detailValue(description,'Machinery details');
+    const machineMatch=machineLine.match(/Year\/hours (.*?), capacity (.*?), delivery note (.*)$/i);
+    if(machineMatch){
+      draft.machine_year=machineMatch[1]==='not added'?'':machineMatch[1];
+      draft.machine_capacity=machineMatch[2]==='not added'?'':machineMatch[2];
+      draft.machine_delivery_note=machineMatch[3]==='not added'?'':machineMatch[3];
+    }
+    const specs=isMachine
+      ? [['Overall length','dim_length'],['Overall width','dim_width'],['Overall height','dim_height'],['Working width','working_width'],['Capacity / HP','engine_hp'],['Tyre / attachment size','attachment_size']]
+      : [['Length / belt length','dim_length'],['Width','dim_width'],['Height','dim_height'],['Outer diameter','dim_outer_dia'],['Inner diameter','dim_inner_dia'],['Thickness / pitch','dim_thickness']];
+    specs.forEach(([label,key])=>{
+      const raw=detailValue(description,label);
+      if(!raw) return;
+      const match=raw.match(/^(.*?)\s+(mm|cm|m|inch|ft|HP|rows|litre|kg|ton)(?:\s+\((.*?)\))?$/i);
+      if(!match) return;
+      draft[key]=match[1];
+      draft[key+'_unit']=match[2];
+      draft[key+'_note']=match[3]||'';
+    });
+    return draft;
+  }
+  function saleUnitOptions(selected='piece'){
+    const units=[['piece','Per piece'],['box','Per box'],['set','Per set'],['kit','Per kit'],['pair','Per pair'],['dozen','Per dozen'],['kg','Per kg'],['quintal','Per quintal'],['lot','Full lot'],['acre','Per acre'],['machine','Whole machine']];
+    return units.map(([value,label])=>`<option value="${value}" ${String(selected||'piece')===value?'selected':''}>${label}</option>`).join('');
+  }
   function sellPage(){
     if(!state.user)return loginPage();
     const gate=sellerStatusCard();
     if(gate) return gate;
     const used=userListingCount(); const limit=currentListingLimit();
-    const d={};
+    const editProduct=state.currentProduct ? myProducts().find(p=>String(p.id)===String(state.currentProduct)) : null;
+    const d=editProduct ? productToSellDraft(editProduct) : {};
     const chosenType=['machine','spare'].includes(d.sell_type) ? d.sell_type : '';
     const chosenMode=['self','assisted'].includes(d.listing_service) ? d.listing_service : '';
     const categoryType=chosenType || 'machine';
@@ -1217,7 +1314,7 @@
     const dimensionTable=specTableHtml('spare',spareSpecRows,'Add any known size, fitment or compatibility values for better buyer matching.') + specTableHtml('machine',machineSpecRows,'Add any known transport, capacity or attachment values for easier buyer planning.');
     const typeCards=`<div class="seller-step-block"><div class="seller-step-title"><span>1</span><div><h2>What do you want to sell?</h2><p class="muted">Choose first. The page will show only the matching form.</p></div></div><div class="sell-type-grid" role="radiogroup" aria-label="What are you selling?"><label class="sell-type-card ${chosenType==='machine'?'active':''}" data-sell-card="machine"><input type="radio" name="sell_type" value="machine" ${chosenType==='machine'?'checked':''}><span class="sell-dot"></span><span><b>Machinery</b><small>Combine, tractor, trolley, seed drill, reaper or farm implement</small></span></label><label class="sell-type-card ${chosenType==='spare'?'active':''}" data-sell-card="spare"><input type="radio" name="sell_type" value="spare" ${chosenType==='spare'?'checked':''}><span class="sell-dot"></span><span><b>Spare Part</b><small>Belts, bearings, blades, shafts, filters, gears or fitment parts</small></span></label></div></div>`;
     const modeCards=`<div class="seller-step-block listing-step ${chosenType?'':'step-muted'}"><div class="seller-step-title"><span>2</span><div><h2>Who should fill the listing?</h2><p class="muted">After choosing this, only one form stays visible.</p></div></div><div class="listing-mode-grid" role="radiogroup" aria-label="Listing method"><label class="listing-mode-card ${chosenMode==='self'?'active':''}" data-listing-mode="self"><input type="radio" name="listing_service" value="self" ${chosenMode==='self'?'checked':''}><b>List it myself</b><span>Free. Add product basics, price, photos and location.</span></label><label class="listing-mode-card ${chosenMode==='assisted'?'active':''}" data-listing-mode="assisted"><input type="radio" name="listing_service" value="assisted" ${chosenMode==='assisted'?'checked':''}><b>Company will fill</b><span>${money(ASSISTED_LISTING_FEE)} per item. Send basics and our team prepares the final listing.</span></label></div></div>`;
-    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>Guided product listing.</h1><p class="muted">Select machinery or spare part, then choose self listing or professional listing. Non-selected forms stay hidden.</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card seller-flow-card"><form id="sellForm" class="form sell-form seller-step-flow">${typeCards}${modeCards}<div class="form-choice-hint request-note ${chosenType&&chosenMode?'hidden-fields':''}"><b>Next step</b><p>Choose both options above. The matching form will open directly below.</p></div><div class="self-listing-fields ${chosenMode==='self'&&chosenType?'':'hidden-fields'}"><div class="assisted-pack"><b id="selfListingTitle">${chosenType==='spare'?'Self listing: spare part':'Self listing: machinery'}</b><span id="selfListingHint">${chosenType==='spare'?'Add part number, price, quantity and photos so buyers can identify it clearly.':'Add machine name, price, quantity, location and photos so buyers can contact confidently.'}</span></div><div class="sell-form-grid"><select name="condition"><option value="New" ${condition==='New'?'selected':''}>New</option><option value="Used" ${condition==='Used'?'selected':''}>Used</option><option value="Refurbished" ${condition==='Refurbished'?'selected':''}>Refurbished</option><option value="Factory Stock" ${condition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name" required><input name="price" value="${esc(formatINRInput(d.price)||'')}" inputmode="numeric" placeholder="Listing price, e.g. 1,25,000" required><input name="listing_qty" value="${esc(d.listing_qty||'')}" inputmode="numeric" placeholder="Quantity available" required><select name="category" id="sellCategorySelect">${categoryOptionsFor(categoryType)}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / company"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"></div><div class="sell-dynamic-section machine-fields ${chosenType==='spare'?'hidden-fields':''}"><h3>Machinery details</h3><div class="sell-form-grid"><input name="machine_year" value="${esc(d.machine_year||'')}" placeholder="Year / hours used, if known"><input name="machine_capacity" value="${esc(d.machine_capacity||'')}" placeholder="Rows, tank, load or working capacity"><input name="machine_delivery_note" value="${esc(d.machine_delivery_note||'')}" placeholder="Seller delivery, buyer pickup or road transport note"></div></div><div class="sell-dynamic-section spare-fields ${chosenType==='spare'?'':'hidden-fields'}"><h3>Spare part identity</h3><div class="sell-form-grid"><input class="spare-self-required" name="part_number" value="${esc(d.part_number||'')}" placeholder="OEM / part number (required)"><input class="spare-self-required" name="compatible_machine" value="${esc(d.compatible_machine||'')}" placeholder="Compatible machine or model (required)"><input name="sku_code" value="${esc(d.sku_code||'')}" placeholder="Seller SKU / alternate number"><input name="material" value="${esc(d.material||'')}" placeholder="Material / grade / teeth / blade size"></div></div>${dimensionTable}<div class="sell-form-grid"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state">${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District"><input name="city" value="${esc(d.city||'')}" placeholder="City / village"><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6"></div><textarea name="description" placeholder="Condition, exact location, fitment notes, defects, warranty, delivery and negotiation notes">${esc(d.description||'')}</textarea><label class="file-label">Product photos<input name="images" type="file" accept="image/*" multiple></label><div class="notice" id="sellerFeePreview">Enter price to preview your slab commission and payout.</div><button class="primary">Publish Listing</button></div><div class="assisted-listing-fields ${chosenMode==='assisted'&&chosenType?'':'hidden-fields'}"><div class="assisted-pack"><b>Professional listing request</b><span>Pay ${money(ASSISTED_LISTING_FEE)} for this item. Send basic details now; our team will prepare the exact final listing.</span></div><input type="hidden" name="assist_item_type" value="${esc(chosenType)}"><div class="assist-type-pill">${chosenType==='spare'?'Spare part request':chosenType==='machine'?'Machinery request':'Choose item type above'}</div><div class="sell-form-grid"><input name="assist_name" value="${esc(d.assist_name||'')}" placeholder="Your name"><input name="assist_phone" value="${esc(d.assist_phone||'')}" placeholder="Phone number"><select name="assist_condition"><option ${assistCondition==='Used'?'selected':''}>Used</option><option ${assistCondition==='New'?'selected':''}>New</option><option ${assistCondition==='Refurbished'?'selected':''}>Refurbished</option><option ${assistCondition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="assist_title" value="${esc(d.assist_title||'')}" placeholder="Machine / part name"><input name="assist_qty" value="${esc(d.assist_qty||'')}" inputmode="numeric" placeholder="Quantity"><input name="assist_expected_price" value="${esc(formatINRInput(d.assist_expected_price)||'')}" inputmode="numeric" placeholder="Expected selling price"><input name="assist_location" value="${esc(d.assist_location||'')}" placeholder="City / village and pincode"><input class="assist-spare-required spare-fields ${chosenType==='spare'?'':'hidden-fields'}" name="assist_part_number" value="${esc(d.assist_part_number||'')}" placeholder="OEM / part number (required for spare part)"></div><textarea name="assist_note" placeholder="Add any note: brand, model, photos available, size, compatibility, condition, pickup or delivery requirement">${esc(d.assist_note||'')}</textarea><button class="primary">Pay ${money(ASSISTED_LISTING_FEE)} and send request</button></div></form></section>${sellerListingsPanel()}`;
+    return `<section class="page-card sell-head"><span class="eyebrow">Approved seller</span><h1>${editProduct?'Edit product listing.':'Guided product listing.'}</h1><p class="muted">${editProduct?'Update price, quantity, category, photos or details without deleting and reposting.':'Select machinery or spare part, then choose self listing or professional listing. Non-selected forms stay hidden.'}</p><div class="sell-limit-note"><span>Listings used: ${used}/${limitLabel(limit)}</span><small>${esc(feeDiscountForPlan(activePlan()))}</small></div></section><section class="page-card seller-flow-card">${editProduct?`<div class="sell-edit-banner"><div><b>Editing: ${esc(editProduct.title||'Product')}</b><span>Save changes or start a fresh listing.</span></div><button type="button" class="ghost" onclick="HP.startNewListing()">New Listing</button></div>`:''}<form id="sellForm" class="form sell-form seller-step-flow"><input type="hidden" name="edit_id" value="${esc(d.edit_id||'')}">${typeCards}${modeCards}<div class="form-choice-hint request-note ${chosenType&&chosenMode?'hidden-fields':''}"><b>Next step</b><p>Choose both options above. The matching form will open directly below.</p></div><div class="self-listing-fields ${chosenMode==='self'&&chosenType?'':'hidden-fields'}"><div class="assisted-pack"><b id="selfListingTitle">${chosenType==='spare'?'Self listing: spare part':'Self listing: machinery'}</b><span id="selfListingHint">${chosenType==='spare'?'Add part number, price, quantity and photos so buyers can identify it clearly.':'Add machine name, price, quantity, location and photos so buyers can contact confidently.'}</span></div><div class="sell-form-grid"><select name="condition"><option value="New" ${condition==='New'?'selected':''}>New</option><option value="Used" ${condition==='Used'?'selected':''}>Used</option><option value="Refurbished" ${condition==='Refurbished'?'selected':''}>Refurbished</option><option value="Factory Stock" ${condition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="title" value="${esc(d.title||'')}" placeholder="Product name" required><input name="price" value="${esc(formatINRInput(d.price)||'')}" inputmode="numeric" placeholder="Listing price, e.g. 1,25,000" required><input name="listing_qty" value="${esc(d.listing_qty||'')}" inputmode="numeric" placeholder="Quantity available" required><select name="sale_unit" class="unit-select">${saleUnitOptions(d.sale_unit || (chosenType==='machine'?'machine':'piece'))}</select><select name="category" id="sellCategorySelect">${categoryOptionsFor(categoryType,d.category||'')}</select><input name="brand" value="${esc(d.brand||'')}" placeholder="Brand / company"><input name="model" value="${esc(d.model||'')}" placeholder="Model / compatibility"></div><div class="sell-dynamic-section machine-fields ${chosenType==='spare'?'hidden-fields':''}"><h3>Machinery details</h3><div class="sell-form-grid"><input name="machine_year" value="${esc(d.machine_year||'')}" placeholder="Year / hours used, if known"><input name="machine_capacity" value="${esc(d.machine_capacity||'')}" placeholder="Rows, tank, load or working capacity"><input name="machine_delivery_note" value="${esc(d.machine_delivery_note||'')}" placeholder="Seller delivery, buyer pickup or road transport note"></div></div><div class="sell-dynamic-section spare-fields ${chosenType==='spare'?'':'hidden-fields'}"><h3>Spare part identity</h3><div class="sell-form-grid"><input class="spare-self-required" name="part_number" value="${esc(d.part_number||'')}" placeholder="OEM / part number (required)"><input class="spare-self-required" name="compatible_machine" value="${esc(d.compatible_machine||'')}" placeholder="Compatible machine or model (required)"><input name="sku_code" value="${esc(d.sku_code||'')}" placeholder="Seller SKU / alternate number"><input name="material" value="${esc(d.material||'')}" placeholder="Material / grade / teeth / blade size"></div></div>${dimensionTable}<div class="sell-form-grid"><input name="weight_kg" value="${esc(d.weight_kg||'')}" type="number" step="0.1" placeholder="Weight kg"><select name="state">${stateOptions(d.state||'')}</select><input name="district" value="${esc(d.district||'')}" placeholder="District"><input name="city" value="${esc(d.city||'')}" placeholder="City / village"><input name="pincode" value="${esc(d.pincode||'')}" placeholder="Pickup pincode" inputmode="numeric" maxlength="6"></div><textarea name="description" placeholder="Condition, exact location, fitment notes, defects, warranty, delivery and negotiation notes">${esc(d.description||'')}</textarea><label class="file-label">Product photos or videos<input name="images" type="file" accept="image/*,video/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.mp4,.webm,.mov,.m4v,.heic,.heif" multiple></label><div class="notice" id="sellerFeePreview">${editProduct&&Number(d.price)?`Listing price: <b>${money(Number(d.price))}</b> • Seller commission: <b>${money(sellerFee(Number(d.price)))}</b> (${commissionLabel(Number(d.price))}) • Your payout before delivery/refund adjustments: <b>${money(Number(d.price)-sellerFee(Number(d.price)))}</b>`:'Enter price to preview your slab commission and payout.'}</div><button class="primary">${editProduct?'Save Changes':'Publish Listing'}</button></div><div class="assisted-listing-fields ${chosenMode==='assisted'&&chosenType?'':'hidden-fields'}"><div class="assisted-pack"><b>Professional listing request</b><span>Pay ${money(ASSISTED_LISTING_FEE)} for this item. Send basic details now; our team will prepare the exact final listing.</span></div><input type="hidden" name="assist_item_type" value="${esc(chosenType)}"><div class="assist-type-pill">${chosenType==='spare'?'Spare part request':chosenType==='machine'?'Machinery request':'Choose item type above'}</div><div class="sell-form-grid"><input name="assist_name" value="${esc(d.assist_name||'')}" placeholder="Your name"><input name="assist_phone" value="${esc(d.assist_phone||'')}" placeholder="Phone number"><select name="assist_condition"><option ${assistCondition==='Used'?'selected':''}>Used</option><option ${assistCondition==='New'?'selected':''}>New</option><option ${assistCondition==='Refurbished'?'selected':''}>Refurbished</option><option ${assistCondition==='Factory Stock'?'selected':''}>Factory Stock</option></select><input name="assist_title" value="${esc(d.assist_title||'')}" placeholder="Machine / part name"><input name="assist_qty" value="${esc(d.assist_qty||'')}" inputmode="numeric" placeholder="Quantity"><input name="assist_expected_price" value="${esc(formatINRInput(d.assist_expected_price)||'')}" inputmode="numeric" placeholder="Expected selling price"><input name="assist_location" value="${esc(d.assist_location||'')}" placeholder="City / village and pincode"><input class="assist-spare-required spare-fields ${chosenType==='spare'?'':'hidden-fields'}" name="assist_part_number" value="${esc(d.assist_part_number||'')}" placeholder="OEM / part number (required for spare part)"></div><textarea name="assist_note" placeholder="Add any note: brand, model, photos available, size, compatibility, condition, pickup or delivery requirement">${esc(d.assist_note||'')}</textarea><button class="primary">Pay ${money(ASSISTED_LISTING_FEE)} and send request</button></div></form></section>${sellerListingsPanel()}`;
   }
 
   function listingSpecSummary(fd,type){
@@ -1236,7 +1333,7 @@
     if(!state.user) return '';
     const rows=myProducts().sort((a,b)=>new Date(b.created_at||0)-new Date(a.created_at||0));
     if(!rows.length) return `<section class="page-card my-listings-panel"><div class="section-head compact"><h2>My listings</h2><span class="badge">0</span></div><p class="muted">Your listings will appear here after you publish them.</p></section>`;
-    return `<section class="page-card my-listings-panel"><div class="section-head compact"><h2>My listings</h2><span class="badge">${rows.length}</span></div><div class="seller-listing-list">${rows.map(p=>`<div class="seller-listing-row"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'"><div><b>${esc(p.title||'Product')}</b><span>${money(p.price)} • ${esc(p.category||'Product')} • ${esc(p.status||'approved')}</span></div><div class="seller-listing-actions"><button class="ghost" onclick="HP.route('product',{id:'${esc(p.id)}'})">Open</button><button class="danger" onclick="HP.deleteOwnProduct('${esc(p.id)}')">Delete</button></div></div>`).join('')}</div></section>`;
+    return `<section class="page-card my-listings-panel"><div class="section-head compact"><h2>My listings</h2><span class="badge">${rows.length}</span></div><div class="seller-listing-list">${rows.map(p=>`<div class="seller-listing-row"><div class="seller-listing-thumb">${productMedia(p)}</div><div><b>${esc(p.title||'Product')}</b><span>${money(p.price)} / ${esc(productSaleUnit(p))} • ${esc(p.category||'Product')} • ${esc(p.status||'approved')}</span></div><div class="seller-listing-actions"><button class="ghost" onclick="HP.route('product',{id:'${esc(p.id)}'})">Open</button><button class="secondary" onclick="HP.route('sell',{id:'${esc(p.id)}'})">Edit</button><button class="danger" onclick="HP.deleteOwnProduct('${esc(p.id)}')">Delete</button></div></div>`).join('')}</div></section>`;
   }
   async function submitSellerVerification(form){
     if(!state.user)return route('login');
@@ -1281,11 +1378,13 @@
     const fd=new FormData(form);
     const sellType=String(fd.get('sell_type')||'');
     const listingService=String(fd.get('listing_service')||'');
+    const editId=String(fd.get('edit_id')||'').trim();
+    const editingProduct=editId ? myProducts().find(p=>String(p.id)===String(editId)) : null;
     if(!sellType) return toast('Choose machinery or spare part first.');
     if(!listingService) return toast('Choose self listing or professional listing.');
     if(listingService==='assisted') return submitAssistedListingRequest(form);
     const limit=currentListingLimit(); const used=userListingCount();
-    if(used>=limit){ toast(`Your ${activePlan()?.name||'Free'} plan allows ${limitLabel(limit)} listings. Upgrade to list more.`); setTimeout(()=>route('membership'),700); return; }
+    if(!editingProduct && used>=limit){ toast(`Your ${activePlan()?.name||'Free'} plan allows ${limitLabel(limit)} listings. Upgrade to list more.`); setTimeout(()=>route('membership'),700); return; }
     const title=String(fd.get('title')||'').trim();
     if(!title) return toast('Enter product name');
     if(sellType==='spare' && !String(fd.get('part_number')||'').trim()) return toast('Enter OEM or part number for the spare part.');
@@ -1294,17 +1393,25 @@
     if(!price || price<1) return toast('Enter a valid listing price');
     const listingQty=parsePrice(fd.get('listing_qty'));
     if(!listingQty || listingQty<1) return toast('Enter quantity available');
+    const saleUnit=String(fd.get('sale_unit')||((sellType==='machine')?'machine':'piece')).trim();
     let image_urls=[]; const files=[...(fd.getAll('images')||[])].filter(f=>f&&f.name);
     if(sb&&files.length){
       for(const f of files){
         const path=`${state.user.id}/${Date.now()}-${f.name.replace(/[^a-z0-9.]/gi,'-')}`;
         const {error}=await sb.storage.from('product-images').upload(path,f,{upsert:true});
-        if(error) return toast('Image upload failed: '+error.message);
+        if(error) return toast('Photo or video upload failed: '+error.message);
         const {data}=sb.storage.from('product-images').getPublicUrl(path); if(data?.publicUrl) image_urls.push(data.publicUrl);
       }
     }
+    if(!sb && files.length){
+      image_urls=(await Promise.all(files.slice(0,6).map(fileToDataUrl))).filter(Boolean);
+    }
+    if(editingProduct && !image_urls.length){
+      image_urls=productImages(editingProduct).filter(src=>src && src!==placeholder(editingProduct.category));
+    }
     const detailLines=[
       `Quantity available: ${listingQty}`,
+      `Sale unit: ${saleUnitLabel(saleUnit)}`,
       sellType==='machine' && `Machinery details: Year/hours ${fd.get('machine_year')||'not added'}, capacity ${fd.get('machine_capacity')||'not added'}, delivery note ${fd.get('machine_delivery_note')||'not added'}`,
       sellType==='spare' && `Spare part details: OEM/part number ${fd.get('part_number')||'not added'}, compatible machine ${fd.get('compatible_machine')||'not added'}, seller SKU ${fd.get('sku_code')||'not added'}, material/grade ${fd.get('material')||'not added'}`,
       listingSpecSummary(fd,sellType).length && `Specification table:\n${listingSpecSummary(fd,sellType).join('\n')}`,
@@ -1312,7 +1419,29 @@
       fd.get('listing_service')==='assisted' && `Assisted listing requested: ${money(ASSISTED_LISTING_FEE)} per item.`
     ].filter(Boolean);
     const description=[fd.get('description'),...detailLines].filter(Boolean).join('\n\n');
-    const payload={user_id:state.user.id,seller_id:state.seller?.id||null,sell_type:sellType,condition:fd.get('condition')||'Used',title:fd.get('title'),price,category:fd.get('category'),brand:fd.get('brand'),model:fd.get('model'),weight_kg:Number(fd.get('weight_kg')||0),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),pincode:fd.get('pincode')||'',description,image_urls,status:'approved'};
+    const payload={user_id:state.user.id,seller_id:state.seller?.id||null,sell_type:sellType,condition:fd.get('condition')||'Used',title:fd.get('title'),price,category:fd.get('category'),brand:fd.get('brand'),model:fd.get('model'),weight_kg:Number(fd.get('weight_kg')||0),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),pincode:fd.get('pincode')||'',description,image_urls,status:editingProduct?.status||'approved'};
+    if(editingProduct){
+      const updatePayload={...payload,updated_at:new Date().toISOString()};
+      if(sb){
+        let {error}=await sb.from('products').update(updatePayload).eq('id',editId).eq('user_id',state.user.id);
+        if(error && /seller_id|pincode|updated_at/i.test(String(error.message||''))){
+          const fallback={...updatePayload};
+          delete fallback.seller_id; delete fallback.pincode; delete fallback.updated_at;
+          const res=await sb.from('products').update(fallback).eq('id',editId).eq('user_id',state.user.id);
+          error=res.error;
+        }
+        if(error) return toast(error.message);
+        await loadProducts();
+      } else {
+        Object.assign(editingProduct, updatePayload, {id:editId});
+        localStorage.hp_products=JSON.stringify(state.products);
+      }
+      await sendAdminNotice('listing_updated','Product listing updated', `${state.profile?.full_name||state.user.email||'Seller'} updated ${payload.title} for ${money(payload.price)}`, {...payload,id:editId,seller_email:state.user.email||'',seller_phone:state.profile?.phone||''});
+      clearFormDraft('sellFormDraft');
+      toast('Listing updated. Your changes are live.');
+      route('market');
+      return;
+    }
     if(sb){
       let {error}=await sb.from('products').insert(payload);
       if(error && /seller_id|pincode/i.test(String(error.message||''))){ const fallback={...payload}; delete fallback.seller_id; delete fallback.pincode; const res=await sb.from('products').insert(fallback); error=res.error; }
@@ -1579,6 +1708,121 @@
     return (state.admin.siteSlides&&state.admin.siteSlides.length?state.admin.siteSlides:state.siteSlides).map(sl=>`<details class="admin-detail-card"><summary><div><b>${esc(sl.title||'Slide')}</b><p>${esc(sl.cta_text||'Open')} → ${esc(sl.cta_route||'market')}</p><small>${sl.active===false?'Hidden':'Live'} • order ${Number(sl.sort_order||0)}</small></div><span class="badge ${sl.active===false?'danger-soft':'verified'}">${sl.active===false?'Hidden':'Live'}</span></summary><div class="info-list"><div><span>Subtitle</span><b>${esc(sl.subtitle||'')}</b></div><div><span>Image</span><b data-no-translate>${esc(sl.image_url||'Default image')}</b></div></div>${sl.id?`<div class="approval-actions"><button class="secondary" onclick="HP.toggleCarouselSlide('${esc(sl.id)}',${sl.active===false?'true':'false'})">${sl.active===false?'Show':'Hide'}</button><button class="danger" onclick="HP.deleteCarouselSlide('${esc(sl.id)}')">Delete</button></div>`:''}</details>`).join('') || empty('No carousel slides yet.');
   }
   function adminCarouselPanel(){ return ''; }
+  function analyticsSessionId(){
+    if(!localStorage.hp_analytics_session_id){
+      localStorage.hp_analytics_session_id='hp-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,9);
+    }
+    return localStorage.hp_analytics_session_id;
+  }
+  function analyticsDevice(){
+    const w=innerWidth||0;
+    const ua=navigator.userAgent||'';
+    if(/ipad|tablet/i.test(ua)) return 'tablet';
+    if(w<=760 || /mobile|android|iphone|ipod/i.test(ua)) return 'mobile';
+    return 'desktop';
+  }
+  function analyticsStoreLocal(event){
+    try{
+      const rows=JSON.parse(localStorage.hp_site_analytics||'[]');
+      rows.unshift(event);
+      localStorage.hp_site_analytics=JSON.stringify(rows.slice(0,500));
+    }catch(e){}
+  }
+  function normalizedAnalyticsEvents(){
+    const remote=Array.isArray(state.admin.analytics)?state.admin.analytics:[];
+    let local=[];
+    try{ local=JSON.parse(localStorage.hp_site_analytics||'[]'); }catch(e){}
+    const seen=new Set();
+    return [...remote,...local].map(e=>({
+      event_type:e.event_type||e.type||'page_view',
+      route:e.route||e.path||e.metadata?.route||'home',
+      product_id:e.product_id||e.metadata?.product_id||'',
+      session_id:e.session_id||e.session||'local',
+      user_id:e.user_id||'guest',
+      lang:e.lang||e.language||'en',
+      device:e.device||'desktop',
+      referrer:e.referrer||'direct',
+      created_at:e.created_at||e.ts||new Date().toISOString()
+    })).filter(e=>{ const key=[e.session_id,e.event_type,e.route,e.product_id,e.created_at].join('|'); if(seen.has(key)) return false; seen.add(key); return true; });
+  }
+  async function trackAnalyticsEvent(type='page_view', extra={}){
+    try{
+      const routeName=extra.route || state.route || parseRoute()[0] || 'home';
+      const productId=extra.product_id || state.currentProduct || '';
+      const now=Date.now();
+      const key=[type,routeName,productId,extra.query||'',extra.category||''].join('|');
+      if(type==='page_view' && window.__hpLastAnalyticsKey===key && now-Number(window.__hpLastAnalyticsAt||0)<8000) return;
+      if(type==='search' && window.__hpLastAnalyticsKey===key && now-Number(window.__hpLastAnalyticsAt||0)<2500) return;
+      window.__hpLastAnalyticsKey=key;
+      window.__hpLastAnalyticsAt=now;
+      const event={
+        event_type:type,
+        route:routeName,
+        product_id:productId||null,
+        user_id:state.user?.id||null,
+        session_id:analyticsSessionId(),
+        lang:state.lang||localStorage.hp_lang||'en',
+        device:analyticsDevice(),
+        referrer:document.referrer || 'direct',
+        user_agent:navigator.userAgent||'',
+        metadata:{...extra, screen:`${screen.width}x${screen.height}`},
+        created_at:new Date(now).toISOString()
+      };
+      analyticsStoreLocal(event);
+      if(sb){
+        sb.from('site_analytics').insert(event).then(()=>{}).catch(()=>{});
+      }
+    }catch(e){}
+  }
+  function setupAnalytics(){
+    analyticsSessionId();
+    if(!window.__hpAnalyticsSetup){
+      window.__hpAnalyticsSetup=true;
+      document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') trackAnalyticsEvent('resume',{route:state.route}); });
+      window.addEventListener('beforeunload',()=>trackAnalyticsEvent('leave',{route:state.route}));
+      window.__hpAnalyticsHeartbeat=setInterval(()=>{ if(document.visibilityState==='visible') trackAnalyticsEvent('heartbeat',{route:state.route,product_id:state.currentProduct||''}); },60000);
+      window.__hpAdminAnalyticsRefresh=setInterval(()=>{ if(state.route==='admin'&&isAdminUser()) refreshAdminAnalytics(); },15000);
+    }
+  }
+  function countBy(rows,keyFn){
+    return rows.reduce((map,row)=>{ const key=keyFn(row)||'Unknown'; map[key]=(map[key]||0)+1; return map; },{});
+  }
+  function adminAnalyticsBars(counts,total){
+    const entries=Object.entries(counts||{}).sort((a,b)=>b[1]-a[1]).slice(0,6);
+    if(!entries.length) return empty('No analytics events yet.');
+    return entries.map(([label,value])=>`<div class="analytics-bar"><span>${esc(label)}</span><b>${value}</b><i style="width:${Math.max(7,Math.round((value/Math.max(total,1))*100))}%"></i></div>`).join('');
+  }
+  function adminAnalyticsBody(){
+    const rows=normalizedAnalyticsEvents();
+    const now=Date.now();
+    const since5=now-5*60*1000;
+    const since30=now-30*60*1000;
+    const today=new Date(); today.setHours(0,0,0,0);
+    const ts=row=>new Date(row.created_at||0).getTime()||0;
+    const liveSessions=new Set(rows.filter(r=>ts(r)>=since5).map(r=>r.session_id)).size;
+    const active30=new Set(rows.filter(r=>ts(r)>=since30).map(r=>r.session_id)).size;
+    const viewsToday=rows.filter(r=>r.event_type==='page_view' && ts(r)>=today.getTime()).length;
+    const productViews=rows.filter(r=>r.event_type==='page_view' && r.route==='product').length;
+    const searches=rows.filter(r=>r.event_type==='search').length;
+    const topRoutes=countBy(rows.filter(r=>r.event_type==='page_view'),r=>r.route);
+    const devices=countBy(rows,r=>r.device);
+    const langs=countBy(rows,r=>r.lang);
+    const referrers=countBy(rows,r=>String(r.referrer||'direct').replace(/^https?:\/\//,'').split('/')[0]||'direct');
+    const recent=rows.sort((a,b)=>ts(b)-ts(a)).slice(0,10).map(r=>`<div class="analytics-event"><b>${esc(r.event_type)}</b><span>${esc(r.route)}${r.product_id?' / '+esc(r.product_id):''}</span><small>${new Date(r.created_at).toLocaleString('en-IN')} • ${esc(r.device)} • ${esc(r.lang)}</small></div>`).join('');
+    return `<div class="analytics-kpi-grid"><div><small>Live now</small><b>${liveSessions}</b><span>Unique sessions in 5 min</span></div><div><small>Last 30 min</small><b>${active30}</b><span>Active sessions</span></div><div><small>Views today</small><b>${viewsToday}</b><span>Page views</span></div><div><small>Product views</small><b>${productViews}</b><span>Listing detail opens</span></div><div><small>Searches</small><b>${searches}</b><span>Marketplace searches</span></div></div><div class="analytics-columns"><div><h3>Top pages</h3>${adminAnalyticsBars(topRoutes,rows.length)}</div><div><h3>Device mix</h3>${adminAnalyticsBars(devices,rows.length)}</div><div><h3>Language mix</h3>${adminAnalyticsBars(langs,rows.length)}</div><div><h3>Referrers</h3>${adminAnalyticsBars(referrers,rows.length)}</div></div><div class="analytics-recent"><h3>Recent activity</h3>${recent||empty('No recent activity yet.')}</div>`;
+  }
+  function adminAnalyticsPanel(){
+    if(!isAdminUser()) return '';
+    return `<section class="page-card admin-panel admin-analytics-panel" id="adminAnalyticsPanel"><div class="section-head compact"><h2>Website analytics</h2><span class="badge live-badge">Live tracking</span></div><p class="muted">Track visitors, active users, page views, product views, devices, languages and search activity without opening another dashboard.</p><div id="adminAnalyticsBody">${adminAnalyticsBody()}</div></section>`;
+  }
+  async function refreshAdminAnalytics(){
+    if(!sb||!isAdminUser()) return;
+    try{
+      const {data,error}=await sb.from('site_analytics').select('*').order('created_at',{ascending:false}).limit(800);
+      if(!error&&data) state.admin.analytics=data;
+      const wrap=$('#adminAnalyticsBody'); if(wrap) wrap.innerHTML=adminAnalyticsBody();
+    }catch(e){}
+  }
   async function saveCarouselSlide(form){
     if(!sb||!isAdminUser()) return toast('Admin access required');
     const fd=new FormData(form); const payload={title:fd.get('title'),subtitle:fd.get('subtitle'),image_url:fd.get('image_url')||'',cta_text:fd.get('cta_text')||'Open',cta_route:normalizeRouteName(fd.get('cta_route')||'market'),sort_order:Number(fd.get('sort_order')||10),active:true,updated_at:new Date().toISOString()};
@@ -1609,8 +1853,8 @@
       <div class="admin-owner-row"><img src="./logo-192.png" alt=""><div><span class="badge owner">ADMIN CONTROL CENTER</span><h1>Platform Owner Dashboard</h1><p data-no-translate>${esc(state.user.email||'')}</p></div></div>
       <div class="admin-quick-actions"><button class="primary" data-route="sell">List Product</button><button class="secondary" data-route="market">View Marketplace</button><button class="ghost" data-route="orders">Orders</button></div>
     </section>
-    <section class="page-card admin-nav-strip"><button onclick="document.getElementById('sellerApprovalList')?.scrollIntoView({behavior:'smooth',block:'start'})">Seller approvals</button><button onclick="document.getElementById('approvedProductsList')?.scrollIntoView({behavior:'smooth',block:'start'})">Products</button><button onclick="document.getElementById('adminOrdersList')?.scrollIntoView({behavior:'smooth',block:'start'})">Orders</button><button onclick="document.getElementById('adminMoneyList')?.scrollIntoView({behavior:'smooth',block:'start'})">Money & payouts</button><button onclick="document.getElementById('adminRanksList')?.scrollIntoView({behavior:'smooth',block:'start'})">Badges</button><button onclick="document.getElementById('adminMembershipList')?.scrollIntoView({behavior:'smooth',block:'start'})">Plans</button></section>
-    ${adminIdentityPanel()}${adminNotificationsPanel()}${adminAssistedListingPanel()}${adminCarouselPanel()}
+    <section class="page-card admin-nav-strip"><button onclick="document.getElementById('adminAnalyticsPanel')?.scrollIntoView({behavior:'smooth',block:'start'})">Analytics</button><button onclick="document.getElementById('sellerApprovalList')?.scrollIntoView({behavior:'smooth',block:'start'})">Seller approvals</button><button onclick="document.getElementById('approvedProductsList')?.scrollIntoView({behavior:'smooth',block:'start'})">Products</button><button onclick="document.getElementById('adminOrdersList')?.scrollIntoView({behavior:'smooth',block:'start'})">Orders</button><button onclick="document.getElementById('adminMoneyList')?.scrollIntoView({behavior:'smooth',block:'start'})">Money & payouts</button><button onclick="document.getElementById('adminRanksList')?.scrollIntoView({behavior:'smooth',block:'start'})">Badges</button><button onclick="document.getElementById('adminMembershipList')?.scrollIntoView({behavior:'smooth',block:'start'})">Plans</button></section>
+    ${adminIdentityPanel()}${adminAnalyticsPanel()}${adminNotificationsPanel()}${adminAssistedListingPanel()}${adminCarouselPanel()}
     <section class="admin-kpi-grid">
       <div class="admin-kpi"><small>Total GMV</small><b>${adminMoney(gross)}</b><span>All checkout value</span></div>
       <div class="admin-kpi"><small>Paid Revenue</small><b>${adminMoney(paid)}</b><span>Paid / shipped / delivered</span></div>
@@ -1739,6 +1983,7 @@
     state.admin.ledger=await safe(()=>sb.from('seller_ledger').select('*, users(email,full_name,phone)').order('created_at',{ascending:false}).limit(160));
     state.admin.siteSlides=await safe(()=>sb.from('site_carousel_slides').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:false}).limit(50));
     state.admin.notifications=await safe(()=>sb.from('admin_notifications').select('*').order('created_at',{ascending:false}).limit(60));
+    state.admin.analytics=await safe(()=>sb.from('site_analytics').select('*').order('created_at',{ascending:false}).limit(800));
     await prepareAdminDocUrls(state.admin.sellers);
     refreshAdminLists();
   }
@@ -1767,6 +2012,7 @@
     const ml=$('#adminMembershipList'); if(ml) ml.innerHTML=adminMembershipList(state.admin.memberships);
     const money=$('#adminMoneyList'); if(money) money.innerHTML=adminMoneyList();
     const car=$('#adminCarouselList'); if(car) car.innerHTML=adminCarouselRows();
+    const analytics=$('#adminAnalyticsBody'); if(analytics) analytics.innerHTML=adminAnalyticsBody();
   }
   async function loadAdminSellers(){ await loadAdminProData(); }
   function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'This admin action needs the latest database setup. Please update the database and try again.'; return msg; }
@@ -1809,6 +2055,11 @@
     const p=(state.products||[]).find(x=>String(x.id)===String(id)) || (state.admin.products||[]).find(x=>String(x.id)===String(id));
     if(!p||!sb||!p.user_id) return;
     try{ await sb.from('messages').insert({sender_id:state.user.id,receiver_id:p.user_id,product_id:id,message:`Admin notice for ${p.title||'your listing'}: ${reason}`,is_read:false}); }catch(e){}
+  }
+  function startNewListing(){
+    clearFormDraft('sellFormDraft');
+    state.currentProduct=null;
+    route('sell');
   }
   async function deleteOwnProduct(id){
     if(!state.user) return route('login');
@@ -2006,7 +2257,7 @@
   }
 
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
-  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||state.currentProduct; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='rewards')html=rewardsPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
+  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||null; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='rewards')html=rewardsPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); trackAnalyticsEvent('page_view',{route:state.route,product_id:state.currentProduct||''}); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
   function bindPage(){
     ensureProductReportButton();
     $$('#app input, #app textarea, #app select').forEach(el=>el.addEventListener('click',e=>e.stopPropagation()));
@@ -2117,7 +2368,7 @@
       const radio=form.querySelector(`input[name="sell_type"][value="${type}"]`); if(radio) radio.checked=true;
       if(select){
         const old=preferredCategory || select.value || '';
-        select.innerHTML=categoryOptionsFor(type || 'machine');
+        select.innerHTML=categoryOptionsFor(type || 'machine', old);
         if([...select.options].some(o=>o.value===old)) select.value=old;
       }
       syncSellerFormVisibility(form);
@@ -2156,10 +2407,10 @@
   function openGallery(id,index=0){
     const p=state.products.find(x=>String(x.id)===String(id)); if(!p)return;
     const imgs=productImages(p); window.__hpGallery={id:String(id),index:Number(index)||0,imgs};
-    const lb=document.getElementById('photoLightbox'); const img=document.getElementById('lightboxImage'); const cnt=document.getElementById('lightboxCount');
-    if(!lb||!img)return; img.src=imgs[window.__hpGallery.index]||imgs[0]; if(cnt)cnt.textContent=`${window.__hpGallery.index+1} / ${imgs.length}`; lb.classList.add('show'); document.body.classList.add('lightbox-open');
+    const lb=document.getElementById('photoLightbox'); const box=document.getElementById('lightboxMedia'); const cnt=document.getElementById('lightboxCount');
+    if(!lb||!box)return; box.innerHTML=mediaMarkup(imgs[window.__hpGallery.index]||imgs[0],p.title||'Product media'); if(cnt)cnt.textContent=`${window.__hpGallery.index+1} / ${imgs.length}`; lb.classList.add('show'); document.body.classList.add('lightbox-open');
   }
-  function stepGallery(delta){ const g=window.__hpGallery; if(!g||!g.imgs?.length)return; g.index=(g.index+delta+g.imgs.length)%g.imgs.length; const img=document.getElementById('lightboxImage'); const cnt=document.getElementById('lightboxCount'); if(img)img.src=g.imgs[g.index]; if(cnt)cnt.textContent=`${g.index+1} / ${g.imgs.length}`; }
+  function stepGallery(delta){ const g=window.__hpGallery; if(!g||!g.imgs?.length)return; g.index=(g.index+delta+g.imgs.length)%g.imgs.length; const box=document.getElementById('lightboxMedia'); const cnt=document.getElementById('lightboxCount'); const p=state.products.find(x=>String(x.id)===String(g.id)); if(box)box.innerHTML=mediaMarkup(g.imgs[g.index],p?.title||'Product media'); if(cnt)cnt.textContent=`${g.index+1} / ${g.imgs.length}`; }
   function closeGallery(){ document.getElementById('photoLightbox')?.classList.remove('show'); document.body.classList.remove('lightbox-open'); }
   function bindPhotoLightbox(){
     const lb=document.getElementById('photoLightbox');
@@ -2196,10 +2447,12 @@
     if(sort==='condition_used') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='used');
     if(sort==='price_low') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
     if(sort==='price_high') arr.sort((a,b)=>Number(b.price||0)-Number(a.price||0));
-    const grid=$('#marketGrid'); if(grid){ grid.innerHTML=localizeHtml(arr.map(productCard).join('')||empty('No matching products')); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,20); }
+    const grid=$('#marketGrid'); if(grid){ grid.innerHTML=localizeHtml(arr.map(productCardNew).join('')||empty('No matching products')); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,20); }
     updateSearchSuggestions();
+    clearTimeout(window.__hpSearchAnalyticsTimer);
+    window.__hpSearchAnalyticsTimer=setTimeout(()=>trackAnalyticsEvent('search',{route:'market',query:q,type,category:cat,results:arr.length}),650);
   }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,reorderOrder,deleteOrder,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,equipBadge,openGallery,closeGallery,stepGallery,selectMessageThread,reportProduct};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,startNewListing,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,reorderOrder,deleteOrder,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,equipBadge,openGallery,closeGallery,stepGallery,selectMessageThread,reportProduct};
   document.addEventListener('DOMContentLoaded',init);
 })();
