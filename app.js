@@ -17,11 +17,12 @@
   }
   function publicProfileFor(uid,product=null){
     if(String(uid||'')===String(state.user?.id||'') && state.profile) return state.profile;
-    return state.publicProfiles?.[String(uid||'')] || product?.users || {};
+    const snapshot=product ? {full_name:product.seller_name||'',avatar_url:product.seller_avatar_url||'',headline:product.seller_headline||'',city:product.seller_city||'',state:product.seller_state||''} : {};
+    return {...snapshot,...(product?.users||{}),...(state.publicProfiles?.[String(uid||'')]||{})};
   }
   function sellerDisplayName(product={},profile=null){
     const p=profile || publicProfileFor(product.user_id,product);
-    return p?.full_name || product.users?.full_name || product.sellers?.business_name || 'Verified seller';
+    return p?.full_name || product.seller_name || product.users?.full_name || product.sellers?.business_name || 'Verified seller';
   }
   function avatarMarkup(profile={},name='Seller',className=''){
     const url=String(profile?.avatar_url||'').trim();
@@ -69,7 +70,7 @@
   const ADMIN_ALERT_EMAIL = cfg.ADMIN_ALERT_EMAIL || ADMIN_EMAIL;
   const ASSISTED_LISTING_FEE = 19;
   const ROAD_TRANSPORT_RATE_PER_KM = 60;
-  const LAUNCH_CLEAN_VERSION = 'v113';
+  const LAUNCH_CLEAN_VERSION = 'v114';
   const LIVE_FINANCE_START = new Date(cfg.LIVE_FINANCE_START || '2026-05-24T00:00:00+05:30').getTime();
   const COMMISSION_SLABS = [
     {upto:5000, rate:0.035, label:'3.5% under Rs. 5,000'},
@@ -794,6 +795,23 @@
     return [...arr, ...demo];
   }
 
+  async function hydrateProductPublicProfiles(products=[]){
+    if(!sb||!Array.isArray(products)||!products.length) return products;
+    const ids=[...new Set(products.map(p=>String(p.user_id||'')).filter(Boolean))].slice(0,500);
+    if(!ids.length) return products;
+    try{
+      const {data,error}=await sb.from('public_seller_profiles').select('*').in('auth_id',ids);
+      if(error||!data) return products;
+      const byId=new Map(data.map(profile=>[String(profile.auth_id),profile]));
+      data.forEach(profile=>{ state.publicProfiles[String(profile.auth_id)]=profile; });
+      products.forEach(product=>{
+        const profile=byId.get(String(product.user_id||''));
+        if(profile) product.users={...(product.users||{}),...profile};
+      });
+    }catch(e){}
+    return products;
+  }
+
   async function loadProducts(){
     if(sb){
       const baseCols='*, sellers(business_name,status), users(email,full_name,badge_title,active_membership,membership_key,membership_title)';
@@ -809,6 +827,7 @@
         const fallback=await buildQuery(baseCols); data=fallback.data; error=fallback.error;
       }
       if(!error && data){
+        await hydrateProductPublicProfiles(data);
         const products=withDemoCatalog(data);
         state.products=products;
         const cats=[...new Set(products.map(p=>p.category).filter(Boolean))];
