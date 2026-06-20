@@ -4,14 +4,39 @@
   const sb = hasConfig && window.supabase ? window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY) : null;
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
   const PHONE_OTP_ENABLED = cfg.ENABLE_PHONE_OTP === true || String(cfg.ENABLE_PHONE_OTP || '').toLowerCase() === 'true';
-  const state = { user:null, profile:null, seller:null, products:[], cart:[], wishlist:[], siteSlides:[], messages:[], unreadMessages:0, factIndex:0, route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[],notifications:[],analytics:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
-  const VALID_ROUTES = new Set(['home','market','product','cart','checkout','login','account','sell','messages','orders','admin','membership','rewards','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
+  const state = { user:null, profile:null, seller:null, products:[], reviews:[], publicProfiles:{}, cart:[], wishlist:[], siteSlides:[], messages:[], unreadMessages:0, factIndex:0, route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],reviews:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[],notifications:[],analytics:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
+  const VALID_ROUTES = new Set(['home','market','product','seller','cart','checkout','login','account','sell','messages','orders','admin','membership','rewards','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
   function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',badges:'rewards',rewards:'rewards',order:'orders',message:'messages',parts:'market',browse:'market',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','disputes':'dispute-policy','grievance-redressal':'grievance'}[r] || r); }
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const app = $('#app');
   function isAdminUser(){ return (state.profile?.role==='admin') || ((state.user?.email||'').toLowerCase()===ADMIN_EMAIL); }
   function esc(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function profileInitials(name='HP'){
+    return String(name||'HP').split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase() || 'HP';
+  }
+  function publicProfileFor(uid,product=null){
+    if(String(uid||'')===String(state.user?.id||'') && state.profile) return state.profile;
+    return state.publicProfiles?.[String(uid||'')] || product?.users || {};
+  }
+  function sellerDisplayName(product={},profile=null){
+    const p=profile || publicProfileFor(product.user_id,product);
+    return p?.full_name || product.users?.full_name || product.sellers?.business_name || 'Verified seller';
+  }
+  function avatarMarkup(profile={},name='Seller',className=''){
+    const url=String(profile?.avatar_url||'').trim();
+    const initials=profileInitials(name);
+    return `<span class="profile-photo ${esc(className)}">${url?`<img src="${esc(url)}" alt="${esc(name)}" onerror="this.style.display='none';this.nextElementSibling.style.display='grid'"><i style="display:none">${esc(initials)}</i>`:`<i>${esc(initials)}</i>`}</span>`;
+  }
+  function reviewStats(sellerId){
+    const rows=(state.reviews||[]).filter(r=>String(r.seller_id)===String(sellerId) && String(r.status||'approved')!=='hidden');
+    const average=rows.length ? rows.reduce((sum,r)=>sum+Number(r.rating||0),0)/rows.length : 0;
+    return {rows,average,count:rows.length};
+  }
+  function ratingStars(value=0){
+    const rounded=Math.round(Number(value||0));
+    return `<span class="rating-stars" aria-label="${Number(value||0).toFixed(1)} out of 5">${[1,2,3,4,5].map(n=>`<i class="${n<=rounded?'filled':''}">★</i>`).join('')}</span>`;
+  }
 
 
   const RANK_RULES = [
@@ -44,7 +69,7 @@
   const ADMIN_ALERT_EMAIL = cfg.ADMIN_ALERT_EMAIL || ADMIN_EMAIL;
   const ASSISTED_LISTING_FEE = 19;
   const ROAD_TRANSPORT_RATE_PER_KM = 60;
-  const LAUNCH_CLEAN_VERSION = 'v112';
+  const LAUNCH_CLEAN_VERSION = 'v113';
   const LIVE_FINANCE_START = new Date(cfg.LIVE_FINANCE_START || '2026-05-24T00:00:00+05:30').getTime();
   const COMMISSION_SLABS = [
     {upto:5000, rate:0.035, label:'3.5% under Rs. 5,000'},
@@ -78,9 +103,10 @@
     const mine=(products||[]).filter(p=>String(p.user_id||'')===String(uid));
     const approved=mine.filter(p=>p.status==='approved').length;
     const pending=mine.filter(p=>p.status==='pending').length;
-    let pts=approved*120 + pending*25 + mine.length*15;
+    let pts=approved*120 + pending*25;
     if(user?.profile_completed) pts+=50;
     if(seller?.status==='approved') pts+=180;
+    pts=Math.max(pts,Number(user?.points||0));
     if((user?.role==='admin') || ((state.user?.email||user?.email||'').toLowerCase()===ADMIN_EMAIL)) pts=999999;
     return pts;
   }
@@ -365,6 +391,21 @@
     await openRazorpayPayment({amount:plan.price,description:plan.name,prefill:{email:state.user.email||'',contact:state.profile?.phone||''},handler:async(resp)=>activate(resp.razorpay_payment_id||'razorpay_paid')});
   }
   function toast(msg){ const el=$('#toast'); el.textContent=localText(msg); el.classList.add('show'); setTimeout(()=>el.classList.remove('show'),2600); }
+  function showSuccessPopup(title='Changes completed',message='Your updates are now live across Harvester Parts.'){
+    let modal=$('#successPopup');
+    if(!modal){
+      modal=document.createElement('div'); modal.id='successPopup'; modal.className='success-popup';
+      modal.innerHTML='<div class="success-popup-card"><span class="success-check">✓</span><h2></h2><p></p><button class="primary" type="button">Done</button></div>';
+      document.body.appendChild(modal);
+      modal.querySelector('button')?.addEventListener('click',()=>modal.classList.remove('show'));
+      modal.addEventListener('click',e=>{ if(e.target===modal) modal.classList.remove('show'); });
+    }
+    modal.querySelector('h2').textContent=title;
+    modal.querySelector('p').textContent=message;
+    modal.classList.add('show');
+    clearTimeout(window.__hpSuccessPopupTimer);
+    window.__hpSuccessPopupTimer=setTimeout(()=>modal.classList.remove('show'),3600);
+  }
   function setFormLoading(form,on=true,msg='Working...'){
     if(!form) return;
     form.classList.toggle('is-loading', !!on);
@@ -496,7 +537,7 @@
     const langModal = $('#languageModal');
     const languageChosen = localStorage.hp_lang_done==='1' || localStorage.hp_lang_seen==='1' || !!localStorage.hp_lang;
     langModal?.classList.toggle('show', !languageChosen);
-    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadSiteContent(); await loadFinanceData(); await loadMessages(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime(); setupAnalytics();
+    bindShell(); applyLang(); await loadSession(); await loadProducts(); await loadSellerReviews(); await loadSiteContent(); await loadFinanceData(); await loadMessages(); loadCart(); loadWishlist(); syncMenu(); render(); setupScroll(); setupFinanceRealtime(); setupProfileRealtime(); setupAnalytics();
     if(languageChosen || !langModal?.classList.contains('show')) scheduleInstallPrompt(1200);
   }
   function scheduleInstallPrompt(delay=700){
@@ -538,6 +579,21 @@
     $('#scrollTop')?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
   }
   function setupScroll(){ window.addEventListener('scroll',()=>$('#scrollTop')?.classList.toggle('show',scrollY>650)); }
+  function setupPageMotion(){
+    const targets=$$('#app > section,#app .page-card,#app .product-card,#app .admin-fold,#app .admin-console-fold').filter((el,i,arr)=>!arr.some(other=>other!==el&&other.contains(el)&&other.classList.contains('product-card')));
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches||!('IntersectionObserver' in window)){
+      targets.forEach(el=>el.classList.add('motion-visible')); return;
+    }
+    window.__hpMotionObserver?.disconnect();
+    window.__hpMotionObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{
+      entry.target.classList.toggle('motion-visible',entry.isIntersecting);
+    }),{threshold:.06,rootMargin:'40px 0px -7% 0px'});
+    targets.forEach((el,index)=>{
+      el.classList.add('motion-reveal'); el.style.setProperty('--motion-delay',`${Math.min(index%5,4)*34}ms`);
+      const rect=el.getBoundingClientRect(); if(rect.top<innerHeight*.96&&rect.bottom>0) el.classList.add('motion-visible');
+      window.__hpMotionObserver.observe(el);
+    });
+  }
 
   async function loadSession(){
     if(!sb) return;
@@ -657,6 +713,7 @@
     $('#logoutBtn')?.classList.toggle('hidden',!state.user);
     $('#menuName') && ($('#menuName').textContent=state.profile?.full_name || state.user?.email || tx('Guest'));
     $('#menuRole') && ($('#menuRole').textContent=isAdmin?'Founder 1 of 1 • Platform Founder':(state.profile?.membership_title || state.profile?.badge_title || tx('Buyer / Seller')));
+    const menuAvatar=$('#sideMenu .menu-head img'); if(menuAvatar){ menuAvatar.src=state.profile?.avatar_url||'./logo-192.png'; menuAvatar.alt=state.profile?.full_name||'Harvester Parts'; menuAvatar.onerror=()=>{menuAvatar.src='./logo-192.png';}; }
     $('#sideMenu')?.classList.toggle('founder-menu', !!isAdmin);
     $('#sideMenu')?.classList.toggle('member-menu', !!state.profile?.active_membership && !isAdmin);
     $$('[data-admin-only]').forEach(el=>el.style.display=isAdmin?'':'none');
@@ -739,15 +796,18 @@
 
   async function loadProducts(){
     if(sb){
-      const cols='*, sellers(business_name,status), users(email,full_name,badge_title,active_membership,membership_key,membership_title)';
-      let query=sb.from('products').select(cols);
-      if(isAdminUser()){
-        query=query.order('status',{ascending:true}).order('is_boosted',{ascending:false}).order('created_at',{ascending:false});
-      } else {
+      const baseCols='*, sellers(business_name,status), users(email,full_name,badge_title,active_membership,membership_key,membership_title)';
+      const profileCols='*, sellers(business_name,status), users(email,full_name,badge_title,active_membership,membership_key,membership_title,avatar_url,headline,bio,city,state,business_type,experience_years,profile_completed,created_at,role,points)';
+      const buildQuery=(cols)=>{
+        let query=sb.from('products').select(cols);
+        if(isAdminUser()) return query.order('status',{ascending:true}).order('is_boosted',{ascending:false}).order('created_at',{ascending:false});
         const visibleUid = state.user?.id || '00000000-0000-0000-0000-000000000000';
-        query=query.or(`status.eq.approved,user_id.eq.${visibleUid}`).order('is_boosted',{ascending:false}).order('created_at',{ascending:false});
+        return query.or(`status.eq.approved,user_id.eq.${visibleUid}`).order('is_boosted',{ascending:false}).order('created_at',{ascending:false});
+      };
+      let {data,error}=await buildQuery(profileCols);
+      if(error && /avatar_url|headline|bio|business_type|experience_years/i.test(String(error.message||''))){
+        const fallback=await buildQuery(baseCols); data=fallback.data; error=fallback.error;
       }
-      const {data,error}=await query;
       if(!error && data){
         const products=withDemoCatalog(data);
         state.products=products;
@@ -765,6 +825,41 @@
     state.stats.products=liveLocal.length;
     state.stats.categories=[...new Set(liveLocal.map(p=>p.category).filter(Boolean))].length;
     state.stats.sellers=[...new Set(liveLocal.map(p=>p.user_id||p.seller_id).filter(Boolean))].length;
+  }
+  async function loadSellerReviews(){
+    if(sb){
+      try{
+        const {data,error}=await sb.from('seller_reviews').select('*').order('created_at',{ascending:false}).limit(600);
+        if(!error&&data){ state.reviews=data; return; }
+      }catch(e){}
+    }
+    try{ state.reviews=JSON.parse(localStorage.hp_seller_reviews||'[]'); }catch(e){ state.reviews=[]; }
+  }
+  async function loadPublicProfile(userId){
+    const id=String(userId||'');
+    if(!id||state.publicProfiles[id]||window.__hpPublicProfileLoading===id) return;
+    window.__hpPublicProfileLoading=id;
+    let profile=(state.products||[]).find(p=>String(p.user_id)===id)?.users || null;
+    if(sb){
+      try{
+        const {data,error}=await sb.from('public_seller_profiles').select('*').eq('auth_id',id).maybeSingle();
+        if(!error&&data) profile=data;
+      }catch(e){}
+    }
+    if(profile) state.publicProfiles[id]=profile;
+    window.__hpPublicProfileLoading='';
+    if(state.route==='seller'&&String(state.currentProduct||'')===id) render();
+  }
+  function setupProfileRealtime(){
+    if(!sb||window.__hpProfileRealtime) return;
+    try{
+      window.__hpProfileRealtime=sb.channel('public-profile-sync').on('postgres_changes',{event:'UPDATE',schema:'public',table:'users'},payload=>{
+        const updated=payload.new||{}; const id=String(updated.auth_id||updated.user_id||''); if(!id) return;
+        state.publicProfiles[id]={...(state.publicProfiles[id]||{}),...updated};
+        state.products.forEach(product=>{ if(String(product.user_id)===id) product.users={...(product.users||{}),...updated}; });
+        if(!shouldHoldRender()) render();
+      }).subscribe();
+    }catch(e){}
   }
   
   function loadCart(){ state.cart=JSON.parse(localStorage.hp_cart||'[]'); updateCartCount(); }
@@ -937,6 +1032,58 @@
     const loc=[p.city,p.district,p.state].filter(Boolean).join(', ') || 'Location shared by seller';
     const related=visibleProducts().filter(x=>String(x.id)!==String(p.id) && (String(x.category||'').toLowerCase()===String(p.category||'').toLowerCase() || String(x.sell_type||'')===String(p.sell_type||''))).slice(0,8);
     return `<section class="product-page"><div class="gallery page-card product-gallery"><div class="main-product-photo" onclick="HP.openGallery('${esc(p.id)}',0)">${mediaMarkup(imgs[0],p.title||'Product')}<span class="photo-count">${imgs.length} media${imgs.length>1?' files':''}</span></div>${imgs.length>1?`<div class="gallery-thumbs">${imgs.map((img,i)=>`<button onclick="HP.openGallery('${esc(p.id)}',${i})">${mediaMarkup(img,p.title||'Product')}</button>`).join('')}</div>`:''}</div><aside class="detail-stack sticky-buy"><div class="page-card"><span class="badge verified">Verified Farm Listing</span><h1>${esc(p.title||'Agricultural Product')}</h1><p class="muted">${esc(p.category||'Spare Part')} • ${esc(p.brand||'Harvester Parts')} ${p.model?`• ${esc(p.model)}`:''}</p><div class="price">${money(p.price)} <small>/ ${esc(productSaleUnit(p))}</small></div><p class="muted">Confirm final price, freight, dimensions and availability before payment.</p><div class="seller-mini-card"><b>${esc(sellerName)}</b><span>${esc(loc)}</span></div><div class="actions"><button class="primary" onclick="HP.buyNow('${esc(p.id)}')">Buy Now</button><button class="secondary" onclick="HP.addToCart('${esc(p.id)}')">Add to Cart</button><button class="ghost" onclick="HP.toggleWishlist('${esc(p.id)}')">Wishlist</button><button class="ghost" onclick="HP.route('messages',{id:'${esc(p.id)}'})">Message Seller</button></div></div><div class="summary-card buyer-only-card"><h3>Buyer assurance</h3><div class="summary-row"><span>Verified seller</span><b>Seller verified</b></div><div class="summary-row"><span>Payment</span><b>Secure checkout</b></div><div class="summary-row"><span>Delivery</span><b>${matchesProductType(p,'machine')?'Road / seller coordination':'Courier for spare parts'}</b></div></div></aside></section><section class="page-card"><h2>Product details</h2><p>${esc(p.description||'Agricultural machinery or spare part listing from a verified seller. Confirm compatibility, condition, dimensions and delivery details before final purchase.')}</p><div class="stats"><div class="stat"><b>${esc(p.condition||'Stock')}</b><span>Condition</span></div><div class="stat"><b>${esc(p.weight_kg||'—')} kg</b><span>Weight</span></div><div class="stat"><b>${esc(p.state||'India')}</b><span>Location</span></div><div class="stat"><b>${esc(p.views||0)}</b><span>Views</span></div></div></section>${related.length?`<section class="product-carousel-section related-products"><div class="section-head"><h2>Similar products</h2><p class="muted">Related listings from the same category, like Amazon or Flipkart style product discovery.</p></div><div class="product-row-carousel">${related.map(productCardNew).join('')}</div></section>`:''}<div id="photoLightbox" class="photo-lightbox" aria-hidden="true"><button class="lightbox-close" onclick="HP.closeGallery()">×</button><button class="lightbox-nav prev" onclick="HP.stepGallery(-1)">‹</button><div id="lightboxMedia" class="lightbox-media">${mediaMarkup(imgs[0],p.title||'Product media')}</div><button class="lightbox-nav next" onclick="HP.stepGallery(1)">›</button><div id="lightboxCount" class="lightbox-count">1 / ${imgs.length}</div></div>`;
+  }
+  function publicSellerPoints(uid,profile={},seller={},products=[]){
+    const mine=(products||[]).filter(p=>String(p.user_id)===String(uid));
+    const approved=mine.filter(p=>p.status==='approved').length;
+    const pending=mine.filter(p=>p.status==='pending').length;
+    let points=approved*120+pending*25+(profile.profile_completed?50:0)+(seller.status==='approved'?180:0);
+    points=Math.max(points,Number(profile.points||0));
+    if(profile.role==='admin'||String(profile.email||'').toLowerCase()===ADMIN_EMAIL) return 999999;
+    return points;
+  }
+  function productPageV113(id){
+    const p=state.products.find(x=>String(x.id)===String(id));
+    if(!p) return emptyPage('Product not found');
+    const imgs=productImages(p); const profile=publicProfileFor(p.user_id,p); const sellerName=sellerDisplayName(p,profile);
+    const loc=[p.city,p.district,p.state].filter(Boolean).join(', ') || [profile.city,profile.state].filter(Boolean).join(', ') || 'Location shared by seller';
+    const ratings=reviewStats(p.user_id);
+    const related=visibleProducts().filter(x=>String(x.id)!==String(p.id) && (String(x.category||'').toLowerCase()===String(p.category||'').toLowerCase() || String(x.sell_type||'')===String(p.sell_type||''))).slice(0,8);
+    return `<section class="product-page"><div class="gallery page-card product-gallery"><div class="main-product-photo" onclick="HP.openGallery('${esc(p.id)}',0)">${mediaMarkup(imgs[0],p.title||'Product')}<span class="photo-count">${imgs.length} media${imgs.length>1?' files':''}</span></div>${imgs.length>1?`<div class="gallery-thumbs">${imgs.map((img,i)=>`<button onclick="HP.openGallery('${esc(p.id)}',${i})">${mediaMarkup(img,p.title||'Product')}</button>`).join('')}</div>`:''}</div><aside class="detail-stack sticky-buy"><div class="page-card"><span class="badge verified">Verified Farm Listing</span><h1>${esc(p.title||'Agricultural Product')}</h1><p class="muted">${esc(p.category||'Spare Part')} • ${esc(p.brand||'Harvester Parts')} ${p.model?`• ${esc(p.model)}`:''}</p><div class="price">${money(p.price)} <small>/ ${esc(productSaleUnit(p))}</small></div><p class="muted">Confirm final price, freight, dimensions and availability before payment.</p><div class="seller-mini-card seller-mini-v113">${avatarMarkup(profile,sellerName,'seller-card-photo')}<div><b>${esc(sellerName)}</b><span>${ratings.count?`${ratings.average.toFixed(1)} rating • ${ratings.count} review${ratings.count===1?'':'s'}`:'New verified seller'}</span><small>${esc(loc)}</small></div><button class="ghost" onclick="HP.route('seller',{id:'${esc(p.user_id)}'})">Visit Profile</button></div><div class="actions"><button class="primary" onclick="HP.buyNow('${esc(p.id)}')">Buy Now</button><button class="secondary" onclick="HP.addToCart('${esc(p.id)}')">Add to Cart</button><button class="ghost" onclick="HP.toggleWishlist('${esc(p.id)}')">Wishlist</button><button class="ghost" onclick="HP.route('messages',{id:'${esc(p.id)}'})">Message Seller</button></div></div><div class="summary-card buyer-only-card"><h3>Buyer assurance</h3><div class="summary-row"><span>Seller</span><b>${esc(sellerName)}</b></div><div class="summary-row"><span>Rating</span><b>${ratings.count?ratings.average.toFixed(1)+' / 5':'New seller'}</b></div><div class="summary-row"><span>Payment</span><b>Secure checkout</b></div><div class="summary-row"><span>Delivery</span><b>${matchesProductType(p,'machine')?'Road / seller coordination':'Courier for spare parts'}</b></div></div></aside></section><section class="page-card product-detail-v113"><h2>Product details</h2><p>${esc(p.description||'Agricultural machinery or spare part listing from a verified seller. Confirm compatibility, condition, dimensions and delivery details before final purchase.')}</p><div class="stats"><div class="stat"><b>${esc(p.condition||'Stock')}</b><span>Condition</span></div><div class="stat"><b>${esc(p.weight_kg||'—')} kg</b><span>Weight</span></div><div class="stat"><b>${esc(p.state||'India')}</b><span>Location</span></div><div class="stat"><b>${esc(p.views||0)}</b><span>Views</span></div></div></section>${related.length?`<section class="product-carousel-section related-products"><div class="section-head"><h2>Similar products</h2><p class="muted">More verified listings related to this item.</p></div><div class="product-row-carousel">${related.map(productCardNew).join('')}</div></section>`:''}<div id="photoLightbox" class="photo-lightbox" aria-hidden="true"><button class="lightbox-close" onclick="HP.closeGallery()">×</button><button class="lightbox-nav prev" onclick="HP.stepGallery(-1)">‹</button><div id="lightboxMedia" class="lightbox-media">${mediaMarkup(imgs[0],p.title||'Product media')}</div><button class="lightbox-nav next" onclick="HP.stepGallery(1)">›</button><div id="lightboxCount" class="lightbox-count">1 / ${imgs.length}</div></div>`;
+  }
+  function sellerReviewCards(sellerId){
+    const rows=reviewStats(sellerId).rows.slice(0,20);
+    if(!rows.length) return `<div class="seller-review-empty"><b>No reviews yet</b><span>Marketplace buyers can be the first to rate this seller.</span></div>`;
+    return rows.map(review=>`<article class="seller-review-card"><div><b>${String(review.reviewer_id)===String(state.user?.id)?'You':'Marketplace buyer'}</b>${ratingStars(review.rating)}</div><p>${esc(review.comment||'Rating submitted without a written review.')}</p><small>${new Date(review.created_at||Date.now()).toLocaleDateString('en-IN')}</small></article>`).join('');
+  }
+  function sellerProfilePage(userId){
+    const id=String(userId||''); const listings=visibleProducts().filter(p=>String(p.user_id)===id); const sample=listings[0]||state.products.find(p=>String(p.user_id)===id);
+    const profile=publicProfileFor(id,sample); const seller=sample?.sellers || (id===String(state.user?.id)?state.seller:{}) || {};
+    if(!sample&&!profile?.full_name) return `<section class="page-card"><h1>Seller profile</h1><p class="muted">Loading public seller details...</p></section>`;
+    const name=profile.full_name || sample?.users?.full_name || seller.business_name || 'Verified seller';
+    const ratings=reviewStats(id); const points=publicSellerPoints(id,profile,seller,state.products); const rank=rankForPoints(points);
+    const location=[profile.city,profile.state].filter(Boolean).join(', ') || [sample?.city,sample?.state].filter(Boolean).join(', ') || 'India';
+    const joined=profile.created_at?new Date(profile.created_at).toLocaleDateString('en-IN',{month:'short',year:'numeric'}):'Harvester Parts member';
+    const isOwn=id===String(state.user?.id||'');
+    const action=isOwn?`<button class="primary" data-route="account">Edit My Profile</button>`:(sample?`<button class="primary" onclick="HP.route('messages',{id:'${esc(sample.id)}'})">Message Seller</button>`:'');
+    const reviewForm=!state.user?`<button class="secondary" data-route="login">Login to Rate Seller</button>`:isOwn?`<p class="muted">Reviews are written by other marketplace members.</p>`:`<form id="sellerReviewForm" class="seller-review-form"><input type="hidden" name="seller_id" value="${esc(id)}"><div class="rating-input" role="radiogroup" aria-label="Seller rating">${[5,4,3,2,1].map(n=>`<label><input type="radio" name="rating" value="${n}" required><span>${n} ★</span></label>`).join('')}</div><textarea name="comment" maxlength="400" placeholder="Share a useful review about communication, product accuracy or delivery"></textarea><button class="primary">Submit Rating</button></form>`;
+    return `<section class="seller-storefront"><div class="seller-profile-hero page-card"><div class="seller-cover-band"></div><div class="seller-profile-top">${avatarMarkup(profile,name,'seller-profile-photo')}<div class="seller-profile-title"><span class="badge verified">Verified Seller</span><h1>${esc(name)}</h1><p>${esc(profile.headline||profile.business_type||'Agricultural machinery and spare parts seller')}</p><div class="seller-public-meta"><span>${esc(location)}</span><span>Member since ${esc(joined)}</span><span>${esc(rank.title)}</span></div></div><div class="seller-profile-actions">${action}</div></div><div class="seller-profile-stats"><div><b>${listings.length}</b><span>Live listings</span></div><div><b>${ratings.count?ratings.average.toFixed(1):'New'}</b><span>Seller rating</span></div><div><b>${ratings.count}</b><span>Reviews</span></div><div><b>${points>=999999?'MAX':points}</b><span>Trust points</span></div></div></div><div class="seller-store-layout"><section class="seller-store-main"><div class="seller-store-tabs"><span class="active">Listings</span><span>About</span><span>Reviews</span></div><div class="seller-listing-showcase"><div class="section-head compact"><div><h2>Seller listings</h2><p class="muted">Current products from this verified seller.</p></div></div><div class="grid seller-store-grid">${listings.map(productCardNew).join('')||empty('No live listings at the moment.')}</div></div><div class="page-card seller-reviews-section"><div class="section-head compact"><div><h2>Seller reviews</h2><p class="muted">Ratings help buyers understand seller communication and listing accuracy.</p></div><span class="badge">${ratings.count?ratings.average.toFixed(1)+' / 5':'New'}</span></div><div class="seller-review-list">${sellerReviewCards(id)}</div>${reviewForm}</div></section><aside class="seller-store-sidebar"><div class="page-card seller-about-card"><h2>About seller</h2><p>${esc(profile.bio||'This verified seller has not added a public introduction yet.')}</p><div class="info-list"><div><span>Profile type</span><b>${esc(profile.business_type||'Seller')}</b></div><div><span>Experience</span><b>${profile.experience_years?esc(profile.experience_years)+' years':'Not added'}</b></div><div><span>Location</span><b>${esc(location)}</b></div><div><span>Verification</span><b>Approved seller</b></div></div></div><div class="page-card seller-safety-card"><h3>Safe marketplace profile</h3><p>Private contact details, identity documents, bank information and pickup address are hidden.</p></div></aside></div></section>`;
+  }
+  async function submitSellerReview(form){
+    if(!state.user) return route('login');
+    const fd=new FormData(form); const sellerId=String(fd.get('seller_id')||''); const rating=Number(fd.get('rating')||0); const comment=String(fd.get('comment')||'').trim();
+    if(!sellerId||sellerId===String(state.user.id)) return toast('You cannot rate your own seller profile.');
+    if(rating<1||rating>5) return toast('Choose a rating from 1 to 5.');
+    const payload={seller_id:sellerId,reviewer_id:state.user.id,rating,comment,status:'approved',updated_at:new Date().toISOString()};
+    if(sb){
+      const {error}=await sb.from('seller_reviews').upsert(payload,{onConflict:'seller_id,reviewer_id'});
+      if(error) return toast('Review could not be saved. Run SUPABASE-PROFILES-REVIEWS.sql once, then try again.');
+    } else {
+      const old=(state.reviews||[]).find(r=>String(r.seller_id)===sellerId&&String(r.reviewer_id)===String(state.user.id));
+      if(old) Object.assign(old,payload); else state.reviews.unshift({...payload,id:'local-review-'+Date.now(),created_at:new Date().toISOString()});
+      localStorage.hp_seller_reviews=JSON.stringify(state.reviews);
+    }
+    await loadSellerReviews(); render(); showSuccessPopup('Rating submitted','Your seller review is now visible on this public profile.');
   }
   function categoriesPage(){
     const machines=AGRI_CATEGORIES.filter(c=>c.group==='Machines').map(categoryCard).join('');
@@ -1205,6 +1352,62 @@
   }
 
   async function saveProfile(form){ if(!sb||!state.user)return; const fd=new FormData(form); const {error}=await sb.from('users').update({full_name:fd.get('full_name'),phone:fd.get('phone')||state.user.phone||'',gender:fd.get('gender'),profile_completed:true}).eq('auth_id',state.user.id); if(error)toast(error.message); else{toast('Profile saved'); await loadSession(); syncMenu(); render();} }
+  function accountPageV113(){
+    if(!state.user) return loginPage();
+    const isAdmin=isAdminUser();
+    const profile=state.profile||{};
+    const profileName=profile.full_name || state.user.user_metadata?.full_name || '';
+    const email=state.user.email || 'Phone login account';
+    const fullName=profileName || email;
+    const phone=profile.phone || state.user.phone || '';
+    const uid=profile.user_uid || ('HP-'+String(state.user.id||'account').replaceAll('-','').slice(0,8).toUpperCase());
+    const pts=userPoints(); const rank=rankForPoints(pts); const memberPlan=activePlan();
+    const role=isAdmin?'Platform Founder • 1 of 1':(memberPlan?.title || profile.membership_title || profile.badge_title || (state.seller?.status==='approved'?'Verified Seller':'Buyer / Seller'));
+    const myProducts=state.products.filter(p=>String(p.user_id||'')===String(state.user.id));
+    const approvedListings=myProducts.filter(p=>p.status==='approved').length;
+    const pendingListings=myProducts.filter(p=>p.status!=='approved').length;
+    const sellerStatus=state.seller?.status || (isAdmin?'approved':'not verified');
+    const ratings=reviewStats(state.user.id);
+    const publicProfileButton=(state.seller?.status==='approved'||isAdmin)?`<button class="secondary" onclick="HP.route('seller',{id:'${esc(state.user.id)}'})">View Public Profile</button>`:'';
+    return `<section class="profile-page profile-page-v113">${userBanner()}<div class="profile-cover page-card ${isAdmin?'founder-profile-cover':''}">${avatarMarkup(profile,fullName,'profile-photo-large')}<div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${esc(fullName)}</h1><p>${esc(profile.headline||'Agricultural marketplace member')}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${esc(role)}</span></div><div class="profile-id"><span data-no-translate>${esc(uid)}</span> • <span>${esc(rank.title)}</span> • <span>${esc(sellerStatus)}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${ratings.count?ratings.average.toFixed(1):'New'}</b><span>Rating</span></div><div><b>${pts>=999999?'MAX':pts}</b><span>Points</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell an Item</button>${publicProfileButton}<button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card profile-edit-v113"><div class="section-head compact"><div><h2>Edit profile</h2><p class="muted">Public seller information updates across your listings.</p></div><span class="badge">Private controls</span></div><form id="profileForm" class="form profile-form profile-form-v113"><div class="profile-photo-editor">${avatarMarkup(profile,fullName,'profile-photo-edit')}<label class="secondary avatar-upload-button">Change photo<input name="avatar" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif"></label><small>Square JPG, PNG or WebP works best.</small></div><div class="profile-form-grid"><label><span>Full name</span><input name="full_name" value="${esc(profileName)}" placeholder="Full name" required autocomplete="name"></label><label><span>Phone number</span><input name="phone" type="tel" value="${esc(phone)}" placeholder="Phone number" autocomplete="tel"></label><label><span>Gender</span><select name="gender"><option value="">Prefer not to say</option><option value="Male" ${profile.gender==='Male'?'selected':''}>Male</option><option value="Female" ${profile.gender==='Female'?'selected':''}>Female</option><option value="Other" ${profile.gender==='Other'?'selected':''}>Other</option></select></label><label><span>Profile type</span><select name="business_type"><option value="">Select profile type</option>${['Farmer','Dealer','Agency','Workshop','Machine Owner','Parts Supplier','Other'].map(x=>`<option ${profile.business_type===x?'selected':''}>${x}</option>`).join('')}</select></label><label><span>Public city</span><input name="city" value="${esc(profile.city||state.seller?.city||'')}" placeholder="City / district"></label><label><span>Public state</span><select name="state">${stateOptions(profile.state||state.seller?.state||'')}</select></label><label><span>Experience</span><input name="experience_years" type="number" min="0" max="80" value="${esc(profile.experience_years||'')}" placeholder="Years in agriculture"></label><label class="wide"><span>Public headline</span><input name="headline" maxlength="90" value="${esc(profile.headline||'')}" placeholder="Example: Combine harvester parts dealer in Punjab"></label><label class="wide"><span>About you or your business</span><textarea name="bio" maxlength="500" placeholder="Describe your machinery, spare parts, experience and service area">${esc(profile.bio||'')}</textarea></label></div><div class="profile-privacy-note"><b>Public:</b> photo, name, headline, bio, city/state, rating, rank and listings. <b>Private:</b> email, phone and gender.</div><button class="primary">Save Profile Changes</button></form></div><div class="page-card profile-info-card"><h2>Private account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${esc(uid)}</b></div><div><span>Email</span><b data-no-translate>${esc(email)}</b></div><div><span>Phone</span><b>${esc(phone||'Not added')}</b></div><div><span>Gender</span><b>${esc(profile.gender||'Not shared')}</b></div><div><span>Seller status</span><b>${esc(sellerStatus)}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div>${rankProgressCard()}${membershipMiniCard()}${accountBalanceCard()}${payoutAccountCard()}${badgeCollectionCard()}<div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Enter Marketplace</button><button class="ghost" data-route="messages">Messages</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div><div class="page-card profile-info-card"><h2>Trust and privacy</h2><p class="muted">Your public seller page never displays your email, phone number, gender, Aadhaar, bank details or pickup address.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Private contact details</span></div></div></div></section>`;
+  }
+  async function saveProfileV113(form){
+    if(!state.user) return route('login');
+    const fd=new FormData(form);
+    const fullName=String(fd.get('full_name')||'').trim();
+    if(fullName.length<2) return toast('Enter your full name.');
+    let avatarUrl=state.profile?.avatar_url||'';
+    const avatarFile=fd.get('avatar');
+    if(avatarFile&&avatarFile.name){
+      if(avatarFile.size>6*1024*1024) return toast('Profile photo must be under 6 MB.');
+      if(sb){
+        const safeName=avatarFile.name.replace(/[^a-z0-9.]/gi,'-');
+        const path=`${state.user.id}/avatar-${Date.now()}-${safeName}`;
+        const {error}=await sb.storage.from('profile-avatars').upload(path,avatarFile,{upsert:true,contentType:avatarFile.type||undefined});
+        if(error) return toast('Profile photo upload failed. Run SUPABASE-PROFILES-REVIEWS.sql once, then try again.');
+        const {data}=sb.storage.from('profile-avatars').getPublicUrl(path); avatarUrl=data?.publicUrl||avatarUrl;
+      } else avatarUrl=await fileToDataUrl(avatarFile);
+    }
+    const patch={full_name:fullName,phone:String(fd.get('phone')||state.user.phone||'').trim(),gender:String(fd.get('gender')||''),avatar_url:avatarUrl,headline:String(fd.get('headline')||'').trim(),bio:String(fd.get('bio')||'').trim(),city:String(fd.get('city')||'').trim(),state:String(fd.get('state')||'').trim(),business_type:String(fd.get('business_type')||'').trim(),experience_years:Number(fd.get('experience_years')||0)||null,profile_completed:true,updated_at:new Date().toISOString()};
+    if(sb){
+      let {error}=await sb.from('users').update(patch).eq('auth_id',state.user.id);
+      if(error&&/avatar_url|headline|bio|business_type|experience_years|updated_at/i.test(String(error.message||''))){
+        const basic={full_name:patch.full_name,phone:patch.phone,gender:patch.gender,profile_completed:true};
+        const fallback=await sb.from('users').update(basic).eq('auth_id',state.user.id); error=fallback.error;
+        if(!error) toast('Basic profile saved. Run the profile upgrade SQL to enable photo and public seller details.');
+      }
+      if(error) return toast(error.message);
+      try{ await sb.auth.updateUser({data:{full_name:patch.full_name,avatar_url:patch.avatar_url}}); }catch(e){}
+    }
+    state.profile={...(state.profile||{}),...patch};
+    if(state.user.user_metadata) state.user.user_metadata={...state.user.user_metadata,full_name:patch.full_name,avatar_url:patch.avatar_url};
+    state.publicProfiles[String(state.user.id)]={...state.profile};
+    state.products.forEach(product=>{ if(String(product.user_id)===String(state.user.id)) product.users={...(product.users||{}),...patch}; });
+    if(!sb) localStorage.hp_local_profile=JSON.stringify(state.profile);
+    if(sb){ await loadSession(); await loadProducts(); }
+    syncMenu(); render();
+    showSuccessPopup('Profile updated','Your new name, photo and public seller details are now live across your listings.');
+  }
   function sellerStatusCard(){
     const st=(state.seller?.status||state.seller?.verification_status||'not_submitted').toLowerCase();
     if(st==='approved') return '';
@@ -1466,14 +1669,14 @@
     if(!state.user) return loginPage();
     const pid=state.currentProduct;
     const p=state.products.find(x=>String(x.id)===String(pid));
-    const sellerName=p ? (p.sellers?.business_name || p.users?.full_name || p.users?.email || 'Seller') : '';
+    const sellerName=p ? sellerDisplayName(p) : '';
     const intro=p ? `You are messaging ${esc(sellerName)} about ${esc(p.title||'this listing')}.` : 'Use in-app chat for order and product questions.';
     const prefill=p ? `Hello, I am interested in ${p.title||'your product'} listed for ${money(p.price)}. Please confirm availability, condition and final price.` : '';
     return `<section class="page-card"><h1>Messages</h1><div class="notice">${intro}</div><form id="messageForm" class="form"><input name="to" value="${esc(sellerName)}" placeholder="Seller name" readonly><input type="hidden" name="product_id" value="${esc(pid||'')}"><textarea name="message" placeholder="Write message">${esc(prefill)}</textarea><button class="primary">Send Message</button></form></section><section class="page-card message-inbox"><div class="section-head compact"><h2>Message inbox</h2><span class="badge ${state.unreadMessages?'owner':''}">${state.unreadMessages} new</span></div>${messageRows()}</section>`;
   }
   function threadKeyFor(receiverId, productId=''){ return `${receiverId||'unknown'}|${productId||'general'}`; }
   function messageProduct(productId){ return (state.products||[]).find(x=>String(x.id)===String(productId)); }
-  function messageProductSellerName(p){ return p ? (p.sellers?.business_name || p.users?.full_name || p.users?.email || 'Seller') : 'Marketplace user'; }
+  function messageProductSellerName(p){ return p ? sellerDisplayName(p) : 'Marketplace user'; }
   function messageThreads(){
     const uid=String(state.user?.id||'');
     const map=new Map();
@@ -1890,6 +2093,31 @@
     </div><div class="admin-panel"><div class="section-head compact"><h2>Membership purchases</h2><span class="badge owner">Rs. 19 to Rs. 499</span></div><div id="adminMembershipList">${adminMembershipList(memberships)}</div></div></details>`;
   }
 
+  function adminReviewsPanel(){
+    const rows=(state.admin.reviews?.length?state.admin.reviews:state.reviews)||[];
+    const content=rows.slice(0,40).map(review=>`<div class="admin-review-row"><div><b>${Number(review.rating||0)} / 5 seller rating</b><p>${esc(review.comment||'No written comment.')}</p><small>Seller ${esc(String(review.seller_id||'').slice(0,12))} • ${new Date(review.created_at||Date.now()).toLocaleDateString('en-IN')}</small></div><span class="badge ${review.status==='hidden'?'danger-soft':'verified'}">${esc(review.status||'approved')}</span><div class="approval-actions"><button class="secondary" onclick="HP.setReviewStatus('${esc(review.id)}','approved')">Approve</button><button class="danger" onclick="HP.setReviewStatus('${esc(review.id)}','hidden')">Hide</button></div></div>`).join('');
+    return `<div class="admin-panel admin-reviews-panel" id="adminReviewsPanel"><div class="section-head compact"><div><h2>Seller reviews</h2><p class="muted">Moderate ratings and remove abusive or irrelevant comments.</p></div><span class="badge">${rows.length}</span></div>${content||empty('No seller reviews yet.')}</div>`;
+  }
+  function adminPageV113(){
+    if(!isAdminUser()) return emptyPage('Admin access only');
+    const base=adminPage();
+    const identityStart=base.indexOf('<section class="page-card admin-panel admin-identity-control">');
+    const kpiStart=base.indexOf('<section class="admin-kpi-grid">');
+    if(identityStart<0||kpiStart<0) return base;
+    const pendingSellers=(state.admin.sellers||[]).filter(s=>['pending','provisional'].includes(s.status)).length;
+    const openReports=(state.admin.reports||[]).filter(r=>r.status==='open').length;
+    const assisted=(state.admin.notifications||[]).filter(n=>/assisted_listing|support_request|buyer_message/i.test(String(n.type||''))).length;
+    const consoleHtml=`<section class="admin-command-center"><div class="admin-attention-strip"><div><small>Seller approvals</small><b data-attention="sellers">${pendingSellers}</b></div><div><small>Open reports</small><b data-attention="reports">${openReports}</b></div><div><small>Assisted listings</small><b data-attention="assisted">${assisted}</b></div><div><small>Reviews</small><b data-attention="reviews">${(state.admin.reviews||state.reviews||[]).length}</b></div></div><details class="admin-console-fold" open><summary><b>Attention and notifications</b><span>Open</span></summary><div>${adminNotificationsPanel()}</div></details><details class="admin-console-fold"><summary><b>Website analytics</b><span>Live</span></summary><div>${adminAnalyticsPanel()}</div></details><details class="admin-console-fold"><summary><b>Assisted listing requests</b><span>${assisted}</span></summary><div>${adminAssistedListingPanel()}</div></details><details class="admin-console-fold"><summary><b>Seller reviews</b><span>${(state.admin.reviews||state.reviews||[]).length}</span></summary><div>${adminReviewsPanel()}</div></details><details class="admin-console-fold"><summary><b>Founder identity and access</b><span>Settings</span></summary><div>${adminIdentityPanel()}</div></details></section>`;
+    let output=base.slice(0,identityStart)+consoleHtml+base.slice(kpiStart);
+    output=output.replace('>Plans</button></section>','>Plans</button><button onclick="document.getElementById(\'adminReviewsPanel\')?.scrollIntoView({behavior:\'smooth\',block:\'start\'})">Reviews</button></section>');
+    return output;
+  }
+  async function setReviewStatus(id,status){
+    if(!isAdminUser()) return toast('Admin access required');
+    if(sb){ const {error}=await sb.from('seller_reviews').update({status,updated_at:new Date().toISOString()}).eq('id',id); if(error) return toast(error.message); }
+    const review=(state.admin.reviews||state.reviews||[]).find(r=>String(r.id)===String(id)); if(review) review.status=status;
+    await loadSellerReviews(); if(sb) await loadAdminProData(); render(); toast(`Review ${status}`);
+  }
   function adminRanksList(){
     const users=state.admin.users||[];
     const rows=(users.length?users:[state.profile].filter(Boolean)).slice(0,25).map(u=>{
@@ -1984,6 +2212,8 @@
     state.admin.siteSlides=await safe(()=>sb.from('site_carousel_slides').select('*').order('sort_order',{ascending:true}).order('created_at',{ascending:false}).limit(50));
     state.admin.notifications=await safe(()=>sb.from('admin_notifications').select('*').order('created_at',{ascending:false}).limit(60));
     state.admin.analytics=await safe(()=>sb.from('site_analytics').select('*').order('created_at',{ascending:false}).limit(800));
+    state.admin.reviews=await safe(()=>sb.from('seller_reviews').select('*').order('created_at',{ascending:false}).limit(300));
+    if(state.admin.reviews.length) state.reviews=state.admin.reviews;
     await prepareAdminDocUrls(state.admin.sellers);
     refreshAdminLists();
   }
@@ -2013,6 +2243,10 @@
     const money=$('#adminMoneyList'); if(money) money.innerHTML=adminMoneyList();
     const car=$('#adminCarouselList'); if(car) car.innerHTML=adminCarouselRows();
     const analytics=$('#adminAnalyticsBody'); if(analytics) analytics.innerHTML=adminAnalyticsBody();
+    const reviews=$('#adminReviewsPanel'); if(reviews) reviews.outerHTML=adminReviewsPanel();
+    const assisted=(state.admin.notifications||[]).filter(n=>/assisted_listing|support_request|buyer_message/i.test(String(n.type||''))).length;
+    const attention={sellers:(state.admin.sellers||[]).filter(s=>['pending','provisional'].includes(s.status)).length,reports:(state.admin.reports||[]).filter(r=>r.status==='open').length,assisted,reviews:(state.admin.reviews||state.reviews||[]).length};
+    Object.entries(attention).forEach(([key,value])=>{ const el=$(`[data-attention="${key}"]`); if(el) el.textContent=value; });
   }
   async function loadAdminSellers(){ await loadAdminProData(); }
   function statusPatchHint(error){ const msg=String(error?.message||error||''); if(msg.includes('check constraint')||msg.includes('banned')||msg.includes('aadhaar_back')) return 'This admin action needs the latest database setup. Please update the database and try again.'; return msg; }
@@ -2257,7 +2491,7 @@
   }
 
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
-  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||null; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPage(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPage(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='rewards')html=rewardsPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); trackAnalyticsEvent('page_view',{route:state.route,product_id:state.currentProduct||''}); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); }
+  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||null; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPageV113(state.currentProduct); else if(state.route==='seller')html=sellerProfilePage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPageV113(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPageV113(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='rewards')html=rewardsPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); setupPageMotion(); trackAnalyticsEvent('page_view',{route:state.route,product_id:state.currentProduct||''}); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); if(state.route==='seller')loadPublicProfile(state.currentProduct); }
   function bindPage(){
     ensureProductReportButton();
     $$('#app input, #app textarea, #app select').forEach(el=>el.addEventListener('click',e=>e.stopPropagation()));
@@ -2267,7 +2501,8 @@
     $('#googleLoginBtn')?.addEventListener('click',loginGoogle);
     $('#sendOtpBtn')?.addEventListener('click',()=>sendPhoneOtp(getOtpPhone()));
     $('#verifyOtpBtn')?.addEventListener('click',()=>verifyPhoneOtp(getOtpPhone(), $('#otpCodeInput')?.value.trim()));
-    $('#profileForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveProfile(e.target),'Saving...')});
+    $('#profileForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>saveProfileV113(e.target),'Saving profile...')});
+    $('#sellerReviewForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitSellerReview(e.target),'Submitting rating...')});
     bindFormDraft('sellerVerifyForm','sellerVerifyDraft');
     $('#sellerVerifyForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitSellerVerification(e.target),'Submitting verification...')});
     $('#sellForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitProduct(e.target),'Submitting listing...')});
@@ -2453,6 +2688,6 @@
     window.__hpSearchAnalyticsTimer=setTimeout(()=>trackAnalyticsEvent('search',{route:'market',query:q,type,category:cat,results:arr.length}),650);
   }
   function animateCounters(){ $$('[data-count]').forEach(el=>{ const target=Number(el.dataset.count||0); let n=0; const step=Math.max(1,Math.ceil(target/40)); const timer=setInterval(()=>{n+=step; if(n>=target){n=target;clearInterval(timer)} el.textContent=n.toLocaleString('en-IN');},18); }); }
-  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,startNewListing,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,reorderOrder,deleteOrder,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,equipBadge,openGallery,closeGallery,stepGallery,selectMessageThread,reportProduct};
+  window.HP={route,addToCart,buyNow,toggleWishlist,changeQty,removeCart,approveProduct,rejectProduct,removeProduct,banProduct,restoreProduct,deleteOwnProduct,startNewListing,approveSeller,rejectSeller,banSeller,restoreSeller,setOrderStatus,setReportStatus,setContactStatus,setReviewStatus,reorderOrder,deleteOrder,loginGoogle,sendPhoneOtp,verifyPhoneOtp,forgotPassword,getOtpPhone,purchaseMembership,savePayoutAccount,requestPayout,setPayoutStatus,saveAdminIdentity,saveCarouselSlide,toggleCarouselSlide,deleteCarouselSlide,equipBadge,openGallery,closeGallery,stepGallery,selectMessageThread,reportProduct};
   document.addEventListener('DOMContentLoaded',init);
 })();
