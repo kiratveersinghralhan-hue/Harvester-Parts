@@ -1546,6 +1546,17 @@
   };
   Object.keys(EXTRA_V108_MENU).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V108_MENU[l]); });
 
+  const EXTRA_V115_NAV = {
+    hi:{'Buy Parts':'पार्ट्स खरीदें','Machinery':'मशीनरी','Categories':'श्रेणियां','Request a Part':'पार्ट की मांग भेजें','Sell':'बेचें'},
+    pa:{'Buy Parts':'ਪਾਰਟਸ ਖਰੀਦੋ','Machinery':'ਮਸ਼ੀਨਰੀ','Categories':'ਸ਼੍ਰੇਣੀਆਂ','Request a Part':'ਪਾਰਟ ਦੀ ਮੰਗ ਭੇਜੋ','Sell':'ਵੇਚੋ'},
+    ta:{'Buy Parts':'பாகங்கள் வாங்குங்கள்','Machinery':'இயந்திரங்கள்','Categories':'வகைகள்','Request a Part':'பாகம் கோருங்கள்','Sell':'விற்க'},
+    te:{'Buy Parts':'పార్ట్స్ కొనండి','Machinery':'యంత్రాలు','Categories':'వర్గాలు','Request a Part':'పార్ట్ అభ్యర్థించండి','Sell':'అమ్మండి'},
+    bn:{'Buy Parts':'পার্টস কিনুন','Machinery':'মেশিনারি','Categories':'বিভাগ','Request a Part':'পার্টের অনুরোধ পাঠান','Sell':'বিক্রি করুন'},
+    mr:{'Buy Parts':'पार्ट्स खरेदी करा','Machinery':'मशिनरी','Categories':'श्रेणी','Request a Part':'पार्टची मागणी पाठवा','Sell':'विका'},
+    gu:{'Buy Parts':'પાર્ટ્સ ખરીદો','Machinery':'મશીનરી','Categories':'શ્રેણીઓ','Request a Part':'પાર્ટની વિનંતી મોકલો','Sell':'વેચો'}
+  };
+  Object.keys(EXTRA_V115_NAV).forEach(l => { DICT[l] = Object.assign(DICT[l] || {}, EXTRA_V115_NAV[l]); });
+
   const SKIP_SELECTOR = 'script,style,textarea,.language-grid,[data-no-translate]';
   const textOriginal = new WeakMap();
   const norm = s => String(s || '').replace(/\s+/g, ' ').trim();
@@ -1633,16 +1644,16 @@
     }
   }
   function syncShellLabels(resetText=false) {
-    const top = {home:'Home', market:'Buyer Marketplace', categories:'Farm Categories', sell:'Seller Tools', membership:'Seller Plans', rewards:'Rewards', support:'Support', admin:'Admin'};
+    const top = {home:'Home', market:'Buy Parts', categories:'Categories', sell:'Sell', membership:'Seller Plans', rewards:'Rewards', support:'Support', 'request-part':'Request a Part', admin:'Admin'};
     const side = {
       home:'Home', market:'Buyer Marketplace', categories:'Farm Categories', cart:'Cart', checkout:'Checkout',
       sell:'List Machinery or Spare Part', membership:'Seller Plans', rewards:'Badges & Titles', orders:'Order History', messages:'Messages',
-      account:'My Account', admin:'Admin Panel', how:'How it works', support:'Support', about:'About Us', contact:'Contact Us',
+      account:'My Account', admin:'Admin Panel', how:'How it works', support:'Support', about:'About Us', contact:'Contact Us', 'request-part':'Request a Part',
       legal:'Legal Centre', terms:'Terms & Conditions', privacy:'Privacy Policy', refund:'Refund & Cancellation',
       shipping:'Shipping & Delivery', razorpay:'Razorpay Payment Policy', 'payout-policy':'Seller Payout Policy', grievance:'Grievance Redressal'
     };
     const bottom = {home:'Home', market:'Buyer', sell:'+', membership:'Plans', account:'Account'};
-    document.querySelectorAll('.nav-tabs button[data-route], .side-menu button[data-route], .bottom-nav button[data-route]').forEach(btn => {
+    document.querySelectorAll('.nav-tabs button[data-route], .nav-tabs a[data-route], .side-menu button[data-route], .side-menu a[data-route], .bottom-nav button[data-route], .bottom-nav a[data-route]').forEach(btn => {
       if (btn.classList.contains('sell-fab')) {
         btn.dataset.rawText = '+';
         if (resetText && btn.textContent !== '+') btn.textContent = '+';
@@ -1650,6 +1661,7 @@
       }
       const route = btn.dataset.route || '';
       let raw = top[route] || btn.dataset.rawText || btn.textContent.trim();
+      if (route === 'market' && btn.dataset.type === 'machine') raw = 'Machinery';
       if (btn.closest('.side-menu')) raw = side[route] || raw;
       if (btn.closest('.bottom-nav')) raw = bottom[route] || raw;
       btn.dataset.rawText = raw;

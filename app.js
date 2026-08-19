@@ -5,13 +5,56 @@
   const ADMIN_EMAIL = (cfg.ADMIN_EMAIL || 'kiratveersinghralhan@gmail.com').toLowerCase();
   const PHONE_OTP_ENABLED = cfg.ENABLE_PHONE_OTP === true || String(cfg.ENABLE_PHONE_OTP || '').toLowerCase() === 'true';
   const state = { user:null, profile:null, seller:null, products:[], reviews:[], publicProfiles:{}, cart:[], wishlist:[], siteSlides:[], messages:[], unreadMessages:0, factIndex:0, route:'home', currentProduct:null, lang:localStorage.hp_lang || 'en', stats:{products:0,categories:0,sellers:0,orders:0}, admin:{orders:[],sellers:[],products:[],reports:[],contacts:[],plans:[],boosts:[],users:[],badges:[],events:[],memberships:[],reviews:[],docUrls:{},balances:[],payoutAccounts:[],payoutRequests:[],ledger:[],siteSlides:[],notifications:[],analytics:[]}, finance:{balance:null,payoutAccount:null,payoutRequests:[],ledger:[]}, realtimeReady:false };
-  const VALID_ROUTES = new Set(['home','market','product','seller','cart','checkout','login','account','sell','messages','orders','admin','membership','rewards','categories','about','contact','how','support','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
-  function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase(); return ({plans:'membership',plan:'membership',badges:'rewards',rewards:'rewards',order:'orders',message:'messages',parts:'market',browse:'market',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','disputes':'dispute-policy','grievance-redressal':'grievance'}[r] || r); }
+  const SITE_ORIGIN = 'https://harvesterparts.in';
+  const VALID_ROUTES = new Set(['home','market','product','seller','cart','checkout','login','account','sell','messages','orders','admin','membership','rewards','categories','about','contact','how','support','request-part','legal','terms','privacy','refund','shipping','razorpay','seller-policy','buyer-policy','payout-policy','fees-policy','prohibited-policy','dispute-policy','grievance']);
+  function normalizeRouteName(name){ const r=String(name||'home').trim().toLowerCase().replace(/\.html$/,''); return ({plans:'membership',plan:'membership','seller-plans':'membership',badges:'rewards',rewards:'rewards',order:'orders',message:'messages',parts:'market','buy-parts':'market',browse:'market','request':'request-part','request-part':'request-part','request-a-part':'request-part',termsconditions:'terms','terms-and-conditions':'terms','privacy-policy':'privacy','refund-policy':'refund','refund-cancellation':'refund','cancellation-policy':'refund','shipping-policy':'shipping','delivery-policy':'shipping','payment-policy':'razorpay','razorpay-payment-policy':'razorpay','seller-payout-policy':'payout-policy','payout':'payout-policy','fees':'fees-policy','fees-commission-policy':'fees-policy','commission':'fees-policy','prohibited':'prohibited-policy','prohibited-items-policy':'prohibited-policy','dispute-resolution-policy':'dispute-policy','disputes':'dispute-policy','grievance-redressal':'grievance','how-it-works':'how'}[r] || r); }
   const $ = s => document.querySelector(s);
   const $$ = s => Array.from(document.querySelectorAll(s));
   const app = $('#app');
   function isAdminUser(){ return (state.profile?.role==='admin') || ((state.user?.email||'').toLowerCase()===ADMIN_EMAIL); }
   function esc(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function slugify(text=''){
+    return String(text||'').toLowerCase().trim()
+      .replace(/&/g,' and ')
+      .replace(/[^a-z0-9]+/g,'-')
+      .replace(/^-+|-+$/g,'')
+      .slice(0,90) || 'item';
+  }
+  function humanizeSlug(slug=''){
+    return String(slug||'').replace(/-/g,' ').replace(/\b\w/g,c=>c.toUpperCase()).trim();
+  }
+  function productUrlId(productOrId){
+    const p=typeof productOrId==='object' ? productOrId : state.products.find(x=>String(x.id)===String(productOrId));
+    if(!p) return encodeURIComponent(String(productOrId||''));
+    return `${slugify([p.title,p.brand,p.model].filter(Boolean).join(' '))}-${p.id}`;
+  }
+  function findProductByRouteId(id){
+    const raw=decodeURIComponent(String(id||''));
+    return state.products.find(p=>String(p.id)===raw)
+      || state.products.find(p=>productUrlId(p)===raw)
+      || state.products.find(p=>raw.endsWith('-'+String(p.id)))
+      || null;
+  }
+  function routeHref(name, params={}){
+    name=normalizeRouteName(name);
+    if(name==='home') return '/';
+    if(name==='market') return params.category ? `/parts/${slugify(params.category)}` : (params.type==='machine'?'/machinery':'/parts');
+    if(name==='categories') return '/categories';
+    if(name==='product') return `/product/${productUrlId(params.product||params.id)}`;
+    if(name==='seller') return `/seller/${encodeURIComponent(params.id||'')}`;
+    if(name==='sell') return params.id ? `/sell/${encodeURIComponent(params.id)}` : '/sell';
+    if(name==='messages') return params.id ? `/messages/${encodeURIComponent(params.id)}` : '/messages';
+    const paths={membership:'/seller-plans',rewards:'/rewards',cart:'/cart',checkout:'/checkout',login:'/login',account:'/account',orders:'/orders',admin:'/admin',about:'/about',contact:'/contact',how:'/how-it-works',support:'/support','request-part':'/request-part',legal:'/legal',terms:'/terms-and-conditions',privacy:'/privacy-policy',refund:'/refund-cancellation-policy',shipping:'/shipping-delivery-policy',razorpay:'/razorpay-payment-policy','seller-policy':'/seller-policy','buyer-policy':'/buyer-policy','payout-policy':'/seller-payout-policy','fees-policy':'/fees-commission-policy','prohibited-policy':'/prohibited-items-policy','dispute-policy':'/dispute-resolution-policy',grievance:'/grievance-redressal'};
+    return paths[name] || `/${name}`;
+  }
+  function navLink(routeName,label,cls='',params={}){
+    const attrs=params.id?` data-id="${esc(params.id)}"`:'';
+    return `<a class="${esc(cls)}" href="${esc(routeHref(routeName,params))}" data-route="${esc(routeName)}"${attrs}>${esc(label)}</a>`;
+  }
+  function categoryFromSlug(slug=''){
+    const normalized=String(slug||'').toLowerCase();
+    return AGRI_CATEGORIES.find(c=>slugify(c.title)===normalized)?.title || humanizeSlug(slug);
+  }
   function profileInitials(name='HP'){
     return String(name||'HP').split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase() || 'HP';
   }
@@ -267,18 +310,18 @@
     }
 
     const routeLabels = {
-      home:'Home', market:'Buyer Marketplace', sell:'Seller Tools', membership:'Seller Plans', rewards:'Rewards', categories:'Farm Categories', how:'How it works',
-      about:'About Us', contact:'Contact Us', support:'Support', legal:'Legal Centre', terms:'Terms', privacy:'Privacy', refund:'Refunds', shipping:'Shipping', razorpay:'Payments', 'payout-policy':'Payouts', grievance:'Grievance', messages:'Messages', account:'My Account', cart:'Cart', checkout:'Checkout', orders:'Order History', admin:'Admin Panel'
+      home:'Home', market:'Buy Parts', sell:'Sell', membership:'Seller Plans', rewards:'Rewards', categories:'Categories', how:'How it works',
+      about:'About Us', contact:'Contact Us', support:'Support', 'request-part':'Request a Part', legal:'Legal Centre', terms:'Terms', privacy:'Privacy', refund:'Refunds', shipping:'Shipping', razorpay:'Payments', 'payout-policy':'Payouts', grievance:'Grievance', messages:'Messages', account:'My Account', cart:'Cart', checkout:'Checkout', orders:'Order History', admin:'Admin Panel'
     };
     const sideRouteLabels = {
       home:'Home', market:'Buyer Marketplace', categories:'Farm Categories', cart:'Cart', checkout:'Checkout',
       sell:'List Machinery or Spare Part', membership:'Seller Plans', rewards:'Badges & Titles', orders:'Order History', messages:'Messages',
-      account:'My Account', admin:'Admin Panel', how:'How it works', support:'Support', about:'About Us', contact:'Contact Us',
+      account:'My Account', admin:'Admin Panel', how:'How it works', support:'Support', about:'About Us', contact:'Contact Us', 'request-part':'Request a Part',
       legal:'Legal Centre', terms:'Terms & Conditions', privacy:'Privacy Policy', refund:'Refund & Cancellation',
       shipping:'Shipping & Delivery', razorpay:'Razorpay Payment Policy', 'payout-policy':'Seller Payout Policy', grievance:'Grievance Redressal'
     };
     const bottomRouteLabels = {home:'Home', market:'Buyer', sell:'+', membership:'Plans', account:'Account'};
-    $$('.side-menu button[data-route], .bottom-nav button, .nav-tabs button').forEach(el=>{
+    $$('.side-menu button[data-route], .side-menu a[data-route], .bottom-nav button, .bottom-nav a[data-route], .nav-tabs button, .nav-tabs a[data-route]').forEach(el=>{
       if(el.classList.contains('sell-fab')){ el.dataset.rawText='+'; el.textContent='+'; return; }
       let key = routeLabels[el.dataset.route] || el.dataset.i18n || el.dataset.label || el.textContent.trim();
       if(el.closest('.side-menu')) key = sideRouteLabels[el.dataset.route] || key;
@@ -445,27 +488,64 @@
     const r = el.getBoundingClientRect();
     return r.width > 0 && r.height > 0;
   }
+  function clearMarketSessionFilters(){
+    ['hp_market_category','hp_market_brand','hp_market_model','hp_market_type','hp_market_query','hp_market_condition'].forEach(k=>sessionStorage.removeItem(k));
+  }
   function route(name, params={}){
     name = normalizeRouteName(name);
     if(!VALID_ROUTES.has(name)) name='home';
+    if(name==='admin' && !isAdminUser()){
+      closeMenu();
+      toast(state.user?'Admin access only':'Login required for admin access');
+      name=state.user?'home':'login';
+      params={};
+    }
     closeMenu();
+    if(name==='market') clearMarketSessionFilters();
     if(params.category){ sessionStorage.hp_market_category=params.category; }
+    if(params.brand){ sessionStorage.hp_market_brand=params.brand; }
+    if(params.model){ sessionStorage.hp_market_model=params.model; }
+    if(params.type){ sessionStorage.hp_market_type=params.type; }
     state.route=name;
-    const nextHash = '#'+name+(params.id?`/${params.id}`:'');
-    if(location.hash !== nextHash) history.replaceState(null,'',nextHash);
+    state.currentProduct=params.id||null;
+    const nextPath = routeHref(name,params);
+    if(location.pathname + location.search !== nextPath) history.pushState({route:name,id:params.id||''},'',nextPath);
     render();
+    recordInstallEngagement();
     setTimeout(()=>window.scrollTo({top:0,behavior:'smooth'}),30);
   }
-  function parseRoute(){ const h=location.hash.replace('#',''); if(!h) return ['home']; return h.split('/'); }
+  function parseRoute(){
+    const h=location.hash.replace('#','');
+    if(h) return h.split('/').map(decodeURIComponent);
+    const parts=decodeURIComponent(location.pathname.replace(/\/+$/,'') || '/').split('/').filter(Boolean);
+    if(!parts.length) return ['home'];
+    const first=normalizeRouteName(parts[0]);
+    const qs=new URLSearchParams(location.search);
+    if(parts[0]==='product') return ['product',parts.slice(1).join('/')];
+    if(parts[0]==='seller') return ['seller',parts[1]||''];
+    if(parts[0]==='messages') return ['messages',parts[1]||''];
+    if(parts[0]==='sell') return ['sell',parts[1]||''];
+    if(parts[0]==='parts' && parts[1]){ clearMarketSessionFilters(); sessionStorage.hp_market_category=categoryFromSlug(parts[1]); return ['market']; }
+    if(parts[0]==='brand'){
+      clearMarketSessionFilters();
+      sessionStorage.hp_market_brand=humanizeSlug(parts[1]||'');
+      sessionStorage.hp_market_model=parts[2]?humanizeSlug(parts.slice(2).join('-')):'';
+      return ['market'];
+    }
+    if(parts[0]==='machinery'){ clearMarketSessionFilters(); sessionStorage.hp_market_type='machine'; return ['market']; }
+    if(parts[0]==='used-machinery'){ clearMarketSessionFilters(); sessionStorage.hp_market_type='machine'; sessionStorage.hp_market_condition='used'; return ['market']; }
+    if(parts[0]==='parts' || parts[0]==='marketplace' || parts[0]==='buy-parts'){ clearMarketSessionFilters(); return ['market']; }
+    return [first,...parts.slice(1)];
+  }
   function parsePrice(v){ return Number(String(v||'').replace(/[^\d.]/g,'')) || 0; }
   function formatINRInput(v){ const raw=String(v||'').replace(/[^\d]/g,''); return raw ? Number(raw).toLocaleString('en-IN') : ''; }
-  function placeholder(cat='parts'){ return './harvester-logo-full.jpg'; }
+  function placeholder(cat='parts'){ return '/harvester-logo-full.jpg'; }
   function productImage(p){ return productImages(p)[0] || placeholder(p.category); }
   function isVideoUrl(url=''){ return /^(data:video\/|blob:)/i.test(String(url||'')) || /\.(mp4|webm|ogg|ogv|mov|m4v)(\?|#|$)/i.test(String(url||'')); }
   function isImageUrl(url=''){ return /^(data:image\/|blob:)/i.test(String(url||'')) || /\.(png|jpe?g|webp|gif|avif|svg|bmp)(\?|#|$)/i.test(String(url||'')); }
   function mediaMarkup(src,alt='Product media',cls=''){
     const safe=esc(src||'');
-    if(isVideoUrl(src)) return `<video class="${esc(cls)}" src="${safe}" muted playsinline controls preload="metadata" poster="./harvester-logo-full.jpg"></video>`;
+    if(isVideoUrl(src)) return `<video class="${esc(cls)}" src="${safe}" muted playsinline controls preload="metadata" poster="${placeholder()}"></video>`;
     if(src && (isImageUrl(src) || !isVideoUrl(src))) return `<img class="${esc(cls)}" src="${safe}" onerror="this.src='${placeholder()}'" alt="${esc(alt)}">`;
     return `<img class="${esc(cls)}" src="${placeholder()}" alt="${esc(alt)}">`;
   }
@@ -534,6 +614,7 @@
     }
     localStorage.removeItem('hp_sellFormDraft');
     sessionStorage.removeItem('hp_sellFormDraft');
+    localStorage.hp_visit_count = String((Number(localStorage.hp_visit_count||0)||0)+1);
     setTimeout(()=>$('#intro')?.classList.add('hide'),2450);
     const langModal = $('#languageModal');
     const languageChosen = localStorage.hp_lang_done==='1' || localStorage.hp_lang_seen==='1' || !!localStorage.hp_lang;
@@ -543,6 +624,9 @@
   }
   function scheduleInstallPrompt(delay=700){
     if(localStorage.hp_install_done==='1' || localStorage.hp_install_prompt_seen==='1' || sessionStorage.hp_install_prompt_seen==='1') return;
+    const visits=Number(localStorage.hp_visit_count||0);
+    const engagement=Number(sessionStorage.hp_install_engagement||0);
+    if(visits<2 && engagement<2) return;
     clearTimeout(window.__hpInstallTimer);
     window.__hpInstallTimer=setTimeout(()=>{
       const langOpen = $('#languageModal')?.classList.contains('show');
@@ -554,6 +638,10 @@
       }
     }, delay);
   }
+  function recordInstallEngagement(){
+    sessionStorage.hp_install_engagement=String((Number(sessionStorage.hp_install_engagement||0)||0)+1);
+    scheduleInstallPrompt(1600);
+  }
   function bindShell(){
     // v86: bubble-phase routing only. Invisible/closed menu buttons must never steal taps from forms.
     document.addEventListener('click', e=>{
@@ -564,7 +652,13 @@
         if(!isActuallyClickable(routeEl)) return;
         e.preventDefault();
         e.stopPropagation();
-        route(routeEl.dataset.route);
+        const params={};
+        if(routeEl.dataset.id) params.id=routeEl.dataset.id;
+        if(routeEl.dataset.category) params.category=routeEl.dataset.category;
+        if(routeEl.dataset.brand) params.brand=routeEl.dataset.brand;
+        if(routeEl.dataset.model) params.model=routeEl.dataset.model;
+        if(routeEl.dataset.type) params.type=routeEl.dataset.type;
+        route(routeEl.dataset.route, params);
         return;
       }
       const close=e.target.closest('[data-close-modal]');
@@ -576,7 +670,9 @@
     $('#logoutBtn')?.addEventListener('click',logout);
     $$('#languageModal [data-lang]').forEach(b=>b.addEventListener('click',()=>{ state.lang=b.dataset.lang; localStorage.hp_lang=state.lang; localStorage.hp_lang_seen='1'; localStorage.hp_lang_done='1'; $('#languageModal')?.classList.remove('show'); render(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,80); scheduleInstallPrompt(700); }));
     $('#languageSelect')?.addEventListener('change',e=>{state.lang=e.target.value;localStorage.hp_lang=state.lang;localStorage.hp_lang_seen='1';localStorage.hp_lang_done='1'; render(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,80);});
-    window.addEventListener('hashchange',()=>{ const [r,id]=parseRoute(); state.route=r||'home'; state.currentProduct=id||null; closeMenu(); render(); });
+    const routeFromLocation=()=>{ const [r,id]=parseRoute(); state.route=r||'home'; state.currentProduct=id||null; closeMenu(); render(); };
+    window.addEventListener('hashchange',routeFromLocation);
+    window.addEventListener('popstate',routeFromLocation);
     $('#scrollTop')?.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
   }
   function setupScroll(){ window.addEventListener('scroll',()=>$('#scrollTop')?.classList.toggle('show',scrollY>650)); }
@@ -714,7 +810,7 @@
     $('#logoutBtn')?.classList.toggle('hidden',!state.user);
     $('#menuName') && ($('#menuName').textContent=state.profile?.full_name || state.user?.email || tx('Guest'));
     $('#menuRole') && ($('#menuRole').textContent=isAdmin?'Founder 1 of 1 • Platform Founder':(state.profile?.membership_title || state.profile?.badge_title || tx('Buyer / Seller')));
-    const menuAvatar=$('#sideMenu .menu-head img'); if(menuAvatar){ menuAvatar.src=state.profile?.avatar_url||'./logo-192.png'; menuAvatar.alt=state.profile?.full_name||'Harvester Parts'; menuAvatar.onerror=()=>{menuAvatar.src='./logo-192.png';}; }
+    const menuAvatar=$('#sideMenu .menu-head img'); if(menuAvatar){ menuAvatar.src=state.profile?.avatar_url||'/logo-192.png'; menuAvatar.alt=state.profile?.full_name||'Harvester Parts'; menuAvatar.onerror=()=>{menuAvatar.src='/logo-192.png';}; }
     $('#sideMenu')?.classList.toggle('founder-menu', !!isAdmin);
     $('#sideMenu')?.classList.toggle('member-menu', !!state.profile?.active_membership && !isAdmin);
     $$('[data-admin-only]').forEach(el=>el.style.display=isAdmin?'':'none');
@@ -892,12 +988,14 @@
 
   function productCard(p){
     const boosted=p.is_boosted?'<span class="badge owner royal-seal">Sponsored</span>':'';
-    return `<article class="product-card fade-up"><div class="product-img"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'" alt="${p.title||'Product'}"></div><div class="product-body"><div>${boosted} <span class="badge verified">Verified Farm Listing</span></div><h3>${p.title||'Agricultural Listing'}</h3><p class="muted">${p.category||'Spare Part'} • ${p.brand||'Harvester Parts'}</p><div class="price-row"><span class="price">${money(p.price)}</span><span class="chip">Confirmed before order</span></div><div class="actions"><button class="ghost" onclick="HP.route('product',{id:'${p.id}'})">Details</button><button class="secondary" onclick="HP.addToCart('${p.id}')">Add Cart</button><button class="primary wide" onclick="HP.buyNow('${p.id}')">Buy Now</button></div></div></article>`;
+    return `<article class="product-card fade-up"><div class="product-img"><a href="${esc(routeHref('product',{product:p}))}" data-route="product" data-id="${esc(productUrlId(p))}"><img src="${productImage(p)}" onerror="this.src='${placeholder(p.category)}'" alt="${p.title||'Product'}"></a></div><div class="product-body"><div>${boosted} <span class="badge verified">Verified Farm Listing</span></div><h3><a href="${esc(routeHref('product',{product:p}))}" data-route="product" data-id="${esc(productUrlId(p))}">${p.title||'Agricultural Listing'}</a></h3><p class="muted">${p.category||'Spare Part'} • ${p.brand||'Harvester Parts'}</p><div class="price-row"><span class="price">${money(p.price)}</span><span class="chip">Confirmed before order</span></div><div class="actions"><a class="ghost" href="${esc(routeHref('product',{product:p}))}" data-route="product" data-id="${esc(productUrlId(p))}">Details</a><button class="secondary" onclick="HP.addToCart('${p.id}')">Add Cart</button><button class="primary wide" onclick="HP.buyNow('${p.id}')">Buy Now</button></div></div></article>`;
   }
   function productCardNew(p){
     const boosted=p.is_boosted?'<span class="badge owner royal-seal">Sponsored</span>':'';
     const unit=productSaleUnit(p);
-    return `<article class="product-card fade-up"><div class="product-img">${productMedia(p)}</div><div class="product-body"><div>${boosted} <span class="badge verified">Verified Farm Listing</span></div><h3>${esc(p.title||'Agricultural Listing')}</h3><p class="muted">${esc(p.category||'Spare Part')} • ${esc(p.brand||'Harvester Parts')}</p><div class="price-row"><span class="price">${money(p.price)} <small>/ ${esc(unit)}</small></span><span class="chip">Confirmed before order</span></div><div class="actions"><button class="ghost" onclick="HP.route('product',{id:'${esc(p.id)}'})">Details</button><button class="secondary" onclick="HP.addToCart('${esc(p.id)}')">Add Cart</button><button class="primary wide" onclick="HP.buyNow('${esc(p.id)}')">Buy Now</button></div></div></article>`;
+    const href=routeHref('product',{product:p});
+    const rid=productUrlId(p);
+    return `<article class="product-card fade-up"><div class="product-img"><a href="${esc(href)}" data-route="product" data-id="${esc(rid)}">${productMedia(p)}</a></div><div class="product-body"><div>${boosted} <span class="badge verified">Verified Farm Listing</span></div><h3><a href="${esc(href)}" data-route="product" data-id="${esc(rid)}">${esc(p.title||'Agricultural Listing')}</a></h3><p class="muted">${esc(p.category||'Spare Part')} • ${esc(p.brand||'Harvester Parts')}</p><div class="price-row"><span class="price">${money(p.price)} <small>/ ${esc(unit)}</small></span><span class="chip">Confirmed before order</span></div><div class="actions"><a class="ghost" href="${esc(href)}" data-route="product" data-id="${esc(rid)}">Details</a><button class="secondary" onclick="HP.addToCart('${esc(p.id)}')">Add Cart</button><button class="primary wide" onclick="HP.buyNow('${esc(p.id)}')">Buy Now</button></div></div></article>`;
   }
   const AGRI_CATEGORIES = [
     {group:'Machines', title:'Combine Harvester', desc:'New and used combine harvesters, feeder houses, threshing units and harvesting machines.', icon:'CH', filters:['Combine Harvester','Harvester','Combine']},
@@ -944,7 +1042,7 @@
   }
   function categoryCard(c){
     const count = visibleProducts().filter(p=> c.filters.some(f=>String(p.category||'').toLowerCase().includes(f.toLowerCase()) || String(p.title||'').toLowerCase().includes(f.toLowerCase()))).length;
-    return `<article class="agri-category-card pro-cat fade-up" onclick="HP.route('market',{category:'${c.title}'})"><div class="cat-mark"><span class="cat-emoji" aria-hidden="true">${categoryIconSvg(c)}</span></div><div><small>${c.group}</small><h3>${c.title}</h3><p>${c.desc}</p><span>${count} active listings</span></div></article>`;
+    return `<a class="agri-category-card pro-cat fade-up" href="${esc(routeHref('market',{category:c.title}))}" data-route="market" data-category="${esc(c.title)}"><div class="cat-mark"><span class="cat-emoji" aria-hidden="true">${categoryIconSvg(c)}</span></div><div><small>${esc(c.group)}</small><h3>${esc(c.title)}</h3><p>${esc(c.desc)}</p><span>${count} active listings</span></div></a>`;
   }
   function categoriesBySellType(type){ return AGRI_CATEGORIES.filter(c => type==='machine' ? c.group==='Machines' : c.group==='Spare Parts'); }
   function categoryOptionsFor(type,selected=''){ return categoriesBySellType(type).map(c=>`<option value="${esc(c.title)}" ${String(selected||'')===c.title?'selected':''}>${esc(c.title)}</option>`).join(''); }
@@ -953,9 +1051,9 @@
 
   function fallbackSlides(){
     return [
-      {title:'Verified machine trading',subtitle:'Buy and sell harvesters, tractors, implements and used farm equipment with seller review.',cta_text:'Open Market',cta_route:'market',image_url:'./harvester-logo-full.jpg'},
-      {title:'Workshop-ready spare parts',subtitle:'Belts, bearings, blades, filters, hydraulic parts and repair stock grouped for fast discovery.',cta_text:'Browse Parts',cta_route:'categories',image_url:'./harvester-logo-full.jpg'},
-      {title:'Built-in commission workflow',subtitle:'Buyer fees, seller platform commission, membership limits, balances and payout requests stay organized.',cta_text:'View Plans',cta_route:'membership',image_url:'./harvester-logo-full.jpg'}
+      {title:'Verified machine trading',subtitle:'Buy and sell harvesters, tractors, implements and used farm equipment with seller review.',cta_text:'Open Market',cta_route:'market',image_url:'/harvester-logo-full.jpg'},
+      {title:'Workshop-ready spare parts',subtitle:'Belts, bearings, blades, filters, hydraulic parts and repair stock grouped for fast discovery.',cta_text:'Browse Parts',cta_route:'categories',image_url:'/harvester-logo-full.jpg'},
+      {title:'Built-in commission workflow',subtitle:'Buyer fees, seller platform commission, membership limits, balances and payout requests stay organized.',cta_text:'View Plans',cta_route:'membership',image_url:'/harvester-logo-full.jpg'}
     ];
   }
 
@@ -1023,14 +1121,14 @@
   }
   function featureCarousel(){
     const slides=carouselSlides();
-    return `<section class="home-carousel-section"><div class="section-head"><h2>Marketplace highlights</h2><p class="muted">Quick rotating cards for buying, selling, plans and verified listings.</p></div><div class="home-carousel">${slides.map(s=>`<article class="carousel-slide"><img src="${esc(s.image_url||'./harvester-logo-full.jpg')}" onerror="this.src='./harvester-logo-full.jpg'" alt="${esc(s.title||'Marketplace update')}"><div><span class="eyebrow">Harvester Parts</span><h3>${esc(s.title||'Marketplace update')}</h3><p>${esc(s.subtitle||'Verified agriculture machinery and spare-part trading.')}</p><button class="primary" data-route="${esc(normalizeRouteName(s.cta_route||'market'))}">${esc(s.cta_text||'Open')}</button></div></article>`).join('')}</div></section>`;
+    return `<section class="home-carousel-section"><div class="section-head"><h2>Marketplace highlights</h2><p class="muted">Quick rotating cards for buying, selling, plans and verified listings.</p></div><div class="home-carousel">${slides.map(s=>`<article class="carousel-slide"><img src="${esc(s.image_url||placeholder())}" onerror="this.src='${placeholder()}'" alt="${esc(s.title||'Marketplace update')}"><div><span class="eyebrow">Harvester Parts</span><h3>${esc(s.title||'Marketplace update')}</h3><p>${esc(s.subtitle||'Verified agriculture machinery and spare-part trading.')}</p><button class="primary" data-route="${esc(normalizeRouteName(s.cta_route||'market'))}">${esc(s.cta_text||'Open')}</button></div></article>`).join('')}</div></section>`;
   }
 
   function home(){
     const categoryCount = state.stats.categories || AGRI_CATEGORIES.length;
     const sellerCount = state.stats.sellers || 0;
     const liveProducts = visibleProducts();
-    return `<section class="hp92-hero"><div class="hp-live-bg" aria-hidden="true"><span class="hp-live-sweep"></span><span class="hp-live-row row-a"></span><span class="hp-live-row row-b"></span><span class="hp-live-row row-c"></span><div class="hp-live-card card-a"><b>Combine</b><small>seller verified</small></div><div class="hp-live-card card-b"><b>Spare part</b><small>OEM matched</small></div><div class="hp-live-card card-c"><b>Road delivery</b><small>route planned</small></div></div><div class="hp92-hero-shade"></div><div class="hp92-hero-copy"><span class="eyebrow">Farm trade made simple</span><h1>Buy and sell farm machines and spare parts without confusion.</h1><p>Harvester Parts connects farmers, dealers, workshops and machine owners with verified sellers, clean search, seller approval, secure checkout, delivery coordination and slab-based launch commission from 3.5% down to 1%.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="secondary" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">Seller Plans</button></div></div><div class="hp92-hero-panel"><div class="hp92-panel-top"><img src="./logo-512.png" alt="Harvester Parts"><div><b>Harvester Parts</b><span>Live marketplace console</span></div></div><div class="hp92-market-visual" aria-hidden="true"><div class="hp92-radar"><span></span><span></span><span></span></div><div class="hp92-activity-list"><i></i><i></i><i></i><i></i></div><div class="hp92-route-line"></div></div><div class="hp92-metric-grid"><div><b data-count="${liveProducts.length}">0</b><span>Live listings</span></div><div><b data-count="${categoryCount}">0</b><span>Categories</span></div><div><b data-count="${sellerCount}">0</b><span>Sellers</span></div><div><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section>${agriFactCard()}${featureCarousel()}<section class="hp92-role-grid"><article><span>Buyer area</span><h2>Find the right item quickly.</h2><p>Search by category, model, brand, condition and location. Cart, checkout and seller chat stay inside the website.</p></article><article><span>Seller tools</span><h2>List only after verification.</h2><p>Dealers, agencies, farmers and owners can upload details, dimensions, price, condition and compatibility for clean listings.</p></article><article><span>Owner revenue</span><h2>Small launch fees that scale with value.</h2><p>Commission starts higher on small orders and drops down to 1% for high-value machinery to keep serious deals attractive.</p></article></section>${homeCarousel()}<section><div class="section-head"><h2>Fresh listings</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${liveProducts.slice(0,6).map(productCardNew).join('')||empty('No live products yet.')}</div></section>`;
+    return `<section class="hp92-hero"><video class="hp92-hero-bg" autoplay muted loop playsinline preload="metadata" poster="${placeholder()}"><source src="/hero-bg.mp4" type="video/mp4"></video><div class="hp-live-bg" aria-hidden="true"><span class="hp-live-sweep"></span><span class="hp-live-row row-a"></span><span class="hp-live-row row-b"></span><span class="hp-live-row row-c"></span><div class="hp-live-card card-a"><b>Combine</b><small>seller verified</small></div><div class="hp-live-card card-b"><b>Spare part</b><small>OEM matched</small></div><div class="hp-live-card card-c"><b>Road delivery</b><small>route planned</small></div></div><div class="hp92-hero-shade"></div><div class="hp92-hero-copy"><span class="eyebrow">Farm trade made simple</span><h1>Buy and sell farm machines and spare parts without confusion.</h1><p>Harvester Parts connects farmers, dealers, workshops and machine owners with verified sellers, clean search, seller approval, secure checkout, delivery coordination and slab-based launch commission from 3.5% down to 1%.</p><div class="hero-actions"><button class="primary" data-route="market">Browse Marketplace</button><button class="secondary" data-route="sell">Start Selling</button><button class="ghost" data-route="membership">Seller Plans</button></div></div><div class="hp92-hero-panel"><div class="hp92-panel-top"><img src="/logo-512.png" alt="Harvester Parts"><div><b>Harvester Parts</b><span>Live marketplace console</span></div></div><div class="hp92-market-visual" aria-hidden="true"><div class="hp92-radar"><span></span><span></span><span></span></div><div class="hp92-activity-list"><i></i><i></i><i></i><i></i></div><div class="hp92-route-line"></div></div><div class="hp92-metric-grid"><div><b data-count="${liveProducts.length}">0</b><span>Live listings</span></div><div><b data-count="${categoryCount}">0</b><span>Categories</span></div><div><b data-count="${sellerCount}">0</b><span>Sellers</span></div><div><b data-count="${state.stats.orders||0}">0</b><span>Orders</span></div></div></div></section>${agriFactCard()}${featureCarousel()}<section class="hp92-role-grid"><article><span>Buyer area</span><h2>Find the right item quickly.</h2><p>Search by category, model, brand, condition and location. Cart, checkout and seller chat stay inside the website.</p></article><article><span>Seller tools</span><h2>List only after verification.</h2><p>Dealers, agencies, farmers and owners can upload details, dimensions, price, condition and compatibility for clean listings.</p></article><article><span>Owner revenue</span><h2>Small launch fees that scale with value.</h2><p>Commission starts higher on small orders and drops down to 1% for high-value machinery to keep serious deals attractive.</p></article></section>${homeCarousel()}<section><div class="section-head"><h2>Fresh listings</h2><button class="ghost" data-route="market">View all</button></div><div class="grid">${liveProducts.slice(0,6).map(productCardNew).join('')||empty('No live products yet.')}</div></section>`;
   }
 
   
@@ -1039,12 +1137,26 @@
     const categories=[...new Set([...marketProducts.map(p=>p.category).filter(Boolean), ...AGRI_CATEGORIES.map(c=>c.title)])];
     const selected=sessionStorage.hp_market_category||'';
     const type=sessionStorage.hp_market_type||'all';
-    const shown=marketProducts.filter(p=>matchesProductType(p,type) && (!selected || String(p.category||'').toLowerCase().includes(selected.toLowerCase()) || String(p.title||'').toLowerCase().includes(selected.toLowerCase())));
-    return `<section class="page-card market-head-card hp92-market-head"><div><span class="eyebrow">Buyer marketplace</span><h1>Search verified farm machines and spare parts.</h1><p class="muted">Use fast suggestions, product type, category, condition and price filters to find the right farm item quickly.</p></div><button class="primary" data-route="sell">List Product</button><div class="market-tools"><select id="typeFilter"><option value="all" ${type==='all'?'selected':''}>All products</option><option value="machine" ${type==='machine'?'selected':''}>Machinery</option><option value="spare" ${type==='spare'?'selected':''}>Spare parts</option></select><div class="search-wrap"><input id="searchInput" autocomplete="off" placeholder="Search tractor, harvester, bearing, belt or model"><div id="searchSuggest" class="search-suggest"></div></div><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${c}</option>`).join('')}</select><select id="sortFilter"><option value="all">All listings</option><option value="condition_new">New</option><option value="condition_used">Used</option><option value="price_low">Price low to high</option><option value="price_high">Price high to low</option></select></div></section><section class="grid hp92-market-grid" id="marketGrid">${shown.map(productCardNew).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
+    const brand=sessionStorage.hp_market_brand||'';
+    const model=sessionStorage.hp_market_model||'';
+    const condition=sessionStorage.hp_market_condition||'';
+    const search=String(new URLSearchParams(location.search).get('q') || sessionStorage.hp_market_query || '').trim();
+    const matchesMarket=p=>{
+      const hay=[p.title,p.category,p.brand,p.model,p.condition,p.description,p.city,p.district,p.state,p.pincode,p.part_number,p.oem_number,p.sku_code,p.compatible_machine].join(' ').toLowerCase();
+      return matchesProductType(p,type)
+        && (!selected || hay.includes(String(selected).toLowerCase()))
+        && (!brand || String(p.brand||'').toLowerCase().includes(brand.toLowerCase()) || hay.includes(brand.toLowerCase()))
+        && (!model || String(p.model||'').toLowerCase().includes(model.toLowerCase()) || hay.includes(model.toLowerCase()))
+        && (!condition || String(p.condition||'').toLowerCase()===condition.toLowerCase())
+        && (!search || hay.includes(search.toLowerCase()));
+    };
+    const shown=marketProducts.filter(matchesMarket);
+    const contextLine=[selected&&`Category: ${selected}`,brand&&`Brand: ${brand}`,model&&`Model: ${model}`,condition&&`Condition: ${condition}`].filter(Boolean).join(' • ');
+    return `<section class="page-card market-head-card hp92-market-head"><div><span class="eyebrow">Buyer marketplace</span><h1>Search verified farm machines and spare parts.</h1><p class="muted">Use fast suggestions, product type, category, condition and price filters to find the right farm item quickly.</p>${contextLine?`<div class="active-filter-strip"><span>${esc(contextLine)}</span><a href="${esc(routeHref('market'))}" data-route="market">Clear filters</a></div>`:''}</div><a class="primary" href="${esc(routeHref('sell'))}" data-route="sell">List Product</a><div class="market-tools"><select id="typeFilter"><option value="all" ${type==='all'?'selected':''}>All products</option><option value="machine" ${type==='machine'?'selected':''}>Machinery</option><option value="spare" ${type==='spare'?'selected':''}>Spare parts</option></select><div class="search-wrap"><input id="searchInput" autocomplete="off" value="${esc(search)}" placeholder="Search by part name, OEM number, machine or brand"><div id="searchSuggest" class="search-suggest"></div></div><select id="categoryFilter"><option value="">All categories</option>${categories.map(c=>`<option ${c===selected?'selected':''}>${esc(c)}</option>`).join('')}</select><select id="sortFilter"><option value="all">All listings</option><option value="condition_new">New</option><option value="condition_used">Used</option><option value="price_low">Price low to high</option><option value="price_high">Price high to low</option></select></div></section><section class="grid hp92-market-grid" id="marketGrid">${shown.map(productCardNew).join('')||empty('No live catalog. Ask sellers to list products.')}</section>`;
   }
   
   function productPage(id){
-    const p=state.products.find(x=>String(x.id)===String(id));
+    const p=findProductByRouteId(id);
     if(!p)return emptyPage('Product not found');
     const imgs=productImages(p);
     const sellerName=p.sellers?.business_name || p.users?.full_name || p.users?.email || 'Verified seller';
@@ -1062,13 +1174,39 @@
     return points;
   }
   function productPageV113(id){
-    const p=state.products.find(x=>String(x.id)===String(id));
+    const p=findProductByRouteId(id);
     if(!p) return emptyPage('Product not found');
     const imgs=productImages(p); const profile=publicProfileFor(p.user_id,p); const sellerName=sellerDisplayName(p,profile);
     const loc=[p.city,p.district,p.state].filter(Boolean).join(', ') || [profile.city,profile.state].filter(Boolean).join(', ') || 'Location shared by seller';
     const ratings=reviewStats(p.user_id);
     const related=visibleProducts().filter(x=>String(x.id)!==String(p.id) && (String(x.category||'').toLowerCase()===String(p.category||'').toLowerCase() || String(x.sell_type||'')===String(p.sell_type||''))).slice(0,8);
     return `<section class="product-page"><div class="gallery page-card product-gallery"><div class="main-product-photo" onclick="HP.openGallery('${esc(p.id)}',0)">${mediaMarkup(imgs[0],p.title||'Product')}<span class="photo-count">${imgs.length} media${imgs.length>1?' files':''}</span></div>${imgs.length>1?`<div class="gallery-thumbs">${imgs.map((img,i)=>`<button onclick="HP.openGallery('${esc(p.id)}',${i})">${mediaMarkup(img,p.title||'Product')}</button>`).join('')}</div>`:''}</div><aside class="detail-stack sticky-buy"><div class="page-card"><span class="badge verified">Verified Farm Listing</span><h1>${esc(p.title||'Agricultural Product')}</h1><p class="muted">${esc(p.category||'Spare Part')} • ${esc(p.brand||'Harvester Parts')} ${p.model?`• ${esc(p.model)}`:''}</p><div class="price">${money(p.price)} <small>/ ${esc(productSaleUnit(p))}</small></div><p class="muted">Confirm final price, freight, dimensions and availability before payment.</p><div class="seller-mini-card seller-mini-v113">${avatarMarkup(profile,sellerName,'seller-card-photo')}<div><b>${esc(sellerName)}</b><span>${ratings.count?`${ratings.average.toFixed(1)} rating • ${ratings.count} review${ratings.count===1?'':'s'}`:'New verified seller'}</span><small>${esc(loc)}</small></div><button class="ghost" onclick="HP.route('seller',{id:'${esc(p.user_id)}'})">Visit Profile</button></div><div class="actions"><button class="primary" onclick="HP.buyNow('${esc(p.id)}')">Buy Now</button><button class="secondary" onclick="HP.addToCart('${esc(p.id)}')">Add to Cart</button><button class="ghost" onclick="HP.toggleWishlist('${esc(p.id)}')">Wishlist</button><button class="ghost" onclick="HP.route('messages',{id:'${esc(p.id)}'})">Message Seller</button></div></div><div class="summary-card buyer-only-card"><h3>Buyer assurance</h3><div class="summary-row"><span>Seller</span><b>${esc(sellerName)}</b></div><div class="summary-row"><span>Rating</span><b>${ratings.count?ratings.average.toFixed(1)+' / 5':'New seller'}</b></div><div class="summary-row"><span>Payment</span><b>Secure checkout</b></div><div class="summary-row"><span>Delivery</span><b>${matchesProductType(p,'machine')?'Road / seller coordination':'Courier for spare parts'}</b></div></div></aside></section><section class="page-card product-detail-v113"><h2>Product details</h2><p>${esc(p.description||'Agricultural machinery or spare part listing from a verified seller. Confirm compatibility, condition, dimensions and delivery details before final purchase.')}</p><div class="stats"><div class="stat"><b>${esc(p.condition||'Stock')}</b><span>Condition</span></div><div class="stat"><b>${esc(p.weight_kg||'—')} kg</b><span>Weight</span></div><div class="stat"><b>${esc(p.state||'India')}</b><span>Location</span></div><div class="stat"><b>${esc(p.views||0)}</b><span>Views</span></div></div></section>${related.length?`<section class="product-carousel-section related-products"><div class="section-head"><h2>Similar products</h2><p class="muted">More verified listings related to this item.</p></div><div class="product-row-carousel">${related.map(productCardNew).join('')}</div></section>`:''}<div id="photoLightbox" class="photo-lightbox" aria-hidden="true"><button class="lightbox-close" onclick="HP.closeGallery()">×</button><button class="lightbox-nav prev" onclick="HP.stepGallery(-1)">‹</button><div id="lightboxMedia" class="lightbox-media">${mediaMarkup(imgs[0],p.title||'Product media')}</div><button class="lightbox-nav next" onclick="HP.stepGallery(1)">›</button><div id="lightboxCount" class="lightbox-count">1 / ${imgs.length}</div></div>`;
+  }
+  function productCompatibilityValues(p={}){
+    const text=[p.compatible_machine,p.compatible_model,p.model,p.description].filter(Boolean).join('\n');
+    const matches=[...String(text).matchAll(/(?:Compatible(?:\s+with)?|compatible machine|model(?:s)?):\s*([^\n]+)/ig)].flatMap(m=>String(m[1]||'').split(/[,;|]/));
+    if(p.compatible_machine) matches.unshift(p.compatible_machine);
+    if(p.model) matches.unshift(p.model);
+    return [...new Set(matches.map(x=>String(x||'').trim()).filter(x=>x && !/not added/i.test(x)))].slice(0,8);
+  }
+  function productExtraPublicSections(p={}){
+    const compat=productCompatibilityValues(p);
+    const specs=[
+      ['OEM / Part number', p.part_number || p.oem_number || detailValue(p.description,'OEM/part number')],
+      ['Brand', p.brand],
+      ['Model', p.model],
+      ['Condition', p.condition],
+      ['Weight', p.weight_kg?`${p.weight_kg} kg`:'' ],
+      ['Location', [p.city,p.district,p.state,p.pincode].filter(Boolean).join(', ')],
+      ['Sale unit', productSaleUnit(p)]
+    ].filter(x=>String(x[1]||'').trim());
+    return `${compat.length?`<section class="page-card compatible-card"><h2>Compatible With</h2><div class="compat-list">${compat.map(x=>`<span>${esc(x)}</span>`).join('')}</div><p class="muted">Compatibility is based only on information provided in this listing. Confirm fitment before purchase.</p></section>`:''}${specs.length?`<section class="page-card product-spec-summary"><h2>Listing specification</h2><div class="info-list">${specs.map(([k,v])=>`<div><span>${esc(k)}</span><b>${esc(v)}</b></div>`).join('')}</div></section>`:''}`;
+  }
+  function productPageProduction(id){
+    const p=findProductByRouteId(id);
+    const html=productPageV113(id);
+    if(!p) return html;
+    return html.replace('<div id="photoLightbox"', productExtraPublicSections(p) + '<div id="photoLightbox"');
   }
   function sellerReviewCards(sellerId){
     const rows=reviewStats(sellerId).rows.slice(0,20);
@@ -1111,9 +1249,11 @@
   }
   function ensureProductReportButton(){
     if(state.route!=='product' || !state.currentProduct) return;
+    const product=findProductByRouteId(state.currentProduct);
+    const reportId=product?.id || state.currentProduct;
     const actions=$('.product-page .actions');
     if(!actions || actions.querySelector('.report-btn')) return;
-    actions.insertAdjacentHTML('beforeend', `<button class="ghost report-btn" onclick="HP.reportProduct('${esc(state.currentProduct)}')">Report listing</button>`);
+    actions.insertAdjacentHTML('beforeend', `<button class="ghost report-btn" onclick="HP.reportProduct('${esc(reportId)}')">Report listing</button>`);
   }
   function aboutPage(){
     return `<section class="about-hero page-card"><span class="eyebrow">About Harvester Parts</span><h1>India-first marketplace for agricultural machinery and spare parts.</h1><p>Harvester Parts helps farmers, dealers, workshops and machinery owners buy and sell new and used agricultural machinery, combine harvester parts, tractor parts, seed drill spares, straw reaper parts, belts, bearings, cutter components and more through one trusted platform.</p><div class="about-metrics"><div><b>Verified</b><span>seller approvals</span></div><div><b>Secure</b><span>in-app enquiry</span></div><div><b>Multi-use</b><span>machines + spares</span></div></div></section><section class="about-grid"><div class="page-card"><h2>What we do</h2><p>We bring agricultural sellers and buyers together with searchable listings, product details, checkout flow, seller verification and admin approvals. The goal is to make agriculture trading easier, safer and more organized.</p></div><div class="page-card"><h2>For farmers</h2><p>Find nearby machinery and spare parts quickly. Compare estimated prices, message sellers inside the website and keep your purchase journey organized.</p></div><div class="page-card"><h2>For dealers & workshops</h2><p>List inventory, get buyer leads, manage enquiries and grow visibility across agricultural categories without depending only on offline contacts.</p></div><div class="page-card"><h2>Our promise</h2><p>We focus on verified sellers, clear product information, direct in-platform communication and a cleaner buying experience for Indian agriculture.</p></div></section>`;
@@ -1127,6 +1267,46 @@
   }
   function supportPage(){
     return `<section class="contact-grid premium-info-grid"><div class="page-card contact-card"><span class="eyebrow">Support Centre</span><h1>AI help plus admin-backed marketplace support.</h1><p class="muted">Use support for verification, listing issues, assisted listing requests, delivery choices, orders, payments or product questions.</p><div class="support-list"><div><b>Buyer help</b><span>Finding products, cart, checkout and delivery support.</span></div><div><b>Seller help</b><span>Verification, listing approval, pricing, dimensions and images.</span></div><div><b>Email support</b><span>${SUPPORT_EMAIL}</span></div></div><div class="contact-actions"><a class="primary" href="mailto:${SUPPORT_EMAIL}">Email Support</a><button class="ghost" data-route="contact">Contact Form</button></div></div><div class="page-card ai-support-card"><h2>AI Support Bot</h2><p class="muted">Ask quick marketplace questions. For real disputes or verification, send the support form so admin receives the record.</p><form id="supportBotForm" class="form"><select name="topic"><option value="seller">Seller verification</option><option value="listing">Product listing</option><option value="delivery">Delivery and transport</option><option value="buyer">Buyer safety</option><option value="commission">Fees and commission</option></select><textarea name="question" placeholder="Type your question"></textarea><button class="primary">Ask AI Help</button></form><div id="supportBotAnswer" class="support-bot-answer">Choose a topic and ask a question.</div></div><div class="page-card"><h2>Common questions</h2><div class="faq"><details open><summary>Can anyone sell?</summary><p>No. Sellers must login and submit verification first. Admin approval is required before selling.</p></details><details><summary>Can I sell machinery and spare parts?</summary><p>Yes. Choose Machinery or Spare Part on the sell page, then fill the correct detail fields.</p></details><details><summary>How are heavy machines delivered?</summary><p>Heavy machinery should use seller delivery, buyer pickup or road transport quote. Courier delivery is mainly for spare parts.</p></details></div></div></section>`;
+  }
+  function requestPartPage(){
+    if(!state.user) return loginPage();
+    return `<section class="page-card request-part-hero"><span class="eyebrow">Request a Part</span><h1>Cannot find the spare part? Send your requirement.</h1><p class="muted">Share machine, brand, model, part number if known, photo and location. Admin can review it and sellers can be guided safely without exposing private contact details publicly.</p></section><section class="page-card request-part-card"><form id="partRequestForm" class="form request-part-form"><div class="sell-form-grid"><select name="machine_type" required><option value="">Machine type</option>${AGRI_CATEGORIES.filter(c=>c.group==='Machines').map(c=>`<option>${esc(c.title)}</option>`).join('')}<option>Other Machinery</option></select><input name="brand" placeholder="Brand, e.g. CLAAS, John Deere, Mahindra"><input name="model" placeholder="Machine model, e.g. Dominator 76"><input name="part_name" placeholder="Part name" required><input name="part_number" placeholder="OEM / part number if known"><select name="condition_preference"><option>Any condition</option><option>New only</option><option>Used acceptable</option><option>OEM preferred</option><option>Aftermarket acceptable</option></select><input name="location" placeholder="City, district, state" required></div><textarea name="description" placeholder="Describe the part, size, fitment, problem, urgency and quantity needed"></textarea><label class="file-label">Reference photo optional<input name="photo" type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif"></label><button class="primary">Submit Part Request</button></form></section>`;
+  }
+  async function submitPartRequest(form){
+    if(!state.user) return route('login');
+    const fd=new FormData(form);
+    const partName=String(fd.get('part_name')||'').trim();
+    const location=String(fd.get('location')||'').trim();
+    if(!partName) return toast('Enter the part name you need.');
+    if(!location) return toast('Enter your location.');
+    let photo_url='';
+    const file=fd.get('photo');
+    if(file&&file.name){
+      if(file.size>6*1024*1024) return toast('Reference photo must be under 6 MB.');
+      if(sb){
+        const safeName=file.name.replace(/[^a-z0-9.]/gi,'-');
+        const path=`${state.user.id}/part-request-${Date.now()}-${safeName}`;
+        const {error}=await sb.storage.from('product-images').upload(path,file,{upsert:true,contentType:file.type||undefined});
+        if(!error){ const {data}=sb.storage.from('product-images').getPublicUrl(path); photo_url=data?.publicUrl||''; }
+      } else photo_url=await fileToDataUrl(file);
+    }
+    const payload={user_id:state.user.id,buyer_email:state.user.email||'',buyer_name:state.profile?.full_name||'',machine_type:fd.get('machine_type')||'',brand:fd.get('brand')||'',model:fd.get('model')||'',part_name:partName,part_number:fd.get('part_number')||'',condition_preference:fd.get('condition_preference')||'Any condition',location,description:fd.get('description')||'',photo_url,status:'open',created_at:new Date().toISOString(),updated_at:new Date().toISOString()};
+    let saved=false;
+    if(sb){
+      const {error}=await sb.from('part_requests').insert(payload);
+      if(!error) saved=true;
+      if(error){
+        await sb.from('contact_messages').insert({user_id:state.user.id,name:payload.buyer_name||payload.buyer_email,topic:'Request a Part',message:`${payload.part_name} / ${payload.part_number}\n${payload.machine_type} ${payload.brand} ${payload.model}\n${payload.location}\n${payload.description}`}).catch(()=>{});
+      }
+    } else {
+      const rows=JSON.parse(localStorage.hp_part_requests||'[]');
+      rows.unshift({...payload,id:'local-pr-'+Date.now()});
+      localStorage.hp_part_requests=JSON.stringify(rows.slice(0,100));
+      saved=true;
+    }
+    await sendAdminNotice('part_request','New buyer part request', `${payload.buyer_name||payload.buyer_email||'Buyer'} needs ${payload.part_name}${payload.part_number?' / '+payload.part_number:''}`, payload);
+    form.reset();
+    showSuccessPopup('Part request sent', saved?'Your requirement is saved for marketplace review.':'Your request was sent through support because the part request table is not installed yet.');
   }
   async function sendContact(form){ const fd=new FormData(form); const text=`Support request from ${fd.get('name')} (${fd.get('phone')}): ${fd.get('topic')} - ${fd.get('message')}`; localStorage.hp_last_contact=text; if(sb){ await sb.from('contact_messages').insert({name:fd.get('name'),phone:fd.get('phone'),topic:fd.get('topic'),message:fd.get('message')}); await sendAdminNotice('support_request','New support request', text, {topic:fd.get('topic'),name:fd.get('name'),phone:fd.get('phone'),message:fd.get('message')}); } toast('Support request saved. We will reply by email/support record.'); form.reset(); }
   function supportBotReply(topic, question=''){
@@ -1367,7 +1547,7 @@
     const pendingListings=myProducts.filter(p=>p.status!=='approved').length;
     const sellerStatus=state.seller?.status || (isAdmin?'approved':'not verified');
     const avatarText=(fullName||email||'HP').split(/[\s@.]+/).filter(Boolean).slice(0,2).map(x=>x[0]).join('').toUpperCase()||'HP';
-    return `<section class="profile-page">${userBanner()}<div class="profile-cover page-card ${isAdmin?'founder-profile-cover':''}"><div class="profile-avatar"><img src="./logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${esc(fullName)}</h1><p>${esc(email)}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${esc(role)}</span></div><div class="profile-id"><span data-no-translate>${esc(uid)}</span> • <span>${esc(rank.title)}</span> • <span>${esc(sellerStatus)}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${pts>=999999?'MAX':pts}</b><span>Points</span></div><div><b>${earnedBadges().length}</b><span>Badges</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${esc(profileName)}" placeholder="Full name"><input name="phone" type="tel" value="${esc(phone)}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${esc(uid)}</b></div><div><span>Email</span><b data-no-translate>${esc(email)}</b></div><div><span>Phone</span><b>${esc(phone || 'Not added')}</b></div><div><span>Seller status</span><b>${esc(sellerStatus)}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div>${rankProgressCard()}${membershipMiniCard()}${accountBalanceCard()}${payoutAccountCard()}${badgeCollectionCard()}<div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Enter Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div>${eventPreviewCard()}<div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
+    return `<section class="profile-page">${userBanner()}<div class="profile-cover page-card ${isAdmin?'founder-profile-cover':''}"><div class="profile-avatar"><img src="/logo-192.png" alt="Harvester Parts"><span>${avatarText}</span></div><div class="profile-main"><div class="profile-title-row"><div data-no-translate><h1>${esc(fullName)}</h1><p>${esc(email)}</p></div><span class="badge ${isAdmin?'owner':'verified'}">${esc(role)}</span></div><div class="profile-id"><span data-no-translate>${esc(uid)}</span> • <span>${esc(rank.title)}</span> • <span>${esc(sellerStatus)}</span></div><div class="profile-stats"><div><b>${myProducts.length}</b><span>Listings</span></div><div><b>${approvedListings}</b><span>Live</span></div><div><b>${pts>=999999?'MAX':pts}</b><span>Points</span></div><div><b>${earnedBadges().length}</b><span>Badges</span></div></div><div class="profile-actions"><button class="primary" data-route="sell">Sell a Part</button><button class="ghost" data-route="orders">My Orders</button>${isAdmin?'<button class="secondary" data-route="admin">Admin Panel</button>':''}</div></div></div><div class="profile-grid"><div class="page-card profile-edit-card"><h2>Profile details</h2><p class="muted">Keep your buyer and seller profile updated for faster support and verification.</p><form id="profileForm" class="form profile-form"><input name="full_name" value="${esc(profileName)}" placeholder="Full name"><input name="phone" type="tel" value="${esc(phone)}" placeholder="Phone number"><select name="gender"><option value="">Gender</option><option ${state.profile?.gender==='Male'?'selected':''}>Male</option><option ${state.profile?.gender==='Female'?'selected':''}>Female</option><option ${state.profile?.gender==='Other'?'selected':''}>Other</option></select><button class="primary">Save Profile</button></form></div><div class="page-card profile-info-card"><h2>Account overview</h2><div class="info-list"><div><span>User ID</span><b data-no-translate>${esc(uid)}</b></div><div><span>Email</span><b data-no-translate>${esc(email)}</b></div><div><span>Phone</span><b>${esc(phone || 'Not added')}</b></div><div><span>Seller status</span><b>${esc(sellerStatus)}</b></div><div><span>Pending listings</span><b>${pendingListings}</b></div></div></div>${rankProgressCard()}${membershipMiniCard()}${accountBalanceCard()}${payoutAccountCard()}${badgeCollectionCard()}<div class="page-card profile-info-card"><h2>Quick tools</h2><div class="quick-grid"><button class="ghost" data-route="market">Enter Marketplace</button><button class="ghost" data-route="messages">Chat</button><button class="ghost" data-route="cart">Cart</button><button class="ghost" data-route="contact">Contact Support</button>${state.seller?.status==='approved'||isAdmin?'<button class="secondary" data-route="sell">Add New Listing</button>':'<button class="secondary" data-route="sell">Become Verified Seller</button>'}</div></div>${eventPreviewCard()}<div class="page-card profile-info-card"><h2>Trust & safety</h2><p class="muted">Use website chat and checkout so orders, seller approvals and support history stay protected inside Harvester Parts.</p><div class="trust-pills"><span>Verified sellers</span><span>Admin review</span><span>Secure orders</span></div></div></div></section>`;
   }
 
   async function saveProfile(form){ if(!sb||!state.user)return; const fd=new FormData(form); const {error}=await sb.from('users').update({full_name:fd.get('full_name'),phone:fd.get('phone')||state.user.phone||'',gender:fd.get('gender'),profile_completed:true}).eq('auth_id',state.user.id); if(error)toast(error.message); else{toast('Profile saved'); await loadSession(); syncMenu(); render();} }
@@ -1464,6 +1644,11 @@
       pincode:p.pincode||'',
       description:description.replace(/(^|\n)(Quantity available|Sale unit|Pickup pincode|Machinery details|Spare part details|Specification table):[\s\S]*$/i,'').trim()
     };
+    if(p.part_number || p.oem_number) draft.part_number=p.part_number||p.oem_number;
+    if(p.compatible_machine) draft.compatible_machine=p.compatible_machine;
+    if(p.sku_code) draft.sku_code=p.sku_code;
+    if(p.quantity_available) draft.listing_qty=p.quantity_available;
+    if(p.sale_unit) draft.sale_unit=productSaleUnit(p);
     const spareLine=detailValue(description,'Spare part details');
     const spareMatch=spareLine.match(/OEM\/part number (.*?), compatible machine (.*?), seller SKU (.*?), material\/grade (.*)$/i);
     if(spareMatch){
@@ -1482,6 +1667,12 @@
     const specs=isMachine
       ? [['Overall length','dim_length'],['Overall width','dim_width'],['Overall height','dim_height'],['Working width','working_width'],['Capacity / HP','engine_hp'],['Tyre / attachment size','attachment_size']]
       : [['Length / belt length','dim_length'],['Width','dim_width'],['Height','dim_height'],['Outer diameter','dim_outer_dia'],['Inner diameter','dim_inner_dia'],['Thickness / pitch','dim_thickness']];
+    if(p.dimensions && typeof p.dimensions==='object'){
+      Object.entries(p.dimensions).forEach(([label,value])=>{
+        const specKey=specs.find(([name])=>name===label)?.[1];
+        if(specKey && value) draft[specKey]=String(value).replace(/\s+(mm|cm|m|inch|ft|HP|rows|litre|kg|ton).*$/i,'');
+      });
+    }
     specs.forEach(([label,key])=>{
       const raw=detailValue(description,label);
       if(!raw) return;
@@ -1641,14 +1832,18 @@
       fd.get('listing_service')==='assisted' && `Assisted listing requested: ${money(ASSISTED_LISTING_FEE)} per item.`
     ].filter(Boolean);
     const description=[fd.get('description'),...detailLines].filter(Boolean).join('\n\n');
-    const payload={user_id:state.user.id,seller_id:state.seller?.id||null,sell_type:sellType,condition:fd.get('condition')||'Used',title:fd.get('title'),price,category:fd.get('category'),brand:fd.get('brand'),model:fd.get('model'),weight_kg:Number(fd.get('weight_kg')||0),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),pincode:fd.get('pincode')||'',description,image_urls,status:editingProduct?.status||'approved'};
+    const dimensions=Object.fromEntries(listingSpecSummary(fd,sellType).map(line=>{
+      const parts=String(line).split(':');
+      return [parts[0],parts.slice(1).join(':').trim()];
+    }));
+    const payload={user_id:state.user.id,seller_id:state.seller?.id||null,sell_type:sellType,condition:fd.get('condition')||'Used',title:fd.get('title'),price,category:fd.get('category'),brand:fd.get('brand'),model:fd.get('model'),weight_kg:Number(fd.get('weight_kg')||0),state:fd.get('state'),district:fd.get('district'),city:fd.get('city'),pincode:fd.get('pincode')||'',description,image_urls,status:editingProduct?.status||'approved',part_number:fd.get('part_number')||'',oem_number:fd.get('part_number')||'',sku_code:fd.get('sku_code')||'',compatible_machine:fd.get('compatible_machine')||'',manufacturer:fd.get('brand')||'',quantity_available:listingQty,sale_unit:saleUnit,dimensions};
     if(editingProduct){
       const updatePayload={...payload,updated_at:new Date().toISOString()};
       if(sb){
         let {error}=await sb.from('products').update(updatePayload).eq('id',editId).eq('user_id',state.user.id);
-        if(error && /seller_id|pincode|updated_at/i.test(String(error.message||''))){
+        if(error && /seller_id|pincode|updated_at|part_number|oem_number|sku_code|compatible_machine|manufacturer|quantity_available|sale_unit|dimensions/i.test(String(error.message||''))){
           const fallback={...updatePayload};
-          delete fallback.seller_id; delete fallback.pincode; delete fallback.updated_at;
+          ['seller_id','pincode','updated_at','part_number','oem_number','sku_code','compatible_machine','manufacturer','quantity_available','sale_unit','dimensions'].forEach(k=>delete fallback[k]);
           const res=await sb.from('products').update(fallback).eq('id',editId).eq('user_id',state.user.id);
           error=res.error;
         }
@@ -1666,7 +1861,7 @@
     }
     if(sb){
       let {error}=await sb.from('products').insert(payload);
-      if(error && /seller_id|pincode/i.test(String(error.message||''))){ const fallback={...payload}; delete fallback.seller_id; delete fallback.pincode; const res=await sb.from('products').insert(fallback); error=res.error; }
+      if(error && /seller_id|pincode|part_number|oem_number|sku_code|compatible_machine|manufacturer|quantity_available|sale_unit|dimensions/i.test(String(error.message||''))){ const fallback={...payload}; ['seller_id','pincode','part_number','oem_number','sku_code','compatible_machine','manufacturer','quantity_available','sale_unit','dimensions'].forEach(k=>delete fallback[k]); const res=await sb.from('products').insert(fallback); error=res.error; }
       if(error)return toast(error.message);
       await loadProducts();
     } else{ payload.id='local-'+Date.now(); payload.status='approved'; state.products.unshift(payload); localStorage.hp_products=JSON.stringify(state.products); }
@@ -1713,7 +1908,7 @@
       if(new Date(m.created_at||0).getTime() > new Date(t.last||0).getTime()) t.last=m.created_at||t.last;
       if(String(m.receiver_id)===uid && !m.is_read) t.unread+=1;
     });
-    const routedProduct=/^#messages\//.test(location.hash||'') ? messageProduct(state.currentProduct) : null;
+    const routedProduct=state.route==='messages' && state.currentProduct ? messageProduct(state.currentProduct) : null;
     if(routedProduct && String(routedProduct.user_id||'')!==uid){
       const receiverId=String(routedProduct.user_id||'');
       const key=threadKeyFor(receiverId, routedProduct.id);
@@ -1722,7 +1917,7 @@
     return [...map.values()].map(t=>{ t.messages.sort((a,b)=>new Date(a.created_at||0)-new Date(b.created_at||0)); return t; }).sort((a,b)=>new Date(b.last||0)-new Date(a.last||0));
   }
   function selectedMessageThread(threads=[]){
-    const routedProduct=/^#messages\//.test(location.hash||'') ? String(state.currentProduct||'') : '';
+    const routedProduct=state.route==='messages' ? String(state.currentProduct||'') : '';
     if(routedProduct) return threads.find(t=>String(t.productId)===routedProduct) || threads[0] || null;
     const stored=sessionStorage.hp_message_thread_key||'';
     return threads.find(t=>t.key===stored) || threads[0] || null;
@@ -1733,7 +1928,7 @@
     if(!t) return;
     sessionStorage.hp_message_thread_key=key;
     state.currentProduct=t.productId||null;
-    if(location.hash!=='#messages') history.replaceState(null,'','#messages');
+    if(location.pathname!=='/messages') history.replaceState(null,'','/messages');
     render();
   }
   function messageRows(thread){
@@ -2072,7 +2267,7 @@
     const pendingSellers=sellers.filter(s=>['pending','provisional'].includes(s.status));
     return `<section class="admin-hero-pro page-card">
       <div class="admin-orb"></div>
-      <div class="admin-owner-row"><img src="./logo-192.png" alt=""><div><span class="badge owner">ADMIN CONTROL CENTER</span><h1>Platform Owner Dashboard</h1><p data-no-translate>${esc(state.user.email||'')}</p></div></div>
+      <div class="admin-owner-row"><img src="/logo-192.png" alt=""><div><span class="badge owner">ADMIN CONTROL CENTER</span><h1>Platform Owner Dashboard</h1><p data-no-translate>${esc(state.user.email||'')}</p></div></div>
       <div class="admin-quick-actions"><button class="primary" data-route="sell">List Product</button><button class="secondary" data-route="market">View Marketplace</button><button class="ghost" data-route="orders">Orders</button></div>
     </section>
     <section class="page-card admin-nav-strip"><button onclick="document.getElementById('adminAnalyticsPanel')?.scrollIntoView({behavior:'smooth',block:'start'})">Analytics</button><button onclick="document.getElementById('sellerApprovalList')?.scrollIntoView({behavior:'smooth',block:'start'})">Seller approvals</button><button onclick="document.getElementById('approvedProductsList')?.scrollIntoView({behavior:'smooth',block:'start'})">Products</button><button onclick="document.getElementById('adminOrdersList')?.scrollIntoView({behavior:'smooth',block:'start'})">Orders</button><button onclick="document.getElementById('adminMoneyList')?.scrollIntoView({behavior:'smooth',block:'start'})">Money & payouts</button><button onclick="document.getElementById('adminRanksList')?.scrollIntoView({behavior:'smooth',block:'start'})">Badges</button><button onclick="document.getElementById('adminMembershipList')?.scrollIntoView({behavior:'smooth',block:'start'})">Plans</button></section>
@@ -2210,7 +2405,7 @@
   function adminReportsList(reports=[]){ return (reports||[]).slice(0,8).map(r=>`<details class="admin-detail-card"><summary><div><b>${esc(r.target_type||'Report')} report</b><p>${esc(r.reason||'No reason added')}</p><small>${new Date(r.created_at||Date.now()).toLocaleDateString('en-IN')}</small></div>${statusBadge(r.status||'open')}</summary><div class="approval-actions"><button class="ghost" onclick="HP.setReportStatus('${esc(r.id)}','reviewing')">Reviewing</button><button class="secondary" onclick="HP.setReportStatus('${esc(r.id)}','closed')">Close</button></div></details>`).join('')||empty('No reports'); }
   function adminContactsList(contacts=[]){ if(!contacts?.length) return ''; return `<h3>Support messages</h3>`+(contacts||[]).slice(0,8).map(c=>`<details class="admin-detail-card"><summary><div><b>${esc(c.name||'Support request')}</b><p>${esc(c.topic||'Support')} • ${esc(c.phone||'')}</p><small>${new Date(c.created_at||Date.now()).toLocaleDateString('en-IN')}</small></div>${statusBadge(c.status||'open')}</summary><p>${esc(c.message||'')}</p><div class="approval-actions"><button class="secondary" onclick="HP.setContactStatus('${esc(c.id)}','closed')">Close</button><button class="ghost" onclick="HP.setContactStatus('${esc(c.id)}','open')">Reopen</button></div></details>`).join(''); }
   async function loadAdminProData(){
-    if(!sb)return;
+    if(!sb||!isAdminUser())return;
     const safe=async(fn,fallback=[])=>{try{const {data,error}=await fn(); if(error) return fallback; return data||fallback;}catch(e){return fallback;}};
     state.admin.sellers=await safe(()=>sb.from('sellers').select('*, users(*)').order('created_at',{ascending:false}).limit(120));
     state.admin.products=await safe(()=>sb.from('products').select('*, sellers(business_name,status), users(*)').order('created_at',{ascending:false}).limit(160));
@@ -2495,11 +2690,11 @@
   };
 
   function legalFooter(){
-    return `<footer class="company-footer royal-footer"><div class="footer-brand"><img src="./logo-192.png" alt="Harvester Parts"><div><b>Harvester Parts</b><span>India’s trusted agri mandi for farm machinery, implements and spare parts.</span></div></div><div class="footer-columns"><div><h4>Marketplace</h4><button data-route="market">Browse farm listings</button><button data-route="sell">Sell machinery or parts</button><button data-route="membership">Seller plans</button></div><div><h4>For farmers & dealers</h4><button data-route="categories">Categories</button><button data-route="how">How it works</button><button data-route="support">Support</button><button data-route="contact">Contact</button></div><div><h4>Company</h4><button data-route="about">About Harvester Parts</button><button data-route="terms">Terms</button><button data-route="privacy">Privacy</button><button data-route="refund">Refunds</button><button data-route="shipping">Shipping</button><button data-route="grievance">Grievance</button></div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} Harvester Parts. All rights reserved.</span><span>Verified sellers • Secure checkout • Agricultural marketplace</span></div></footer>`;
+    return `<footer class="company-footer royal-footer"><div class="footer-brand"><img src="/logo-192.png" alt="Harvester Parts"><div><b>Harvester Parts</b><span>India’s trusted agri mandi for farm machinery, implements and spare parts.</span></div></div><div class="footer-columns"><div><h4>Marketplace</h4>${navLink('market','Browse farm listings')}${navLink('request-part','Request a Part')}${navLink('sell','Sell machinery or parts')}${navLink('membership','Seller plans')}</div><div><h4>For farmers & dealers</h4>${navLink('categories','Categories')}${navLink('how','How it works')}${navLink('support','Support')}${navLink('contact','Contact')}</div><div><h4>Company</h4>${navLink('about','About Harvester Parts')}${navLink('terms','Terms')}${navLink('privacy','Privacy')}${navLink('refund','Refunds')}${navLink('shipping','Shipping')}${navLink('grievance','Grievance')}</div></div><div class="footer-bottom"><span>© ${new Date().getFullYear()} Harvester Parts. All rights reserved.</span><span>Verified sellers • Secure checkout • Agricultural marketplace</span></div></footer>`;
   }
   function legalCardLink(key,label,desc){
     const doc=legalDocs[key]||{};
-    return `<button class="legal-link-card" data-route="${esc(key)}"><b>${esc(label||doc.title||key)}</b><span>${esc(desc||doc.subtitle||'Open policy')}</span></button>`;
+    return `<a class="legal-link-card" href="${esc(routeHref(key))}" data-route="${esc(key)}"><b>${esc(label||doc.title||key)}</b><span>${esc(desc||doc.subtitle||'Open policy')}</span></a>`;
   }
   function legalCentrePage(){
     return `<section class="legal-hero page-card"><span class="eyebrow">Legal centre</span><h1>Clear policies for buyers, sellers, payments, refunds and payouts.</h1><p class="muted">These pages are written for a real marketplace workflow: verified sellers, Razorpay checkout, platform commission, seller balance, payout review, refunds, disputes and support escalation.</p><div class="legal-meta"><span>Last updated: ${LEGAL_LAST_UPDATED}</span><span>Website: ${LEGAL_WEBSITE}</span><span>Support: ${LEGAL_SUPPORT_EMAIL}</span></div></section><section class="legal-grid">${legalCardLink('terms','Terms & Conditions','Complete rules for accounts, listings, orders, plans and platform use.')}${legalCardLink('privacy','Privacy Policy','Personal data, seller documents, payout information and payment references.')}${legalCardLink('refund','Refund & Cancellation','Cancellation, refund eligibility, non-refundable cases and timelines.')}${legalCardLink('shipping','Shipping & Delivery','Dispatch, delivery, logistics and inspection rules.')}${legalCardLink('razorpay','Razorpay Payment Policy','Payment gateway, failed payment, refunds, chargebacks and security.')}${legalCardLink('seller-policy','Seller Policy','Seller approval, product accuracy, order handling and prohibited conduct.')}${legalCardLink('buyer-policy','Buyer Policy','Buyer responsibility, safe buying and dispute reporting.')}${legalCardLink('payout-policy','Seller Payout Policy','Seller balance, commission, UPI/bank payout and 7 business day target.')}${legalCardLink('fees-policy','Fees & Commission','Buyer charges, seller commission and membership fee discounts.')}${legalCardLink('prohibited-policy','Prohibited Items','Items and activities not allowed on the marketplace.')}${legalCardLink('dispute-policy','Dispute Resolution','Evidence, review process and resolution options.')}${legalCardLink('grievance','Grievance Redressal','Complaint and support escalation process.')}</section><section class="page-card legal-note"><h2>Launch checklist</h2><p>Before public launch, update your final legal entity name, registered address, GSTIN if applicable, business email and grievance officer/contact details. Do not add fake details.</p></section>`;
@@ -2509,8 +2704,110 @@
     return `<section class="legal-doc page-card"><div class="legal-doc-head"><span class="eyebrow">Harvester Parts policy</span><h1>${esc(doc.title)}</h1><p class="muted">${esc(doc.subtitle)}</p><div class="legal-meta"><span>Last updated: ${LEGAL_LAST_UPDATED}</span><span>Operator: ${LEGAL_OWNER}</span><span>Support: ${LEGAL_SUPPORT_EMAIL}</span></div></div><div class="legal-toc">${doc.sections.map((s,i)=>`<span>${i+1}. ${esc(s[0].replace(/^\d+\.\s*/,''))}</span>`).join('')}</div><div class="legal-body">${doc.sections.map((s,i)=>`<article id="policy-${i+1}"><h2>${esc(s[0])}</h2><p>${esc(s[1])}</p></article>`).join('')}</div><div class="legal-contact-box"><h2>Contact and notices</h2><div class="info-list"><div><span>Email</span><b>${LEGAL_SUPPORT_EMAIL}</b></div><div><span>Support mode</span><b>${LEGAL_SUPPORT_PHONE}</b></div><div><span>Website</span><b>${LEGAL_WEBSITE}</b></div><div><span>Business details</span><b>${LEGAL_BUSINESS_ADDRESS}</b></div></div><button class="primary" data-route="contact">Contact Support</button><button class="ghost" data-route="legal">Back to Legal Centre</button>${doc.staticFile?`<a class="ghost legal-static-link" href="./${esc(doc.staticFile)}" target="_blank" rel="noopener">Open standalone page</a>`:''}</div></section>`;
   }
 
+  function setMetaAttr(selector, attr, value){
+    const el=document.querySelector(selector);
+    if(el) el.setAttribute(attr,value);
+  }
+  function setJsonLd(id,obj){
+    let el=document.getElementById(id);
+    if(!el){
+      el=document.createElement('script');
+      el.type='application/ld+json';
+      el.id=id;
+      document.head.appendChild(el);
+    }
+    el.textContent=JSON.stringify(obj);
+  }
+  function shortDescription(text='',fallback=''){
+    return String(text||fallback||'').replace(/\s+/g,' ').trim().slice(0,155);
+  }
+  function absoluteMediaUrl(src=''){
+    const value=String(src||'').trim();
+    if(!value) return SITE_ORIGIN+'/logo-512.png';
+    if(/^(https?:|data:|blob:)/i.test(value)) return value;
+    return SITE_ORIGIN+'/'+value.replace(/^\.?\//,'');
+  }
+  function currentCanonicalPath(){
+    if(state.route==='product'){
+      const p=findProductByRouteId(state.currentProduct);
+      return p ? routeHref('product',{product:p}) : '/product';
+    }
+    if(state.route==='market'){
+      const brand=sessionStorage.hp_market_brand||'';
+      const model=sessionStorage.hp_market_model||'';
+      const cat=sessionStorage.hp_market_category||'';
+      if(brand) return `/brand/${slugify(brand)}${model?'/'+slugify(model):''}`;
+      if(cat) return routeHref('market',{category:cat});
+      if(sessionStorage.hp_market_type==='machine') return '/machinery';
+      return '/parts';
+    }
+    if(state.route==='seller') return routeHref('seller',{id:state.currentProduct||''});
+    return routeHref(state.route||'home');
+  }
+  function updateSeo(){
+    let title='Harvester Parts | Buy & Sell Farm Machinery, Tractor Parts and Harvester Spares';
+    let description='Harvester Parts is a verified agricultural marketplace to buy and sell new or used farm machinery, OEM spare parts, tractor parts, combine harvester spares, implements and repair inventory across India.';
+    let image=SITE_ORIGIN+'/logo-512.png';
+    let type='website';
+    const p=state.route==='product' ? findProductByRouteId(state.currentProduct) : null;
+    if(p){
+      title=`${p.title||'Agricultural Listing'} | Harvester Parts`;
+      description=shortDescription(p.description,`Buy ${p.title||'agricultural machinery or spare part'} for ${money(p.price)}. Confirm condition, compatibility, location and delivery with the seller before ordering.`);
+      image=absoluteMediaUrl(productImage(p));
+      type='product';
+    } else if(state.route==='market'){
+      const cat=sessionStorage.hp_market_category||'';
+      const brand=sessionStorage.hp_market_brand||'';
+      const model=sessionStorage.hp_market_model||'';
+      if(model&&brand){ title=`${brand} ${model} Parts and Machinery | Harvester Parts`; description=`Find ${brand} ${model} compatible agricultural spare parts and machinery listings from marketplace sellers in India.`; }
+      else if(brand){ title=`${brand} Agricultural Parts and Machinery | Harvester Parts`; description=`Search ${brand} tractor, harvester and farm machinery parts listed by marketplace sellers in India.`; }
+      else if(cat){ title=`${cat} in India | Harvester Parts`; description=`Buy and sell ${cat.toLowerCase()} with verified agricultural marketplace listings, seller profiles, location details and secure order records.`; }
+      else { title='Buy Agricultural Spare Parts and Machinery in India | Harvester Parts'; description='Search by part name, OEM number, machine, model, brand, condition and location on Harvester Parts.'; }
+    } else if(state.route==='categories'){
+      title='Agricultural Machinery and Spare Part Categories | Harvester Parts';
+      description='Browse combine harvester, tractor, rotavator, seed drill, straw reaper, bearing, belt, blade, hydraulic and other agricultural categories.';
+    } else if(state.route==='request-part'){
+      title='Request a Harvester or Tractor Spare Part | Harvester Parts';
+      description='Submit a requirement for hard-to-find agricultural spare parts with machine type, brand, model, OEM number, photo and location.';
+    } else if(legalDocs[state.route]){
+      title=`${legalDocs[state.route].title} | Harvester Parts`;
+      description=legalDocs[state.route].subtitle;
+    } else if(state.route==='about'){
+      title='About Harvester Parts | Indian Agricultural Marketplace';
+    } else if(state.route==='sell'){
+      title='Sell Agricultural Machinery and Spare Parts | Harvester Parts';
+      description='Verified sellers can list new or used agricultural machinery, tractor parts, harvester spares and farm equipment with clear commission and payout tracking.';
+    }
+    const canonical=SITE_ORIGIN+currentCanonicalPath();
+    document.title=title;
+    setMetaAttr('meta[name="description"]','content',description);
+    setMetaAttr('link[rel="canonical"]','href',canonical);
+    setMetaAttr('meta[property="og:title"]','content',title);
+    setMetaAttr('meta[property="og:description"]','content',description);
+    setMetaAttr('meta[property="og:image"]','content',image);
+    setMetaAttr('meta[property="og:url"]','content',canonical);
+    setMetaAttr('meta[property="og:type"]','content',type);
+    setMetaAttr('meta[name="twitter:card"]','content','summary_large_image');
+    setJsonLd('hp-jsonld-organization',{"@context":"https://schema.org","@type":"Organization","name":"Harvester Parts","url":SITE_ORIGIN,"logo":SITE_ORIGIN+"/logo-512.png","description":"Verified marketplace for agricultural machinery, combine harvester parts, tractor spares, farm implements and repair inventory in India.","contactPoint":{"@type":"ContactPoint","email":SUPPORT_EMAIL,"contactType":"customer support","areaServed":"IN"}});
+    setJsonLd('hp-jsonld-website',{"@context":"https://schema.org","@type":"WebSite","name":"Harvester Parts","url":SITE_ORIGIN,"potentialAction":{"@type":"SearchAction","target":SITE_ORIGIN+"/parts?q={search_term_string}","query-input":"required name=search_term_string"}});
+    const crumbs=[{"@type":"ListItem","position":1,"name":"Home","item":SITE_ORIGIN+"/"}];
+    if(state.route==='market') crumbs.push({"@type":"ListItem","position":2,"name":"Marketplace","item":SITE_ORIGIN+"/parts"});
+    if(p){
+      crumbs.push({"@type":"ListItem","position":2,"name":p.category||'Marketplace',"item":SITE_ORIGIN+routeHref('market',{category:p.category||''})});
+      crumbs.push({"@type":"ListItem","position":3,"name":p.title||'Product',"item":canonical});
+      const ratings=reviewStats(p.user_id);
+      const offer={"@type":"Offer","priceCurrency":"INR","price":Number(p.price||0),"availability":isVisibleProduct(p)?"https://schema.org/InStock":"https://schema.org/OutOfStock","url":canonical,"itemCondition":String(p.condition||'').toLowerCase()==='new'?"https://schema.org/NewCondition":"https://schema.org/UsedCondition","seller":{"@type":"Organization","name":sellerDisplayName(p)}};
+      const productSchema={"@context":"https://schema.org","@type":"Product","name":p.title||'Agricultural listing',"image":productImages(p).filter(src=>!isVideoUrl(src)).map(absoluteMediaUrl),"description":description,"category":p.category||"Agricultural machinery and spare parts","brand":p.brand?{"@type":"Brand","name":p.brand}:undefined,"model":p.model||undefined,"sku":p.part_number||p.oem_number||detailValue(p.description,'OEM/part number')||String(p.id||''),"offers":offer};
+      if(ratings.count) productSchema.aggregateRating={"@type":"AggregateRating","ratingValue":Number(ratings.average.toFixed(1)),"reviewCount":ratings.count};
+      setJsonLd('hp-jsonld-dynamic',productSchema);
+    } else {
+      setJsonLd('hp-jsonld-dynamic',{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":crumbs});
+    }
+    setJsonLd('hp-jsonld-breadcrumbs',{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":crumbs});
+  }
+
   function empty(msg){return `<div class="page-card muted" style="grid-column:1/-1">${msg}</div>`} function emptyPage(msg){return `<section class="page-card"><h1>${msg}</h1><button class="primary" data-route="home">Go Home</button></section>`}
-  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||null; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPageV113(state.currentProduct); else if(state.route==='seller')html=sellerProfilePage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPageV113(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPageV113(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='rewards')html=rewardsPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); setupPageMotion(); trackAnalyticsEvent('page_view',{route:state.route,product_id:state.currentProduct||''}); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); if(state.route==='seller')loadPublicProfile(state.currentProduct); }
+  function render(){ const [r,id]=parseRoute(); state.route=r||state.route||'home'; state.currentProduct=id||null; let html=''; if(state.route==='home')html=home(); else if(state.route==='market')html=market(); else if(state.route==='product')html=productPageProduction(state.currentProduct); else if(state.route==='seller')html=sellerProfilePage(state.currentProduct); else if(state.route==='cart')html=cartPage(); else if(state.route==='checkout')html=checkoutPage(); else if(state.route==='login')html=loginPage(); else if(state.route==='account')html=accountPageV113(); else if(state.route==='sell')html=sellPage(); else if(state.route==='messages')html=messagesPage(); else if(state.route==='orders')html=ordersPage(); else if(state.route==='admin')html=adminPageV113(); else if(state.route==='membership')html=membershipPage(); else if(state.route==='rewards')html=rewardsPage(); else if(state.route==='categories')html=categoriesPage(); else if(state.route==='about')html=aboutPage(); else if(state.route==='contact')html=contactPage(); else if(state.route==='how')html=howPage(); else if(state.route==='support')html=supportPage(); else if(state.route==='request-part')html=requestPartPage(); else if(state.route==='legal')html=legalCentrePage(); else if(legalDocs[state.route])html=legalDocPage(state.route); else html=home(); app.innerHTML=localizeHtml(html + legalFooter()); syncMenu(); bindPage(); applyLang(); updateSeo(); if(window.HP_APPLY_LANGUAGE) setTimeout(window.HP_APPLY_LANGUAGE,40); animateCounters(); startFactTicker(); setupPageMotion(); trackAnalyticsEvent('page_view',{route:state.route,product_id:state.currentProduct||''}); if(state.route==='orders')loadOrders(); if(state.route==='admin')loadAdminProData(); if(state.route==='seller')loadPublicProfile(state.currentProduct); }
   function bindPage(){
     ensureProductReportButton();
     $$('#app input, #app textarea, #app select').forEach(el=>el.addEventListener('click',e=>e.stopPropagation()));
@@ -2536,6 +2833,7 @@
     $('#messageForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>sendMsg(e.target),'Sending...')});
     $('#messageThreadSelect')?.addEventListener('change',e=>selectMessageThread(e.target.value));
     $('#contactForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>sendContact(e.target),'Saving request...')});
+    $('#partRequestForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>submitPartRequest(e.target),'Sending request...')});
     $('#supportBotForm')?.addEventListener('submit',e=>{e.preventDefault(); const fd=new FormData(e.target); const ans=$('#supportBotAnswer'); if(ans){ ans.textContent=supportBotReply(fd.get('topic'),fd.get('question')); ans.classList.add('active'); }});
     $$('[data-plan-key]').forEach(btn=>btn.addEventListener('click',e=>{ e.preventDefault(); e.stopPropagation(); withLoading(btn.closest('.membership-card')||btn,()=>purchaseMembership(btn.dataset.planKey),'Opening plan...'); }));
     $('#payoutAccountForm')?.addEventListener('submit',e=>{e.preventDefault();withLoading(e.target,()=>savePayoutAccount(e.target),'Saving payout...')});
@@ -2693,10 +2991,22 @@
 
   function filterMarket(){
     const q=($('#searchInput')?.value||'').toLowerCase();
+    sessionStorage.hp_market_query=q;
     const type=$('#typeFilter')?.value||'all'; sessionStorage.hp_market_type=type;
     const cat=$('#categoryFilter')?.value||''; sessionStorage.hp_market_category=cat;
+    const brand=(sessionStorage.hp_market_brand||'').toLowerCase();
+    const model=(sessionStorage.hp_market_model||'').toLowerCase();
+    const forcedCondition=(sessionStorage.hp_market_condition||'').toLowerCase();
     const sort=$('#sortFilter')?.value||'all';
-    let arr=visibleProducts().filter(p=>matchesProductType(p,type)&&(!q||[p.title,p.category,p.brand,p.model,p.condition].join(' ').toLowerCase().includes(q))&&(!cat||String(p.category||'').toLowerCase().includes(String(cat).toLowerCase()) || String(p.title||'').toLowerCase().includes(String(cat).toLowerCase())));
+    let arr=visibleProducts().filter(p=>{
+      const hay=[p.title,p.category,p.brand,p.model,p.condition,p.description,p.city,p.district,p.state,p.pincode,p.part_number,p.oem_number,p.sku_code,p.compatible_machine].join(' ').toLowerCase();
+      return matchesProductType(p,type)
+        && (!q||hay.includes(q))
+        && (!cat||hay.includes(String(cat).toLowerCase()))
+        && (!brand||hay.includes(brand))
+        && (!model||hay.includes(model))
+        && (!forcedCondition||String(p.condition||'').toLowerCase()===forcedCondition);
+    });
     if(sort==='condition_new') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='new');
     if(sort==='condition_used') arr=arr.filter(p=>String(p.condition||'').toLowerCase()==='used');
     if(sort==='price_low') arr.sort((a,b)=>Number(a.price||0)-Number(b.price||0));

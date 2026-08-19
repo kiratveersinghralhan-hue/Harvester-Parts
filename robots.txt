@@ -1,3 +1,11 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /checkout
+Disallow: /cart
+Disallow: /messages
+Disallow: /orders
+Disallow: /sell
+
 Sitemap: https://harvesterparts.in/sitemap.xml
