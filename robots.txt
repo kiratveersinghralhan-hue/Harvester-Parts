@@ -1,11 +1,23 @@
 User-agent: *
 Allow: /
-Disallow: /admin
+Disallow: /auth
 Disallow: /account
-Disallow: /checkout
+Disallow: /seller
+Disallow: /admin
+Disallow: /delivery
 Disallow: /cart
-Disallow: /messages
+Disallow: /checkout
+Disallow: /login
 Disallow: /orders
-Disallow: /sell
+Disallow: /sign-in
+Disallow: /sign-up
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /saved
+Disallow: /compare
+Disallow: /requests
+Disallow: /sell/parts/new
+Disallow: /sell/machinery/new
+Disallow: /design-system
 
 Sitemap: https://harvesterparts.in/sitemap.xml

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" role="img" aria-label="Harvester Parts">
+<title>Harvester Parts</title>
+<defs>
+<clipPath id="sy-a"><path d="M-30 89.837 L130 -2.539 V-30 H-30 Z"/></clipPath>
+<clipPath id="sy-b"><path d="M-30 102.539 L130 10.163 V130 H-30 Z"/></clipPath>
+</defs>
+<g transform="translate(-3.464 2)"><circle cx="50" cy="50" r="42" fill="#111111" clip-path="url(#sy-a)"/></g>
+<g transform="translate(3.464 -2.000)"><circle cx="50" cy="50" r="42" fill="#111111" clip-path="url(#sy-b)"/></g>
+</svg>

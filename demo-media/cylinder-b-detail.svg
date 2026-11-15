@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="330 170 540 405" width="1200" height="900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Demo illustration — not a product photo">
+  <defs>
+    <radialGradient id="bg" cx=".5" cy=".38" r=".75"><stop offset="0" stop-color="#2a3530"/><stop offset=".6" stop-color="#121a17"/><stop offset="1" stop-color="#070b0a"/></radialGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#4fb985" stop-opacity=".22"/><stop offset="1" stop-color="#4fb985" stop-opacity="0"/></radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2420"/><stop offset="1" stop-color="#090d0b"/></linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <rect y="690" width="1200" height="210" fill="url(#floor)"/>
+  <ellipse cx="600" cy="380" rx="520" ry="360" fill="url(#glow)"/><defs>
+  <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#9aa3a8"/><stop offset=".45" stop-color="#5c6469"/>
+    <stop offset=".7" stop-color="#262c30"/><stop offset="1" stop-color="#5c6469"/>
+  </linearGradient>
+  <linearGradient id="metalV" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#9aa3a8"/><stop offset=".5" stop-color="#5c6469"/><stop offset="1" stop-color="#262c30"/>
+  </linearGradient>
+  <radialGradient id="spec" cx=".35" cy=".3" r=".6">
+    <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient></defs><ellipse cx="600" cy="720" rx="360" ry="40" fill="#000" opacity="0.55"/><g>
+    <g transform="rotate(-6 600 430)">
+      <rect x="230" y="380" width="560" height="120" rx="30" fill="#121618" transform="translate(8 12)"/>
+      <rect x="790" y="410" width="300" height="60" fill="url(#metalV)" stroke="#121618" stroke-width="3"/>
+      <rect x="230" y="380" width="560" height="120" rx="30" fill="#c77a12"/>
+      <rect x="230" y="380" width="560" height="120" rx="30" fill="url(#spec)"/>
+      <rect x="760" y="372" width="44" height="136" rx="8" fill="url(#metal)" stroke="#121618" stroke-width="3"/>
+      <rect x="216" y="372" width="44" height="136" rx="8" fill="url(#metal)" stroke="#121618" stroke-width="3"/>
+      <circle cx="160" cy="440" r="62" fill="url(#metal)" stroke="#121618" stroke-width="4"/><circle cx="160" cy="440" r="28" fill="#0b0f0d"/>
+      <circle cx="1120" cy="440" r="50" fill="url(#metal)" stroke="#121618" stroke-width="4"/><circle cx="1120" cy="440" r="22" fill="#0b0f0d"/>
+      <rect x="330" y="340" width="40" height="44" fill="#e2b53e"/><rect x="660" y="340" width="40" height="44" fill="#e2b53e"/>
+    </g></g><g font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="0.9">
+    <rect x="340.8" y="546.2" width="211.5" height="18" rx="2.7" fill="#000" opacity=".45"/>
+    <text x="348" y="558.4" font-size="8.1" fill="#fff" fill-opacity=".85">DEMO ILLUSTRATION — NOT A PRODUCT PHOTO</text>
+  </g></svg>

@@ -1,0 +1,16 @@
+{
+  "name": "Harvester Parts",
+  "short_name": "Harvester Parts",
+  "description": "Independent agricultural marketplace — parts and machinery.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#101715",
+  "theme_color": "#101715",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "favicon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ],
+  "scope": "./"
+}

@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Demo illustration — not a product photo">
+  <defs>
+    <radialGradient id="bg" cx=".5" cy=".38" r=".75"><stop offset="0" stop-color="#2a3530"/><stop offset=".6" stop-color="#121a17"/><stop offset="1" stop-color="#070b0a"/></radialGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#d4a017" stop-opacity=".22"/><stop offset="1" stop-color="#d4a017" stop-opacity="0"/></radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2420"/><stop offset="1" stop-color="#090d0b"/></linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <rect y="690" width="1200" height="210" fill="url(#floor)"/>
+  <ellipse cx="600" cy="380" rx="520" ry="360" fill="url(#glow)"/><defs>
+  <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#eef1f3"/><stop offset=".45" stop-color="#aab2b9"/>
+    <stop offset=".7" stop-color="#4f575e"/><stop offset="1" stop-color="#aab2b9"/>
+  </linearGradient>
+  <linearGradient id="metalV" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#eef1f3"/><stop offset=".5" stop-color="#aab2b9"/><stop offset="1" stop-color="#4f575e"/>
+  </linearGradient>
+  <radialGradient id="spec" cx=".35" cy=".3" r=".6">
+    <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient></defs><ellipse cx="600" cy="720" rx="360" ry="40" fill="#000" opacity="0.55"/><g><g transform="translate(0 20)">
+      <path d="M250 200 L980 200 L930 650 L200 650 Z" fill="#2b3136" transform="translate(10 14)"/>
+      <path d="M250 200 L980 200 L930 650 L200 650 Z" fill="#101513" stroke="#aab2b9" stroke-width="18"/>
+      <clipPath id="sv"><path d="M262 212 L968 212 L920 638 L212 638 Z"/></clipPath>
+      <g clip-path="url(#sv)"><path d="M285 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M315 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M345 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M375 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M405 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M435 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M465 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M495 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M525 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M555 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M585 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M615 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M645 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M675 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M705 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M735 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M765 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M795 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M825 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M855 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M885 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/><path d="M915 220 l26 0 l-60 420 l-26 0 Z" fill="url(#metal)" opacity=".9"/></g>
+      <path d="M250 200 L980 200 L930 650 L200 650 Z" fill="none" stroke="#d4a017" stroke-width="4" opacity=".7"/>
+    </g></g><g font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="2">
+    <rect x="24" y="836" width="470" height="40" rx="6" fill="#000" opacity=".45"/>
+    <text x="40" y="863" font-size="18" fill="#fff" fill-opacity=".85">DEMO ILLUSTRATION — NOT A PRODUCT PHOTO</text>
+  </g></svg>

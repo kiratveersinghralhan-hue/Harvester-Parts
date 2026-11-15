@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="330 170 540 405" width="1200" height="900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Demo illustration — not a product photo">
+  <defs>
+    <radialGradient id="bg" cx=".5" cy=".38" r=".75"><stop offset="0" stop-color="#2a3530"/><stop offset=".6" stop-color="#121a17"/><stop offset="1" stop-color="#070b0a"/></radialGradient>
+    <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#4fb985" stop-opacity=".22"/><stop offset="1" stop-color="#4fb985" stop-opacity="0"/></radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b2420"/><stop offset="1" stop-color="#090d0b"/></linearGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#bg)"/>
+  <rect y="690" width="1200" height="210" fill="url(#floor)"/>
+  <ellipse cx="600" cy="380" rx="520" ry="360" fill="url(#glow)"/><defs>
+  <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#eef1f3"/><stop offset=".45" stop-color="#aab2b9"/>
+    <stop offset=".7" stop-color="#4f575e"/><stop offset="1" stop-color="#aab2b9"/>
+  </linearGradient>
+  <linearGradient id="metalV" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#eef1f3"/><stop offset=".5" stop-color="#aab2b9"/><stop offset="1" stop-color="#4f575e"/>
+  </linearGradient>
+  <radialGradient id="spec" cx=".35" cy=".3" r=".6">
+    <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient></defs><ellipse cx="600" cy="720" rx="360" ry="40" fill="#000" opacity="0.55"/><g><g transform="rotate(-8 600 450)">
+      <path d="M300 300 H900 A150 150 0 0 1 900 600 H300 A150 150 0 0 1 300 300 Z" fill="none" stroke="#2b3136" stroke-width="70" transform="translate(10 14)"/>
+      <path d="M300 300 H900 A150 150 0 0 1 900 600 H300 A150 150 0 0 1 300 300 Z" fill="none" stroke="#1d2120" stroke-width="64"/>
+      <path d="M300 300 H900 A150 150 0 0 1 900 600 H300 A150 150 0 0 1 300 300 Z" fill="none" stroke="#2e3431" stroke-width="40" stroke-dasharray="14 18"/>
+      <path d="M300 268 H900" stroke="#5b625e" stroke-width="6"/>
+      <text x="520" y="292" font-family="Arial" font-size="20" fill="#d4a017" font-weight="700">DEMO · 2540 mm</text>
+    </g></g><g font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="0.9">
+    <rect x="340.8" y="546.2" width="211.5" height="18" rx="2.7" fill="#000" opacity=".45"/>
+    <text x="348" y="558.4" font-size="8.1" fill="#fff" fill-opacity=".85">DEMO ILLUSTRATION — NOT A PRODUCT PHOTO</text>
+  </g></svg>

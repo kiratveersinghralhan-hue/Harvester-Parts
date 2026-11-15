@@ -1,0 +1,9 @@
+{
+  "mode": "public-showcase",
+  "realTransactions": false,
+  "accounts": false,
+  "syntheticProviders": false,
+  "catalogue": "fictional-demonstration",
+  "contract": "r6.2",
+  "hostedBackendValidated": false
+}

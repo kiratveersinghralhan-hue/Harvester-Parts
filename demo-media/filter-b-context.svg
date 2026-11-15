@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" width="1200" height="900" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Demo illustration — not a product photo">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e2422"/><stop offset="1" stop-color="#0e1211"/></linearGradient>
+    <linearGradient id="bench" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b4a2a"/><stop offset=".08" stop-color="#4d3520"/><stop offset="1" stop-color="#24180e"/></linearGradient>
+    <radialGradient id="lampPool" cx=".5" cy="0" r=".9"><stop offset="0" stop-color="#ffe7a8" stop-opacity=".3"/><stop offset="1" stop-color="#ffe7a8" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1200" height="900" fill="url(#wall)"/>
+  <g stroke="#2a312e" stroke-width="2"><line x1="0" y1="0" x2="0" y2="640"/><line x1="90" y1="0" x2="90" y2="640"/><line x1="180" y1="0" x2="180" y2="640"/><line x1="270" y1="0" x2="270" y2="640"/><line x1="360" y1="0" x2="360" y2="640"/><line x1="450" y1="0" x2="450" y2="640"/><line x1="540" y1="0" x2="540" y2="640"/><line x1="630" y1="0" x2="630" y2="640"/><line x1="720" y1="0" x2="720" y2="640"/><line x1="810" y1="0" x2="810" y2="640"/><line x1="900" y1="0" x2="900" y2="640"/><line x1="990" y1="0" x2="990" y2="640"/><line x1="1080" y1="0" x2="1080" y2="640"/><line x1="1170" y1="0" x2="1170" y2="640"/></g>
+  <rect y="640" width="1200" height="260" fill="url(#bench)"/>
+  <rect width="1200" height="900" fill="url(#lampPool)"/><defs>
+  <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#9aa3a8"/><stop offset=".45" stop-color="#5c6469"/>
+    <stop offset=".7" stop-color="#262c30"/><stop offset="1" stop-color="#5c6469"/>
+  </linearGradient>
+  <linearGradient id="metalV" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#9aa3a8"/><stop offset=".5" stop-color="#5c6469"/><stop offset="1" stop-color="#262c30"/>
+  </linearGradient>
+  <radialGradient id="spec" cx=".35" cy=".3" r=".6">
+    <stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+  </radialGradient></defs><ellipse cx="600" cy="700" rx="380" ry="30" fill="#000" opacity="0.55"/><g transform="translate(108 117.4) scale(0.82)">
+    <ellipse cx="612" cy="660" rx="170" ry="44" fill="#121618"/>
+    <rect x="430" y="240" width="340" height="420" fill="#c77a12"/>
+    <line x1="448" y1="250" x2="448" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="468" y1="250" x2="468" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="488" y1="250" x2="488" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="508" y1="250" x2="508" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="528" y1="250" x2="528" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="548" y1="250" x2="548" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="568" y1="250" x2="568" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="588" y1="250" x2="588" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="608" y1="250" x2="608" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="628" y1="250" x2="628" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="648" y1="250" x2="648" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="668" y1="250" x2="668" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="688" y1="250" x2="688" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="708" y1="250" x2="708" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="728" y1="250" x2="728" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/><line x1="748" y1="250" x2="748" y2="650" stroke="#000" stroke-opacity=".22" stroke-width="5"/>
+    <rect x="430" y="240" width="340" height="420" fill="url(#spec)"/>
+    <ellipse cx="600" cy="660" rx="170" ry="44" fill="#262c30"/>
+    <rect x="430" y="300" width="340" height="40" fill="#e2b53e" opacity=".85"/>
+    <text x="600" y="328" text-anchor="middle" font-family="Arial" font-weight="700" font-size="22" fill="#111">DEMO FILTER</text>
+    <ellipse cx="600" cy="240" rx="170" ry="44" fill="url(#metal)" stroke="#121618" stroke-width="4"/>
+    <ellipse cx="600" cy="240" rx="70" ry="18" fill="#0b0f0d"/>
+    <ellipse cx="600" cy="236" rx="40" ry="10" fill="#262c30"/></g><g font-family="Arial, Helvetica, sans-serif" font-weight="700" letter-spacing="2">
+    <rect x="24" y="836" width="470" height="40" rx="6" fill="#000" opacity=".45"/>
+    <text x="40" y="863" font-size="18" fill="#fff" fill-opacity=".85">DEMO ILLUSTRATION — NOT A PRODUCT PHOTO</text>
+  </g></svg>
