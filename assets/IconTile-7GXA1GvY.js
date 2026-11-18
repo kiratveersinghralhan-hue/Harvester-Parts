@@ -1,0 +1,1 @@
+import{j as s,c as i}from"./index-Chd-Lz6m.js";const o="_tile_1mbyh_1",c="_sm_1mbyh_22",_="_md_1mbyh_26",l="_lg_1mbyh_29",t={tile:o,sm:c,md:_,lg:l};function a({icon:m,size:e="md",className:n}){return s.jsx("span",{className:i(t.tile,t[e],n),"aria-hidden":"true",children:s.jsx(m,{strokeWidth:1.75})})}export{a as I};
