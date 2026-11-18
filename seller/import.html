@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en-IN" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Harvester Parts — Independent agricultural marketplace</title>
+    <meta
+      name="description"
+      content="Harvester Parts is an independent marketplace for agricultural parts and machinery. Finance and farm inputs are planned, subject to partner authorization."
+    />
+    <!-- Pre-launch preview: keep out of search indexes until launch approval. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- Social-sharing defaults for crawlers that do not run JavaScript. The app
+         updates these per route (src/lib/seo.ts); per-route previews for such
+         crawlers need prerendering/SSR. Absolute URLs are written at build time
+         only for an indexable production build (vite.config.ts, seoFiles). -->
+    <meta property="og:site_name" content="Harvester Parts" />
+    <meta property="og:locale" content="en_IN" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Harvester Parts — Independent agricultural marketplace" />
+    <meta
+      property="og:description"
+      content="Harvester Parts is an independent marketplace for agricultural parts and machinery. Finance and farm inputs are planned, subject to partner authorization."
+    />
+    <meta property="og:url" content="/" />
+    <meta property="og:image" content="/og/harvester-parts-1200x630.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Harvester Parts" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#14171A" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="icon" href="/icons/favicon-16.png" sizes="16x16" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <script>
+      // Runs before first paint: applies the saved or system theme (no flash) and decides
+      // whether the one-time intro plays. React reads data-intro at boot.
+      (function () {
+        var d = document.documentElement;
+        var theme = null;
+        try {
+          var saved = localStorage.getItem('hp:theme');
+          if (saved === 'light' || saved === 'dark') theme = saved;
+        } catch (e) {}
+        if (!theme) {
+          try {
+            theme = window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          } catch (e) {
+            theme = 'dark';
+          }
+        }
+        d.dataset.theme = theme;
+        var meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', theme === 'light' ? '#F6F4EE' : '#14171A');
+        try {
+          var q = new URLSearchParams(location.search).get('intro');
+          var shown = null;
+          // Once per browser session on the home page (INTRO_SESSION_KEY in src/app/intro.tsx).
+          // Full or short version is chosen by the app (motion setting / visitor's choice).
+          try { shown = sessionStorage.getItem('hp:intro:session'); } catch (e) {}
+          // ?intro=1 plays it again (honours the motion setting); ?intro=full plays the full sequence.
+          if (q === '1' || q === 'full') d.dataset.intro = 'play';
+          else if (q !== '0' && location.pathname === '/' && !shown) d.dataset.intro = 'play';
+        } catch (e) {}
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-uQp-c8lu.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BSDePQiV.css">
+    <link rel="preload" href="/assets/manrope-latin-wght-normal-DHIcAJRg.woff2" as="font" type="font/woff2" crossorigin="">
+    <link rel="preload" href="/assets/archivo-latin-wdth-normal-DY7AcnAa.woff2" as="font" type="font/woff2" crossorigin="">
+    <script>(function(){var b="/",m=[["^\\/(parts|machinery)(\\/category\\/[^/]+)?\\/?$",["assets/CataloguePage-C6unRGvm.js","assets/listings-Bbh1jtHg.js","assets/summary-DQkiIxhH.js","assets/labels-cc7ZpQ-B.js","assets/locations-BmILOnCP.js","assets/DemoNotice-Dkq4X188.js","assets/Field-DelW4sDP.js","assets/truck-B19lM9OQ.js","assets/ListingCard-FJ09g4Bu.js","assets/ActivityButtons-BXFZQTYx.js","assets/States-SAib_G56.js","assets/RecentlyViewed-COtRUXqt.js"]],["^\\/sell\\/?$",["assets/SellHubPage-C2Fvjz_y.js","assets/IconTile-B3MhdGg1.js","assets/useDocumentTitle-B_folDh-.js","assets/DemoNotice-Dkq4X188.js","assets/listingValidation-vMObNWA2.js","assets/validation-e26k_sZc.js","assets/file-text-Ck__wP9d.js"]],["^\\/sell\\/(parts|machinery)\\/new",["assets/ListingWizard-BoaMxFzz.js","assets/index-Cw7qqhtN.js","assets/listingValidation-vMObNWA2.js","assets/validation-e26k_sZc.js","assets/labels-cc7ZpQ-B.js","assets/locations-BmILOnCP.js","assets/Field-DelW4sDP.js","assets/ErrorSummary-DXm_V-YN.js","assets/useDocumentTitle-B_folDh-.js","assets/DemoNotice-Dkq4X188.js","assets/ListingCard-FJ09g4Bu.js","assets/ActivityButtons-BXFZQTYx.js","assets/photos-DaUFtnA5.js","assets/arrow-left-D_JbY3mv.js","assets/send-DQL2VfI5.js","assets/pencil-B0-5SAur.js"]],["^\\/saved\\/?$",["assets/SavedPage-BMl7g5SJ.js","assets/summary-DQkiIxhH.js","assets/useDocumentTitle-B_folDh-.js","assets/DemoNotice-Dkq4X188.js","assets/ListingCard-FJ09g4Bu.js","assets/labels-cc7ZpQ-B.js","assets/locations-BmILOnCP.js","assets/ActivityButtons-BXFZQTYx.js","assets/States-SAib_G56.js","assets/RecentlyViewed-COtRUXqt.js","assets/ActivityPages.module-DRDxgaCA.js","assets/bookmark-COlJeMxV.js"]],["^\\/compare\\/?$",["assets/ComparePage-DAOneclO.js","assets/labels-cc7ZpQ-B.js","assets/locations-BmILOnCP.js","assets/useDocumentTitle-B_folDh-.js","assets/DemoNotice-Dkq4X188.js","assets/States-SAib_G56.js","assets/ActivityPages.module-DRDxgaCA.js","assets/message-square-DbE7SXXd.js"]],["^\\/sign-(in|up)\\/?$|^\\/forgot-password\\/?$",["assets/AuthPages-CTHbolyd.js","assets/Field-DelW4sDP.js","assets/ErrorSummary-DXm_V-YN.js","assets/PasswordField-DfZsYyQJ.js","assets/eye-BIxBSYI5.js","assets/useDocumentTitle-B_folDh-.js","assets/validation-e26k_sZc.js","assets/layout-dashboard-D-5m3q_i.js"]],["^\\/account\\/?$|^\\/account\\/(profile|settings|notifications)\\/?$",["assets/BuyerPages-D1XiBbU-.js","assets/index-Bst_PsmO.js","assets/index-DQwQOTpS.js","assets/index-CZ3yQ43s.js","assets/locations-BmILOnCP.js","assets/Field-DelW4sDP.js","assets/ErrorSummary-DXm_V-YN.js","assets/PasswordField-DfZsYyQJ.js","assets/eye-BIxBSYI5.js","assets/useDocumentTitle-B_folDh-.js","assets/validation-e26k_sZc.js","assets/summary-DQkiIxhH.js","assets/RecentlyViewed-COtRUXqt.js","assets/ListingCard-FJ09g4Bu.js","assets/labels-cc7ZpQ-B.js","assets/ActivityButtons-BXFZQTYx.js","assets/States-SAib_G56.js","assets/EnquiryParts-CAlhEoJ0.js","assets/truck-B19lM9OQ.js","assets/map-pin-Ck_XJ77R.js","assets/message-square-DbE7SXXd.js","assets/circle-dashed-DHi2RM6E.js","assets/archive-CoMgH62d.js","assets/AccountLayout-B70ACrXT.js","assets/DemoNotice-Dkq4X188.js","assets/layout-dashboard-D-5m3q_i.js"]],["^\\/(account|seller)\\/enquiries(\\/|$)",["assets/EnquiryPages-BK8U6B7-.js","assets/index-Bst_PsmO.js","assets/index-DQwQOTpS.js","assets/index-CZ3yQ43s.js","assets/Field-DelW4sDP.js","assets/useDocumentTitle-B_folDh-.js","assets/AccountLayout-B70ACrXT.js","assets/DemoNotice-Dkq4X188.js","assets/layout-dashboard-D-5m3q_i.js","assets/map-pin-Ck_XJ77R.js","assets/truck-B19lM9OQ.js","assets/States-SAib_G56.js","assets/EnquiryParts-CAlhEoJ0.js","assets/message-square-DbE7SXXd.js","assets/circle-dashed-DHi2RM6E.js","assets/archive-CoMgH62d.js","assets/arrow-left-D_JbY3mv.js","assets/send-DQL2VfI5.js"]],["^\\/seller(\\/(listings|profile))?\\/?$",["assets/SellerPages-DTPA80WT.js","assets/index-Bst_PsmO.js","assets/index-DQwQOTpS.js","assets/index-CZ3yQ43s.js","assets/labels-cc7ZpQ-B.js","assets/locations-BmILOnCP.js","assets/Field-DelW4sDP.js","assets/ErrorSummary-DXm_V-YN.js","assets/useDocumentTitle-B_folDh-.js","assets/validation-e26k_sZc.js","assets/States-SAib_G56.js","assets/listingValidation-vMObNWA2.js","assets/EnquiryParts-CAlhEoJ0.js","assets/truck-B19lM9OQ.js","assets/map-pin-Ck_XJ77R.js","assets/message-square-DbE7SXXd.js","assets/circle-dashed-DHi2RM6E.js","assets/archive-CoMgH62d.js","assets/AccountLayout-B70ACrXT.js","assets/DemoNotice-Dkq4X188.js","assets/layout-dashboard-D-5m3q_i.js","assets/file-text-Ck__wP9d.js","assets/play-DccbYSKw.js","assets/pause-B89744wP.js","assets/copy-BBa0ToV1.js","assets/eye-BIxBSYI5.js","assets/package-check-DW0U-JZO.js"]],["^\\/legal(\\/|$)",["assets/LegalPages-BcfeuvJb.js","assets/circle-dashed-DHi2RM6E.js"]]],p=location.pathname,s={};if(p.indexOf(b)===0)p=p.slice(b.length-1);m.forEach(function(r){if(new RegExp(r[0]).test(p))r[1].forEach(function(f){if(s[f])return;s[f]=1;var l=document.createElement('link');if(/\.css$/.test(f)){l.rel='preload';l.as='style'}else{l.rel='modulepreload'}l.href=b+f;document.head.appendChild(l)})})})();</script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      <p style="padding:24px;font-family:system-ui">Harvester Parts needs JavaScript enabled in this preview build.</p>
+    </noscript>
+  </body>
+</html>
