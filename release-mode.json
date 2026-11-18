@@ -1,10 +1,10 @@
 {
-  "mode": "family-review-staging",
+  "mode": "public-marketplace",
   "realTransactions": false,
-  "paymentMode": "razorpay-test",
-  "accounts": "isolated-staging-supabase-dev",
+  "paymentMode": "disabled",
+  "accounts": "production-supabase-auth",
   "syntheticProviders": false,
-  "catalogue": "staging-test-plus-2-showcase-references",
+  "catalogue": "verified-seller-inventory",
   "contract": "r6.2",
   "hostedBackendValidated": true
 }
