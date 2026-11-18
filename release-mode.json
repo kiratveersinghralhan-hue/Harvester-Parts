@@ -1,9 +1,10 @@
 {
-  "mode": "public-showcase",
+  "mode": "family-review-staging",
   "realTransactions": false,
-  "accounts": false,
+  "paymentMode": "razorpay-test",
+  "accounts": "isolated-staging-supabase-dev",
   "syntheticProviders": false,
-  "catalogue": "fictional-demonstration",
+  "catalogue": "staging-test-plus-2-showcase-references",
   "contract": "r6.2",
-  "hostedBackendValidated": false
+  "hostedBackendValidated": true
 }

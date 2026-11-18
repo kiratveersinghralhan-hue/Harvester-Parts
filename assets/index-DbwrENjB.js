@@ -1,1 +1,0 @@
-import{a3 as i}from"./index-Chd-Lz6m.js";function t(){return new Proxy({},{get:(a,e)=>e==="then"?void 0:()=>Promise.reject(new i("unavailable","This feature is not available yet. Nothing was sent."))})}const r=t();export{r as l};
