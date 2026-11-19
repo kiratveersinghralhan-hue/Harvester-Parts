@@ -1,0 +1,1 @@
+import{j as s,x as i}from"./index-q58cIi0q.js";const o="_tile_1mbyh_1",_="_sm_1mbyh_22",c="_md_1mbyh_26",l="_lg_1mbyh_29",t={tile:o,sm:_,md:c,lg:l};function a({icon:m,size:e="md",className:n}){return s.jsx("span",{className:i(t.tile,t[e],n),"aria-hidden":"true",children:s.jsx(m,{strokeWidth:1.75})})}export{a as I};
