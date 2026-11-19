@@ -1,0 +1,1 @@
+import{A as e}from"./index-C2Z80YGs.js";import"./index-BbHtWZLF.js";const a=()=>new e("unavailable","This feature is not available in preview mode."),i=new Proxy({},{get:()=>()=>Promise.reject(a())}),s=i;export{s as p};
