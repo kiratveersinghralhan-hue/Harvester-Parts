@@ -1,1 +1,0 @@
-import{d as t}from"./index-q58cIi0q.js";const e={name:"pause",size:24,node:[["rect",{x:"14",y:"3",width:"5",height:"18",rx:"1",key:"kaeet6"}],["rect",{x:"5",y:"3",width:"5",height:"18",rx:"1",key:"1wsw3u"}]]};e.node;const o=t(e);export{o as P};
